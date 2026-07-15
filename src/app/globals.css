@@ -2248,14 +2248,12 @@ a {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s;
+  animation: mkt-scanner-fade-in 0.2s ease-out;
 }
 
-.mkt-scanner-overlay.visible {
-  opacity: 1;
-  pointer-events: auto;
+@keyframes mkt-scanner-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .mkt-scanner-modal {
@@ -2310,15 +2308,47 @@ a {
 .mkt-scanner-reader {
   width: 100%;
   min-height: 280px;
+  position: relative;
+  background: #000;
+  overflow: hidden;
 }
 
 .mkt-scanner-reader video {
   width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
   border-radius: 0 !important;
+  display: block !important;
 }
 
 .mkt-scanner-reader img[alt="Info icon"] {
   display: none;
+}
+
+.mkt-scanner-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+  background: var(--surface-dim);
+}
+
+.mkt-scanner-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: mkt-scanner-spin 0.7s linear infinite;
+}
+
+@keyframes mkt-scanner-spin {
+  to { transform: rotate(360deg); }
 }
 
 .mkt-scanner-hint {

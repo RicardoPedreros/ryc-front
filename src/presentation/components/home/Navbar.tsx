@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useTheme } from "@/presentation/hooks/useTheme";
+import { useAuth } from "@/presentation/hooks/useAuth";
 
 export function Navbar() {
   const { toggle } = useTheme();
+  const { user, loading, logout } = useAuth();
 
   return (
     <header className="navbar">
@@ -59,7 +61,29 @@ export function Navbar() {
               <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
             </svg>
           </button>
-          <Link href="/market" className="btn-primary">Iniciar sesión</Link>
+          {loading ? (
+            <span className="btn-primary" style={{ opacity: 0.5 }}>
+              …
+            </span>
+          ) : user ? (
+            <div className="navbar-user">
+              <Link href="/market" className="btn-primary">
+                {user.firstName || user.username}
+              </Link>
+              <button
+                className="btn-ghost"
+                onClick={() => {
+                  logout().then(() => window.location.reload());
+                }}
+              >
+                Salir
+              </button>
+            </div>
+          ) : (
+            <Link href="/login" className="btn-primary">
+              Iniciar sesión
+            </Link>
+          )}
         </div>
       </nav>
     </header>

@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RYC — Ajuste de Stock Inicial</title>
+  <style>
+    :root {
+      --bg:        oklch(99% 0.002 240);
+      --surface:   oklch(100% 0 0);
+      --surface-dim: oklch(96% 0.004 240);
+      --surface-raised: oklch(100% 0 0);
+      --fg:        oklch(18% 0.012 250);
+      --fg-muted:  oklch(54% 0.012 250);
+      --fg-subtle: oklch(72% 0.008 250);
+      --border:      oklch(92% 0.005 250);
+      --border-focus: oklch(58% 0.18 255);
+      --accent:       oklch(58% 0.18 255);
+      --accent-hover: oklch(52% 0.20 255);
+      --accent-soft:  oklch(92% 0.06 255);
+      --secondary:       oklch(62% 0.12 170);
+      --secondary-soft:  oklch(93% 0.04 170);
+      --success: oklch(62% 0.17 145);
+      --success-soft: oklch(93% 0.06 145);
+      --warning: oklch(72% 0.16 80);
+      --warning-soft: oklch(94% 0.06 80);
+      --danger:  oklch(60% 0.20 25);
+      --danger-soft: oklch(93% 0.06 25);
+      --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+      --shadow-sm: 0 1px 2px oklch(50% 0.012 250 / 0.04);
+      --shadow-md: 0 4px 12px oklch(50% 0.012 250 / 0.06);
+      --shadow-lg: 0 12px 32px oklch(50% 0.012 250 / 0.08);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
+    }
+    :root[data-theme="dark"] {
+      --bg:        oklch(14% 0.012 250);
+      --surface:   oklch(18% 0.014 250);
+      --surface-dim: oklch(16% 0.012 250);
+      --surface-raised: oklch(20% 0.016 250);
+      --fg:        oklch(96% 0.004 250);
+      --fg-muted:  oklch(68% 0.012 250);
+      --fg-subtle: oklch(48% 0.012 250);
+      --border:      oklch(26% 0.014 250);
+      --border-focus: oklch(58% 0.18 255);
+      --accent:       oklch(64% 0.16 255);
+      --accent-hover: oklch(70% 0.14 255);
+      --accent-soft:  oklch(24% 0.06 255);
+      --secondary:       oklch(68% 0.10 170);
+      --secondary-soft:  oklch(22% 0.04 170);
+      --success-soft: oklch(20% 0.06 145);
+      --warning-soft: oklch(22% 0.06 80);
+      --danger-soft:  oklch(22% 0.06 25);
+      --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.12);
+      --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.18);
+      --shadow-lg: 0 12px 32px oklch(0% 0 0 / 0.24);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in oklch, var(--bg) 80%, transparent);
+      backdrop-filter: blur(12px);
+    }
+    .navbar-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.875rem 1.5rem;
+      max-width: 720px; margin: 0 auto;
+    }
+    .navbar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .navbar-back {
+      background: none; border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--fg-muted);
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .navbar-back:hover { border-color: var(--fg-subtle); color: var(--fg); }
+    .navbar-title {
+      font-size: 1rem; font-weight: 600;
+      letter-spacing: -0.01em; font-family: var(--font-display);
+    }
+    .navbar-right { display: flex; align-items: center; gap: 0.5rem; }
+
+    /* ── Page ── */
+    .page {
+      max-width: 720px; margin: 0 auto;
+      padding: 2rem 1.5rem 6rem;
+    }
+
+    /* ── Header ── */
+    .page-header { margin-bottom: 2rem; }
+    .page-header h1 {
+      font-size: clamp(1.5rem, 4vw, 1.75rem);
+      font-weight: 700; letter-spacing: -0.02em;
+      font-family: var(--font-display);
+      margin-bottom: 0.375rem;
+    }
+    .page-header p {
+      font-size: 0.9375rem; color: var(--fg-muted);
+      line-height: 1.6;
+    }
+
+    /* ── Info Banner ── */
+    .info-banner {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .info-banner svg { width: 20px; height: 20px; color: var(--accent); flex-shrink: 0; margin-top: 1px; }
+    .info-banner-body h3 { font-size: 0.875rem; font-weight: 600; color: var(--accent); margin-bottom: 0.125rem; }
+    .info-banner-body p { font-size: 0.8125rem; color: var(--fg-muted); line-height: 1.5; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 2.5rem; }
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem; gap: 0.5rem;
+    }
+    .section-title {
+      font-size: 1rem; font-weight: 600;
+      font-family: var(--font-display);
+    }
+    .section-action {
+      background: none; border: none;
+      font-size: 0.8125rem; font-weight: 600;
+      color: var(--accent); cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .section-action:hover { opacity: 0.8; }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    /* ── Search ── */
+    .search-bar {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: var(--surface-dim);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: 0.5rem 1rem;
+      margin-bottom: 1rem;
+      transition: border-color 0.15s;
+    }
+    .search-bar:focus-within { border-color: var(--border-focus); }
+    .search-bar svg { width: 16px; height: 16px; color: var(--fg-subtle); flex-shrink: 0; }
+    .search-bar input {
+      border: none; background: none; outline: none;
+      font-size: 0.875rem; color: var(--fg);
+      font-family: var(--font-body);
+      flex: 1;
+    }
+    .search-bar input::placeholder { color: var(--fg-subtle); }
+
+    /* ── Filter chips ── */
+    .filter-row {
+      display: flex; gap: 0.5rem; flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .chip {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: 0.375rem 0.875rem;
+      font-size: 0.75rem; font-weight: 600;
+      color: var(--fg-muted);
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+    }
+    .chip:hover { border-color: var(--fg-subtle); color: var(--fg); }
+    .chip.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── Product rows ── */
+    .product-list { display: flex; flex-direction: column; }
+    .product-row {
+      display: flex; align-items: center; gap: 0.875rem;
+      padding: 0.875rem 1rem;
+      transition: background 0.12s;
+    }
+    .product-row:not(:last-child) { border-bottom: 1px solid var(--border); }
+    .product-row:hover { background: var(--surface-dim); }
+
+    .product-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.75rem; font-weight: 700;
+    }
+    .product-icon.green { background: oklch(93% 0.06 145); color: oklch(52% 0.14 145); }
+    .product-icon.blue  { background: oklch(93% 0.06 220); color: oklch(52% 0.14 220); }
+    .product-icon.pink  { background: oklch(93% 0.06 340); color: oklch(52% 0.14 340); }
+    .product-icon.amber { background: oklch(94% 0.06 80);  color: oklch(62% 0.14 80);  }
+    :root[data-theme="dark"] .product-icon.green { background: oklch(20% 0.06 145); color: oklch(72% 0.14 145); }
+    :root[data-theme="dark"] .product-icon.blue  { background: oklch(20% 0.06 220); color: oklch(72% 0.14 220); }
+    :root[data-theme="dark"] .product-icon.pink  { background: oklch(20% 0.06 340); color: oklch(72% 0.14 340); }
+    :root[data-theme="dark"] .product-icon.amber { background: oklch(22% 0.06 80);  color: oklch(72% 0.14 80);  }
+
+    .product-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .product-name { font-size: 0.875rem; font-weight: 500; }
+    .product-meta { font-size: 0.75rem; color: var(--fg-subtle); }
+
+    .product-stock {
+      display: flex; flex-direction: column; align-items: flex-end;
+      gap: 2px; flex-shrink: 0;
+    }
+    .product-stock-value {
+      font-size: 0.9375rem; font-weight: 700;
+      font-family: var(--font-mono);
+      letter-spacing: -0.01em;
+    }
+    .product-stock-label {
+      font-size: 0.6875rem; color: var(--fg-subtle);
+    }
+    .product-stock-value.empty { color: var(--danger); }
+    .product-stock-value.low { color: var(--warning); }
+
+    /* ── Inline edit ── */
+    .product-actions { flex-shrink: 0; }
+    .btn-edit {
+      background: none; border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--fg-subtle);
+      transition: border-color 0.12s, color 0.12s, background 0.12s;
+    }
+    .btn-edit:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+    .btn-edit svg { width: 14px; height: 14px; }
+
+    /* ── Batch mode ── */
+    .batch-mode {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -4px 16px oklch(50% 0.012 250 / 0.08);
+    }
+    .batch-inner {
+      max-width: 720px; margin: 0 auto;
+      padding: 1rem 1.5rem;
+    }
+    .batch-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .batch-header h3 {
+      font-size: 0.875rem; font-weight: 600;
+      font-family: var(--font-display);
+    }
+    .batch-count {
+      font-size: 0.75rem; font-weight: 600;
+      background: var(--accent-soft); color: var(--accent);
+      padding: 0.25rem 0.625rem; border-radius: var(--radius-full);
+    }
+    .batch-actions {
+      display: flex; gap: 0.75rem;
+    }
+    .batch-btn-save {
+      flex: 1;
+      background: var(--accent); color: #fff; border: none;
+      border-radius: var(--radius-full);
+      padding: 0.75rem 1.25rem;
+      font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .batch-btn-save:hover { background: var(--accent-hover); }
+    .batch-btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+    .batch-btn-cancel {
+      background: none; border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      padding: 0.75rem 1.25rem;
+      font-size: 0.875rem; font-weight: 600;
+      color: var(--fg-muted); cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .batch-btn-cancel:hover { border-color: var(--fg-subtle); color: var(--fg); }
+
+    /* ── Inline quantity editor ── */
+    .qty-editor {
+      display: flex; align-items: center; gap: 0.375rem;
+      background: var(--surface-dim);
+      border: 1px solid var(--border-focus);
+      border-radius: var(--radius-sm);
+      padding: 0.25rem;
+    }
+    .qty-btn {
+      width: 28px; height: 28px;
+      border-radius: var(--radius-sm);
+      border: none; background: var(--surface);
+      color: var(--fg-muted);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1rem; font-weight: 600;
+      transition: background 0.1s, color 0.1s;
+    }
+    .qty-btn:hover { background: var(--accent-soft); color: var(--accent); }
+    .qty-input {
+      width: 48px; text-align: center;
+      border: none; background: none; outline: none;
+      font-size: 0.9375rem; font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--fg);
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      padding: 3rem 1.5rem;
+      text-align: center;
+      color: var(--fg-muted);
+    }
+    .empty-state svg { width: 48px; height: 48px; color: var(--fg-subtle); margin-bottom: 1rem; }
+    .empty-state h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.375rem; color: var(--fg); }
+    .empty-state p { font-size: 0.875rem; line-height: 1.6; max-width: 320px; margin: 0 auto; }
+
+    /* ── Toggle switch ── */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-size: 0.875rem; font-weight: 500; }
+    .toggle-desc { font-size: 0.75rem; color: var(--fg-subtle); margin-top: 1px; }
+    .toggle-switch {
+      position: relative; width: 44px; height: 24px;
+      background: var(--border); border-radius: var(--radius-full);
+      cursor: pointer; flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .toggle-switch.on { background: var(--accent); }
+    .toggle-switch::after {
+      content: ''; position: absolute;
+      top: 2px; left: 2px;
+      width: 20px; height: 20px;
+      background: #fff; border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px oklch(0% 0 0 / 0.15);
+    }
+    .toggle-switch.on::after { transform: translateX(20px); }
+
+    /* ── Summary bar ── */
+    .summary-bar {
+      display: flex; align-items: center; gap: 1rem;
+      padding: 0.75rem 1rem;
+      background: var(--surface-dim);
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+    }
+    .summary-item {
+      display: flex; flex-direction: column;
+    }
+    .summary-item-label { font-size: 0.6875rem; color: var(--fg-subtle); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
+    .summary-item-value { font-size: 1.125rem; font-weight: 700; font-family: var(--font-display); }
+    .summary-item-value.accent { color: var(--accent); }
+
+    /* ── Theme toggle ── */
+    .btn-theme {
+      background: none; border: 1px solid var(--border);
+      border-radius: var(--radius-full);
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--fg-muted);
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+    .btn-theme:hover { border-color: var(--fg-subtle); color: var(--fg); background: var(--surface-dim); }
+    .btn-theme .icon-sun, .btn-theme .icon-moon { display: none; }
+    :root:not([data-theme="dark"]) .btn-theme .icon-moon { display: block; }
+    :root[data-theme="dark"] .btn-theme .icon-sun { display: block; }
+
+    @media (max-width: 479px) {
+      .summary-bar { flex-wrap: wrap; gap: 0.75rem; }
+      .batch-actions { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navbar -->
+  <header class="navbar">
+    <nav class="navbar-inner">
+      <div class="navbar-left">
+        <button class="navbar-back" aria-label="Volver">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8L10 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <span class="navbar-title">Ajuste de stock</span>
+      </div>
+      <div class="navbar-right">
+        <button class="btn-theme" aria-label="Cambiar tema">
+          <svg class="icon-moon" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 9.5A6 6 0 016.5 2a6 6 0 107.5 7.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="icon-sun" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Page -->
+  <main class="page">
+
+    <!-- Header -->
+    <div class="page-header">
+      <h1>Stock inicial</h1>
+      <p>Registrá lo que ya tenés en casa antes de empezar. No necesitás ligarlo a una compra.</p>
+    </div>
+
+    <!-- Info banner -->
+    <div class="info-banner">
+      <svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M10 9v4M10 6.5v.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <div class="info-banner-body">
+        <h3>¿Por qué esto?</h3>
+        <p>Cuando arrancás con la app, ya tenés cosas en la despensa. Este paso carga esas existencias como <strong>inventario inicial</strong> — no afecta el historial de compras.</p>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-bar">
+      <div class="summary-item">
+        <span class="summary-item-label">Sin stock</span>
+        <span class="summary-item-value" style="color: var(--danger);">4</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-item-label">Con stock</span>
+        <span class="summary-item-value" style="color: var(--success);">6</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-item-label">Total productos</span>
+        <span class="summary-item-value">10</span>
+      </div>
+    </div>
+
+    <!-- Search + filters -->
+    <div class="search-bar">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input type="text" placeholder="Buscar producto..." />
+    </div>
+    <div class="filter-row">
+      <button class="chip active">Todos</button>
+      <button class="chip">Sin stock</button>
+      <button class="chip">Bajo stock</button>
+      <button class="chip">Alimentos</button>
+      <button class="chip">Bebidas</button>
+      <button class="chip">Limpieza</button>
+    </div>
+
+    <!-- Product list -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Productos</span>
+        <button class="section-action">Editar todo</button>
+      </div>
+      <div class="card">
+        <div class="product-list">
+
+          <!-- Product with existing stock -->
+          <div class="product-row">
+            <div class="product-icon green">AL</div>
+            <div class="product-info">
+              <span class="product-name">Leche entera La Serenísima 1L</span>
+              <span class="product-meta">Lácteos · La Serenísima · 1 und</span>
+            </div>
+            <div class="product-stock">
+              <span class="product-stock-value">3 und</span>
+              <span class="product-stock-label">en casa</span>
+            </div>
+            <div class="product-actions">
+              <button class="btn-edit" aria-label="Editar">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l3 3M1.5 9.5l5.5-5.5 3 3L4.5 12.5h-3v-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Product with zero stock (editable) -->
+          <div class="product-row">
+            <div class="product-icon green">AL</div>
+            <div class="product-info">
+              <span class="product-name">Pan integral Bimbo 500g</span>
+              <span class="product-meta">Panadería · Bimbo · 1 paq</span>
+            </div>
+            <div class="qty-editor">
+              <button class="qty-btn" aria-label="Restar">−</button>
+              <input class="qty-input" type="number" value="0" min="0" />
+              <button class="qty-btn" aria-label="Sumar">+</button>
+            </div>
+          </div>
+
+          <!-- Product with existing stock -->
+          <div class="product-row">
+            <div class="product-icon green">AL</div>
+            <div class="product-info">
+              <span class="product-name">Huevos blancos x12</span>
+              <span class="product-meta">Alimentos · — · 1 docena</span>
+            </div>
+            <div class="product-stock">
+              <span class="product-stock-value">2 docenas</span>
+              <span class="product-stock-label">en casa</span>
+            </div>
+            <div class="product-actions">
+              <button class="btn-edit" aria-label="Editar">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l3 3M1.5 9.5l5.5-5.5 3 3L4.5 12.5h-3v-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Zero stock -->
+          <div class="product-row">
+            <div class="product-icon blue">BE</div>
+            <div class="product-info">
+              <span class="product-name">Agua mineral sin gas 500ml</span>
+              <span class="product-meta">Bebidas · — · 1 bot</span>
+            </div>
+            <div class="product-stock">
+              <span class="product-stock-value empty">0 und</span>
+              <span class="product-stock-label">sin stock</span>
+            </div>
+            <div class="product-actions">
+              <button class="btn-edit" aria-label="Editar">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l3 3M1.5 9.5l5.5-5.5 3 3L4.5 12.5h-3v-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Low stock -->
+          <div class="product-row">
+            <div class="product-icon pink">LI</div>
+            <div class="product-info">
+              <span class="product-name">Líquido lavar ropa Skip 3L</span>
+              <span class="product-meta">Lavandería · Skip · 1 bot</span>
+            </div>
+            <div class="product-stock">
+              <span class="product-stock-value low">1 und</span>
+              <span class="product-stock-label">bajo</span>
+            </div>
+            <div class="product-actions">
+              <button class="btn-edit" aria-label="Editar">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l3 3M1.5 9.5l5.5-5.5 3 3L4.5 12.5h-3v-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Product with existing stock -->
+          <div class="product-row">
+            <div class="product-icon green">AL</div>
+            <div class="product-info">
+              <span class="product-name">Arroz largo fino 1kg</span>
+              <span class="product-meta">Alimentos · — · 1 paq</span>
+            </div>
+            <div class="product-stock">
+              <span class="product-stock-value">4 paq</span>
+              <span class="product-stock-label">en casa</span>
+            </div>
+            <div class="product-actions">
+              <button class="btn-edit" aria-label="Editar">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l3 3M1.5 9.5l5.5-5.5 3 3L4.5 12.5h-3v-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Zero stock -->
+          <div class="product-row">
+            <div class="product-icon amber">CO</div>
+            <div class="product-info">
+              <span class="product-name">Fideos tallarín Matarazzo 500g</span>
+              <span class="product-meta">Cocina · Matarazzo · 1 paq</span>
+            </div>
+            <div class="product-stock">
+              <span class="product-stock-value empty">0 und</span>
+              <span class="product-stock-label">sin stock</span>
+            </div>
+            <div class="product-actions">
+              <button class="btn-edit" aria-label="Editar">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l3 3M1.5 9.5l5.5-5.5 3 3L4.5 12.5h-3v-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Existing stock -->
+          <div class="product-row">
+            <div class="product-icon pink">LI</div>
+            <div class="product-info">
+              <span class="product-name">Pastillas lavar dishes 30 und</span>
+              <span class="product-meta">Limpieza · — · 1 caja</span>
+            </div>
+            <div class="product-stock">
+              <span class="product-stock-value">1 caja</span>
+              <span class="product-stock-label">en casa</span>
+            </div>
+            <div class="product-actions">
+              <button class="btn-edit" aria-label="Editar">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l3 3M1.5 9.5l5.5-5.5 3 3L4.5 12.5h-3v-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Low stock -->
+          <div class="product-row">
+            <div class="product-icon blue">BE</div>
+            <div class="product-info">
+              <span class="product-name">Cerveza Quilmes 473ml</span>
+              <span class="product-meta">Bebidas · Quilmes · 1 lata</span>
+            </div>
+            <div class="product-stock">
+              <span class="product-stock-value low">2 latas</span>
+              <span class="product-stock-label">bajo</span>
+            </div>
+            <div class="product-actions">
+              <button class="btn-edit" aria-label="Editar">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l3 3M1.5 9.5l5.5-5.5 3 3L4.5 12.5h-3v-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Existing stock -->
+          <div class="product-row">
+            <div class="product-icon green">AL</div>
+            <div class="product-info">
+              <span class="product-name">Aceite de girasol 900ml</span>
+              <span class="product-meta">Alimentos · Cocinero · 1 bot</span>
+            </div>
+            <div class="product-stock">
+              <span class="product-stock-value">1 bot</span>
+              <span class="product-stock-label">en casa</span>
+            </div>
+            <div class="product-actions">
+              <button class="btn-edit" aria-label="Editar">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8.5 2.5l3 3M1.5 9.5l5.5-5.5 3 3L4.5 12.5h-3v-3z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings hints -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">Opciones</span>
+      </div>
+      <div class="card">
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Ocultar productos sin stock</div>
+            <div class="toggle-desc">Mostrá solo los que ya tenés en casa</div>
+          </div>
+          <div class="toggle-switch" id="toggleHideEmpty"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">Ocultar productos con stock completo</div>
+            <div class="toggle-desc">Enfocate en lo que falta o está bajo</div>
+          </div>
+          <div class="toggle-switch" id="toggleHideFull"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Batch mode bar (appears when editing) -->
+  <div class="batch-mode" id="batchBar" style="display: none;">
+    <div class="batch-inner">
+      <div class="batch-header">
+        <h3>Guardando stock inicial</h3>
+        <span class="batch-count" id="batchCount">3 cambios</span>
+      </div>
+      <div class="batch-actions">
+        <button class="batch-btn-cancel" id="batchCancel">Cancelar</button>
+        <button class="batch-btn-save" id="batchSave">Guardar todo</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Theme toggle
+    (function () {
+      const btn = document.querySelector('.btn-theme');
+      const root = document.documentElement;
+      const stored = localStorage.getItem('ryc-theme');
+      if (stored) root.setAttribute('data-theme', stored);
+
+      btn.addEventListener('click', function () {
+        const isDark = root.getAttribute('data-theme') === 'dark';
+        const next = isDark ? 'light' : 'dark';
+        root.setAttribute('data-theme', isDark ? '' : 'dark');
+        if (isDark) root.removeAttribute('data-theme');
+        localStorage.setItem('ryc-theme', next);
+      });
+    })();
+
+    // Toggle switches
+    document.querySelectorAll('.toggle-switch').forEach(function (el) {
+      el.addEventListener('click', function () {
+        el.classList.toggle('on');
+      });
+    });
+
+    // Show batch bar on any qty edit
+    var batchBar = document.getElementById('batchBar');
+    var batchCount = document.getElementById('batchCount');
+    var edits = 0;
+
+    document.querySelectorAll('.qty-input').forEach(function (input) {
+      var base = parseInt(input.value, 10);
+      input.addEventListener('input', function () {
+        var val = parseInt(input.value, 10) || 0;
+        if (val !== base) {
+          if (edits === 0) batchBar.style.display = 'block';
+          edits++;
+        } else {
+          edits = Math.max(0, edits - 1);
+        }
+        batchCount.textContent = edits + (edits === 1 ? ' cambio' : ' cambios');
+        if (edits === 0) batchBar.style.display = 'none';
+      });
+    });
+
+    // Edit button shows qty editor (demo: toggles first row's edit)
+    document.querySelectorAll('.btn-edit').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var row = btn.closest('.product-row');
+        var stock = row.querySelector('.product-stock');
+        var name = row.querySelector('.product-name').textContent;
+        if (!stock) return;
+        var val = stock.querySelector('.product-stock-value').textContent;
+        var num = parseInt(val, 10) || 0;
+
+        var editor = document.createElement('div');
+        editor.className = 'qty-editor';
+        editor.innerHTML =
+          '<button class="qty-btn" aria-label="Restar">\u2212</button>' +
+          '<input class="qty-input" type="number" value="' + num + '" min="0" />' +
+          '<button class="qty-btn" aria-label="Sumar">+</button>';
+
+        stock.replaceWith(editor);
+
+        editor.querySelector('.qty-btn').addEventListener('click', function () {
+          var inp = editor.querySelector('.qty-input');
+          inp.value = Math.max(0, parseInt(inp.value, 10) - 1);
+          inp.dispatchEvent(new Event('input'));
+        });
+        editor.querySelectorAll('.qty-btn')[1].addEventListener('click', function () {
+          var inp = editor.querySelector('.qty-input');
+          inp.value = parseInt(inp.value, 10) + 1;
+          inp.dispatchEvent(new Event('input'));
+        });
+      });
+    });
+
+    // Cancel batch
+    document.getElementById('batchCancel').addEventListener('click', function () {
+      batchBar.style.display = 'none';
+      edits = 0;
+      window.location.reload();
+    });
+
+    // Save batch (demo: hide bar)
+    document.getElementById('batchSave').addEventListener('click', function () {
+      batchBar.style.display = 'none';
+      edits = 0;
+    });
+
+    // Filter chips
+    document.querySelectorAll('.chip').forEach(function (chip) {
+      chip.addEventListener('click', function () {
+        document.querySelectorAll('.chip').forEach(function (c) { c.classList.remove('active'); });
+        chip.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

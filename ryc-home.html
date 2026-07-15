@@ -1,0 +1,308 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RYC — Tu hogar, organizado juntos</title>
+  <style>
+    /* ── Design Tokens: modern-minimal ── */
+    :root {
+      --bg:        oklch(99% 0.002 240);
+      --surface:   oklch(100% 0 0);
+      --surface-dim: oklch(96% 0.004 240);
+      --fg:        oklch(18% 0.012 250);
+      --fg-muted:  oklch(54% 0.012 250);
+      --fg-subtle: oklch(72% 0.008 250);
+      --border:      oklch(92% 0.005 250);
+      --border-focus: oklch(58% 0.18 255);
+      --accent:       oklch(58% 0.18 255);
+      --accent-hover: oklch(52% 0.20 255);
+      --accent-soft:  oklch(92% 0.06 255);
+      --secondary:       oklch(62% 0.12 170);
+      --secondary-soft:  oklch(93% 0.04 170);
+      --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+      --shadow-lg: 0 12px 32px oklch(50% 0.012 250 / 0.08);
+      --radius-lg: 16px;
+    }
+    :root[data-theme="dark"] {
+      --bg:        oklch(14% 0.012 250);
+      --surface:   oklch(18% 0.014 250);
+      --surface-dim: oklch(16% 0.012 250);
+      --fg:        oklch(96% 0.004 250);
+      --fg-muted:  oklch(68% 0.012 250);
+      --fg-subtle: oklch(48% 0.012 250);
+      --border:      oklch(26% 0.014 250);
+      --border-focus: oklch(58% 0.18 255);
+      --accent:       oklch(64% 0.16 255);
+      --accent-hover: oklch(70% 0.14 255);
+      --accent-soft:  oklch(24% 0.06 255);
+      --secondary:       oklch(68% 0.10 170);
+      --secondary-soft:  oklch(22% 0.04 170);
+      --shadow-lg: 0 12px 32px oklch(0% 0 0 / 0.24);
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--fg); font-family: var(--font-body); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    .text-balance { text-wrap: balance; }
+    .gradient-text { background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ── Navbar ── */
+    .navbar { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--border); background: color-mix(in oklch, var(--bg) 80%, transparent); backdrop-filter: blur(12px); }
+    .navbar-inner { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; max-width: 1200px; margin: 0 auto; }
+    .navbar-logo { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; font-family: var(--font-display); }
+    .navbar-links { display: flex; align-items: center; gap: 1.5rem; }
+    .navbar-links a { font-size: 0.875rem; font-weight: 500; color: var(--fg-muted); transition: color 0.15s; }
+    .navbar-links a:hover { color: var(--fg); }
+    .btn-primary { background: var(--accent); color: #fff; border: none; border-radius: 9999px; padding: 0.625rem 1.25rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-ghost { background: transparent; color: var(--fg); border: 1px solid var(--border); border-radius: 9999px; padding: 0.625rem 2rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+    .btn-ghost:hover { border-color: var(--fg-subtle); background: var(--surface-dim); }
+    .btn-theme { background: none; border: 1px solid var(--border); border-radius: 9999px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--fg-muted); transition: border-color 0.15s, color 0.15s, background 0.15s; }
+    .btn-theme:hover { border-color: var(--fg-subtle); color: var(--fg); background: var(--surface-dim); }
+    .btn-theme .icon-sun, .btn-theme .icon-moon { display: none; width: 18px; height: 18px; }
+    :root:not([data-theme="dark"]) .btn-theme .icon-moon { display: block; }
+    :root[data-theme="dark"] .btn-theme .icon-sun { display: block; }
+
+    /* ── Hero ── */
+    .hero { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 6rem 1.5rem 5rem; }
+    .hero-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--accent-soft); color: var(--accent); font-size: 0.75rem; font-weight: 600; padding: 0.375rem 1rem; border-radius: 9999px; margin-bottom: 1.5rem; }
+    .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+    .hero h1 { max-width: 48rem; font-size: clamp(2.25rem, 5vw, 3.75rem); font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; font-family: var(--font-display); }
+    .hero p { max-width: 36rem; font-size: 1.125rem; color: var(--fg-muted); margin-top: 1.5rem; line-height: 1.7; }
+    .hero-actions { display: flex; gap: 0.75rem; margin-top: 2.5rem; flex-wrap: wrap; justify-content: center; }
+
+    /* ── Preview ── */
+    .preview { max-width: 1024px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+    .preview-card { border: 1px solid var(--border); border-radius: 1rem; padding: 4px; box-shadow: var(--shadow-lg); }
+    .preview-inner { background: var(--surface); border-radius: 0.75rem; padding: 2.5rem; }
+    .preview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; }
+    .preview-header h3 { font-size: 1.125rem; font-weight: 600; }
+    .preview-header p { font-size: 0.875rem; color: var(--fg-muted); }
+    .sync-badge { background: var(--secondary-soft); color: var(--secondary); font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 9999px; }
+    .item-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .item-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-radius: 8px; }
+    .item-row.done { background: var(--surface-dim); }
+    .item-check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .item-check.checked { background: var(--accent); border-color: var(--accent); }
+    .item-name { flex: 1; font-size: 0.875rem; font-weight: 500; }
+    .item-name.done { text-decoration: line-through; opacity: 0.5; }
+    .item-cat { font-size: 0.75rem; font-weight: 500; color: var(--fg-subtle); }
+
+    /* ── Features ── */
+    .features { padding: 0 1.5rem 6rem; }
+    .section-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+    .section-title { font-size: clamp(1.875rem, 3vw, 2.5rem); font-weight: 600; letter-spacing: -0.02em; font-family: var(--font-display); margin-bottom: 3rem; }
+    .features-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+    @media (min-width: 640px) { .features-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1024px) { .features-grid { grid-template-columns: repeat(3, 1fr); } }
+    .feature-card { border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; background: var(--surface); transition: border-color 0.15s; }
+    .feature-card:hover { border-color: var(--border-focus); }
+    .feature-icon { width: 40px; height: 40px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+    .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .feature-card p { font-size: 0.875rem; color: var(--fg-muted); line-height: 1.6; }
+
+    /* ── Steps ── */
+    .steps { padding: 0 1.5rem 6rem; }
+    .steps-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; }
+    @media (min-width: 640px) { .steps-grid { grid-template-columns: repeat(3, 1fr); } }
+    .step-number { display: block; font-size: 1.875rem; font-weight: 700; color: var(--fg-subtle); font-family: var(--font-mono); margin-bottom: 1rem; }
+    .step-title { font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem; }
+    .step-desc { font-size: 0.875rem; color: var(--fg-muted); line-height: 1.6; }
+
+    /* ── CTA ── */
+    .cta { padding: 0 1.5rem 6rem; }
+    .cta-card { max-width: 48rem; margin: 0 auto; border: 1px solid var(--border); border-radius: 1rem; background: var(--surface); padding: 4rem 2rem; text-align: center; }
+    @media (min-width: 640px) { .cta-card { padding: 4rem 4rem; } }
+    .cta-card h2 { font-size: clamp(1.5rem, 3vw, 1.875rem); font-weight: 600; letter-spacing: -0.02em; font-family: var(--font-display); margin-bottom: 1rem; }
+    .cta-card p { font-size: 1rem; color: var(--fg-muted); margin-bottom: 2rem; }
+
+    /* ── Footer ── */
+    .footer { border-top: 1px solid var(--border); padding: 2rem 1.5rem; }
+    .footer-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+    .footer-copy { font-size: 0.875rem; color: var(--fg-subtle); }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a { font-size: 0.875rem; color: var(--fg-muted); transition: color 0.15s; }
+    .footer-links a:hover { color: var(--fg); }
+
+    @media (max-width: 639px) {
+      .navbar-links a.nav-text { display: none; }
+      .hero { padding-top: 4rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <header class="navbar">
+    <nav class="navbar-inner">
+      <a href="/" class="navbar-logo">RYC</a>
+      <div class="navbar-links">
+        <a href="#caracteristicas" class="nav-text">Características</a>
+        <a href="#como-funciona" class="nav-text">Cómo funciona</a>
+        <button class="btn-theme" id="themeToggle" aria-label="Cambiar tema">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <button class="btn-primary">Iniciar sesión</button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      Diseñado para parejas
+    </div>
+    <h1 class="text-balance">Tu hogar, <span class="gradient-text">organizado juntos</span></h1>
+    <p>Gestionen las compras del mercado, las tareas del hogar y el presupuesto familiar desde un solo lugar. Simple, claro, en tiempo real.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" style="padding: 0.875rem 2rem; font-size: 0.875rem;">Comenzar gratis</button>
+      <button class="btn-ghost" style="padding: 0.875rem 2rem; font-size: 0.875rem;">Ver cómo funciona</button>
+    </div>
+  </section>
+
+  <!-- Preview mockup -->
+  <section class="preview">
+    <div class="preview-card">
+      <div class="preview-inner">
+        <div class="preview-header">
+          <div>
+            <h3>Lista del mercado</h3>
+            <p>8 productos · 3 pendientes</p>
+          </div>
+          <span class="sync-badge">Sincronizado</span>
+        </div>
+        <div class="item-list">
+          <div class="item-row done">
+            <div class="item-check checked">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <span class="item-name done">Leche entera 1L</span>
+            <span class="item-cat">Lácteos</span>
+          </div>
+          <div class="item-row done">
+            <div class="item-check checked">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <span class="item-name done">Pan integral</span>
+            <span class="item-cat">Panadería</span>
+          </div>
+          <div class="item-row">
+            <div class="item-check"></div>
+            <span class="item-name">Huevos (docena)</span>
+            <span class="item-cat">Lácteos</span>
+          </div>
+          <div class="item-row">
+            <div class="item-check"></div>
+            <span class="item-name">Tomate redondo</span>
+            <span class="item-cat">Verdulería</span>
+          </div>
+          <div class="item-row">
+            <div class="item-check"></div>
+            <span class="item-name">Pechuga de pollo</span>
+            <span class="item-cat">Carnicería</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="caracteristicas" class="features">
+    <div class="container">
+      <p class="section-label" style="color: var(--accent);">Características</p>
+      <h2 class="section-title">Todo lo que necesitan, nada que no</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+          </div>
+          <h3>Listas compartidas</h3>
+          <p>Crean y editan la lista del mercado juntos. Los cambios se sincronizan al instante en ambos dispositivos.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+          </div>
+          <h3>Por categoría</h3>
+          <p>Organizada automáticamente por sección del supermercado. Encuentran lo que necesitan en segundos.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background: var(--secondary-soft); color: var(--secondary);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+          </div>
+          <h3>Presupuesto del hogar</h3>
+          <p>Lleven un registro claro de los gastos mensuales. Próximamente: categorías, metas y reportes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section id="como-funciona" class="steps">
+    <div class="container">
+      <p class="section-label" style="color: var(--secondary);">Cómo funciona</p>
+      <h2 class="section-title">Tres pasos, sin fricción</h2>
+      <div class="steps-grid">
+        <div>
+          <span class="step-number">01</span>
+          <h3 class="step-title">Crean su hogar</h3>
+          <p class="step-desc">Se registran, crean un hogar y comparten el código con su pareja. Listo.</p>
+        </div>
+        <div>
+          <span class="step-number">02</span>
+          <h3 class="step-title">Organizan juntos</h3>
+          <p class="step-desc">Agregan productos, categorías y tareas. Todo se actualiza en tiempo real para ambos.</p>
+        </div>
+        <div>
+          <span class="step-number">03</span>
+          <h3 class="step-title">Viven tranquilos</h3>
+          <p class="step-desc">Saben exactamente qué falta, qué cuesta y qué necesita atención. Sin sorpresas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="cta-card">
+      <h2>Empiecen a organizar su hogar hoy</h2>
+      <p>Gratis para parejas. Sin tarjeta de crédito. Cancelen cuando quieran.</p>
+      <button class="btn-primary" style="padding: 0.875rem 2rem;">Crear mi hogar</button>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <span class="footer-copy">© 2026 RYC</span>
+      <div class="footer-links">
+        <a href="#">Privacidad</a>
+        <a href="#">Términos</a>
+        <a href="#">Soporte</a>
+      </div>
+    </div>
+  </footer>
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const toggle = document.getElementById('themeToggle');
+      const stored = localStorage.getItem('ryc-theme');
+      if (stored === 'dark' || stored === 'light') {
+        root.setAttribute('data-theme', stored);
+      } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        root.setAttribute('data-theme', 'dark');
+      }
+      toggle.addEventListener('click', function () {
+        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('ryc-theme', next);
+      });
+    })();
+  </script>
+</body>
+</html>

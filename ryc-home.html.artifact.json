@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "RYC — Home (mockup inicial)",
+  "entry": "ryc-home.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-07-12T23:32:24.735Z",
+  "updatedAt": "2026-07-12T23:32:24.777Z",
+  "metadata": {
+    "identifier": "ryc-home",
+    "artifactType": "text/html",
+    "inferred": false
+  }
+}

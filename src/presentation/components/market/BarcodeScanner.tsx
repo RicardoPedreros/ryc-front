@@ -58,10 +58,6 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
             fps: 10,
             qrbox: { width: 280, height: 150 },
             aspectRatio: 1.7778,
-            videoConstraints: {
-              width: { ideal: 1280 },
-              height: { ideal: 720 },
-            },
           },
           (decodedText: string) => {
             if (!mounted) return;

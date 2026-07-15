@@ -51,7 +51,9 @@ export function StockOverview() {
             <div key={item.id} className="mkt-stock-row">
               <div className="mkt-stock-info">
                 <span className="mkt-stock-name">{item.name}</span>
-                {item.brand && <span className="mkt-stock-brand">{item.brand}</span>}
+                <span className="mkt-stock-brand">
+                  {[item.brand, item.categoryName, item.presentationQuantity && item.unitSymbol ? `${item.presentationQuantity} ${item.unitSymbol}` : item.presentationQuantity ? `${item.presentationQuantity}` : null].filter(Boolean).join(" · ")}
+                </span>
               </div>
               <div className="mkt-stock-right">
                 <span className="mkt-stock-qty">{item.currentStock}</span>

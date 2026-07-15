@@ -4,8 +4,25 @@ import { NeonProductRepository } from '@/infrastructure/market/repositories/neon
 
 const productUseCases = new ProductUseCases(new NeonProductRepository());
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const barcode = searchParams.get('barcode');
+    const q = searchParams.get('q');
+
+    if (barcode) {
+      const product = await productUseCases.findByBarcode(barcode);
+      if (!product) {
+        return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+      }
+      return NextResponse.json(product);
+    }
+
+    if (q && q.trim().length > 0) {
+      const products = await productUseCases.searchByName(q.trim());
+      return NextResponse.json(products);
+    }
+
     const products = await productUseCases.findAll();
     return NextResponse.json(products);
   } catch (error) {

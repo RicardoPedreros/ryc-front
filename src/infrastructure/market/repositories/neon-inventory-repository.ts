@@ -16,6 +16,9 @@ interface InventoryStockRow {
   id: string;
   name: string;
   brand: string | null;
+  categoryName: string | null;
+  unitSymbol: string | null;
+  presentationQuantity: number | null;
   current_stock: number;
 }
 
@@ -36,6 +39,9 @@ function toInventoryStock(row: InventoryStockRow): InventoryStock {
     id: row.id,
     name: row.name,
     brand: row.brand,
+    categoryName: row.categoryName,
+    unitSymbol: row.unitSymbol,
+    presentationQuantity: row.presentationQuantity,
     currentStock: row.current_stock,
   };
 }
@@ -55,7 +61,23 @@ export class NeonInventoryRepository implements IInventoryRepository {
 
   async getStock(): Promise<readonly InventoryStock[]> {
     const sql = getSql();
-    const rows = await sql`SELECT * FROM inventory ORDER BY name` as InventoryStockRow[];
+    const rows = await sql`
+      SELECT
+        p.id,
+        p.name,
+        b.name AS brand,
+        c.name AS "categoryName",
+        u.symbol AS "unitSymbol",
+        p.presentation_quantity AS "presentationQuantity",
+        COALESCE(inv.current_stock, 0)::int AS current_stock
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN units u ON p.unit_id = u.id
+      LEFT JOIN inventory inv ON p.id = inv.id
+      WHERE p.is_active = true
+      ORDER BY p.name
+    ` as InventoryStockRow[];
     return rows.map(toInventoryStock);
   }
 

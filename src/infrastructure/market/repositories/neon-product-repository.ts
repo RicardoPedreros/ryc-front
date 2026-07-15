@@ -1,5 +1,5 @@
 import type { Product, CreateProduct, UpdateProduct } from '@/domain/market/entities/product';
-import type { IProductRepository } from '@/domain/market/repositories/product-repository';
+import type { IProductRepository, ProductSearchResult } from '@/domain/market/repositories/product-repository';
 import { getSql } from '../neon-client';
 
 interface ProductRow {
@@ -67,6 +67,51 @@ export class NeonProductRepository implements IProductRepository {
       RETURNING *
     ` as ProductRow[];
     return rows.length > 0 ? toProduct(rows[0]) : null;
+  }
+
+  async searchByName(query: string): Promise<readonly ProductSearchResult[]> {
+    const sql = getSql();
+    const pattern = `%${query}%`;
+    const rows = await sql`
+      SELECT
+        p.id,
+        p.name,
+        b.name AS "brandName",
+        c.name AS "categoryName",
+        u.symbol AS "unitSymbol",
+        p.presentation_quantity AS "presentationQuantity",
+        p.barcode
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN units u ON p.unit_id = u.id
+      WHERE p.is_active = true
+        AND (p.name ILIKE ${pattern} OR b.name ILIKE ${pattern})
+      ORDER BY p.name
+      LIMIT 20
+    ` as ProductSearchResult[];
+    return rows;
+  }
+
+  async findByBarcode(barcode: string): Promise<ProductSearchResult | null> {
+    const sql = getSql();
+    const rows = await sql`
+      SELECT
+        p.id,
+        p.name,
+        b.name AS "brandName",
+        c.name AS "categoryName",
+        u.symbol AS "unitSymbol",
+        p.presentation_quantity AS "presentationQuantity",
+        p.barcode
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN units u ON p.unit_id = u.id
+      WHERE p.is_active = true AND p.barcode = ${barcode}
+      LIMIT 1
+    ` as ProductSearchResult[];
+    return rows.length > 0 ? rows[0] : null;
   }
 
   async remove(id: string): Promise<boolean> {

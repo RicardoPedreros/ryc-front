@@ -21,6 +21,9 @@ export function LowStockAlerts() {
       <div className="mkt-alert-list">
         {lowItems.map((item) => {
           const isOut = item.currentStock === 0;
+          const presentation = item.presentationQuantity && item.unitSymbol
+            ? `${item.presentationQuantity}${item.unitSymbol}`
+            : null;
           return (
             <div key={item.id} className="mkt-alert-item">
               <span className={`mkt-alert-dot ${isOut ? "danger" : "warning"}`} />
@@ -28,6 +31,7 @@ export function LowStockAlerts() {
                 <span className="mkt-alert-text">
                   {item.name}
                   {item.brand && ` — ${item.brand}`}
+                  {presentation && ` (${presentation})`}
                 </span>
                 <span className="mkt-alert-sub">
                   {isOut

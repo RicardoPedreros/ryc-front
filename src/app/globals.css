@@ -871,7 +871,7 @@ a {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  position: relative;
 }
 
 /* ── Quick actions ── */
@@ -1055,6 +1055,121 @@ a {
   height: 14px;
 }
 
+/* ── Quantity badge ── */
+.mkt-list-item-qty {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mkt-list-item.done .mkt-list-item-qty {
+  color: var(--fg-subtle);
+  background: var(--surface-dim);
+}
+
+/* ── Duplicate warning ── */
+.mkt-duplicate-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-top: 1px solid var(--border);
+}
+
+/* ── Quantity stepper ── */
+.mkt-add-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.mkt-qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.mkt-qty-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-dim);
+  border: none;
+  color: var(--fg);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.mkt-qty-btn:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.mkt-qty-input {
+  width: 40px;
+  height: 32px;
+  border: none;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  -moz-appearance: textfield;
+  padding: 0;
+}
+
+.mkt-qty-input::-webkit-outer-spin-button,
+.mkt-qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.mkt-qty-input:focus {
+  background: var(--accent-soft);
+}
+
+/* ── Search result already-added state ── */
+.mkt-search-result.already-added {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mkt-search-result.already-added:hover {
+  background: transparent;
+}
+
+.mkt-search-result-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--warning);
+  background: var(--warning-soft);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
 /* ── Add item row ── */
 
 .mkt-add-row {
@@ -1103,6 +1218,211 @@ a {
   height: 14px;
 }
 
+/* ── Search modes ── */
+
+.mkt-search-modes {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.mkt-search-mode-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  background: var(--surface);
+  border: none;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.mkt-search-mode-btn:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+.mkt-search-mode-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.mkt-search-mode-btn:hover:not(.active) {
+  background: var(--surface-dim);
+}
+
+/* ── Search input wrapper ── */
+
+.mkt-search-input-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.mkt-search-input-field {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  padding-right: 2rem;
+  font-size: 0.875rem;
+  color: var(--fg);
+  background: var(--surface);
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: var(--font-body);
+}
+
+.mkt-search-input-field::placeholder {
+  color: var(--fg-subtle);
+}
+
+.mkt-search-input-field:focus {
+  border-color: var(--accent);
+}
+
+.mkt-search-spinner {
+  position: absolute;
+  right: 0.625rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: mkt-spin 0.6s linear infinite;
+  pointer-events: none;
+}
+
+/* ── Search dropdown ── */
+
+.mkt-search-dropdown {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  z-index: 20;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.mkt-search-dropdown:empty {
+  display: none;
+}
+
+.mkt-search-result {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.mkt-search-result:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+.mkt-search-result:hover {
+  background: var(--accent-soft);
+}
+
+.mkt-search-result:active {
+  background: color-mix(in oklch, var(--accent-soft) 80%, var(--accent));
+}
+
+.mkt-search-result-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mkt-search-result-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mkt-search-result-meta {
+  font-size: 0.6875rem;
+  color: var(--fg-muted);
+}
+
+.mkt-search-no-results {
+  padding: 0.75rem 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+  text-align: center;
+}
+
+/* ── Barcode input row ── */
+
+.mkt-barcode-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mkt-barcode-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 0.75rem;
+  height: 36px;
+  transition: border-color 0.15s;
+}
+
+.mkt-barcode-input-wrap:focus-within {
+  border-color: var(--accent);
+}
+
+.mkt-barcode-input {
+  flex: 1;
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 0.875rem;
+  font-family: var(--font-mono);
+  color: var(--fg);
+  min-width: 0;
+}
+
+.mkt-barcode-input::placeholder {
+  color: var(--fg-subtle);
+  font-family: var(--font-body);
+}
+
+.mkt-barcode-input-row .mkt-add-row-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@keyframes mkt-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* ── Alerts ── */
 
 .mkt-alert-list {
@@ -1142,6 +1462,9 @@ a {
 }
 
 .mkt-alert-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   flex: 1;
   min-width: 0;
 }
@@ -2529,4 +2852,17 @@ a {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+/* ── Mobile: stack controls row ── */
+@media (max-width: 479px) {
+  .mkt-add-controls-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .mkt-qty-stepper {
+    align-self: flex-start;
+  }
 }

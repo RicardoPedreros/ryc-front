@@ -10,6 +10,7 @@ interface ProductWithStock {
   readonly brandId: string | null;
   readonly categoryName: string | null;
   readonly unitSymbol: string | null;
+  readonly presentationQuantity: number | null;
   readonly currentStock: number;
 }
 
@@ -224,9 +225,7 @@ export function StockAdjustment() {
                 <div className="mkt-adjust-info">
                   <span className="mkt-adjust-name">{product.name}</span>
                   <span className="mkt-adjust-meta">
-                    {[product.brand, product.categoryName, product.unitSymbol]
-                      .filter(Boolean)
-                      .join(" · ")}
+                    {[product.brand, product.categoryName, product.presentationQuantity && product.unitSymbol ? `${product.presentationQuantity} ${product.unitSymbol}` : product.presentationQuantity ? `${product.presentationQuantity}` : null].filter(Boolean).join(" · ")}
                   </span>
                 </div>
                 <div className="mkt-adjust-controls">
@@ -255,9 +254,7 @@ export function StockAdjustment() {
                       +
                     </button>
                   </div>
-                  <span className="mkt-adjust-unit">
-                    {product.unitSymbol ?? "und"}
-                  </span>
+                  <span className="mkt-adjust-unit">uds</span>
                 </div>
               </div>
             );

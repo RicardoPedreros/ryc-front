@@ -20,5 +20,8 @@ export interface InventoryStock {
   readonly id: string;
   readonly name: string;
   readonly brand: string | null;
+  readonly categoryName: string | null;
+  readonly unitSymbol: string | null;
+  readonly presentationQuantity: number | null;
   readonly currentStock: number;
 }

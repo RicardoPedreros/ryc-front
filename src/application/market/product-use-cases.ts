@@ -12,6 +12,14 @@ export class ProductUseCases {
     return this.productRepository.findById(id);
   }
 
+  async searchByName(query: string) {
+    return this.productRepository.searchByName(query);
+  }
+
+  async findByBarcode(barcode: string) {
+    return this.productRepository.findByBarcode(barcode);
+  }
+
   async create(product: CreateProduct) {
     if (!product.name.trim()) {
       throw new Error('Product name is required');

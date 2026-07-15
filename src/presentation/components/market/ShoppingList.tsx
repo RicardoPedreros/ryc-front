@@ -21,8 +21,9 @@ function formatPresentation(qty: number | null, unit: string | null): string {
 }
 
 function isAlreadyInList(item: ProductResult | { productId: string | null; name: string }, items: readonly ShoppingItem[]): boolean {
-  if (item.productId != null) {
-    return items.some((i) => i.productId === item.productId);
+  const itemId = "id" in item ? item.id : item.productId;
+  if (itemId != null) {
+    return items.some((i) => i.productId === itemId);
   }
   return items.some(
     (i) => i.productId === null && i.name.toLowerCase() === item.name.toLowerCase()

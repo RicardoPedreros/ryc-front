@@ -43,7 +43,7 @@ export default function TestDbPage() {
   return (
     <main style={{ fontFamily: "monospace", padding: "2rem", maxWidth: "800px" }}>
       <h1 style={{ fontSize: "1.25rem", marginBottom: "0.5rem" }}>Test DB Connection</h1>
-      <p style={{ fontSize: "0.875rem", color: "#666", marginBottom: "1.5rem" }}>
+      <p style={{ fontSize: "0.875rem", color: "var(--fg-muted)", marginBottom: "1.5rem" }}>
         Validación de conexión a Neon PostgreSQL
       </p>
 
@@ -60,7 +60,7 @@ export default function TestDbPage() {
       </button>
 
       {error && (
-        <div style={{ color: "red", marginBottom: "1rem" }}>
+        <div style={{ color: "var(--danger)", marginBottom: "1rem" }}>
           Error de red: {error}
         </div>
       )}
@@ -77,7 +77,7 @@ export default function TestDbPage() {
               style={{
                 marginBottom: "0.75rem",
                 padding: "0.75rem",
-                border: "1px solid #ddd",
+                border: "1px solid var(--border)",
                 borderRadius: "4px",
               }}
             >
@@ -88,12 +88,12 @@ export default function TestDbPage() {
                     width: "8px",
                     height: "8px",
                     borderRadius: "50%",
-                    background: result.status === "ok" ? "green" : "red",
+                    background: result.status === "ok" ? "var(--success)" : "var(--danger)",
                   }}
                 />
                 <strong>{result.step}</strong>
                 {result.duration != null && (
-                  <span style={{ color: "#999", fontSize: "0.75rem" }}>
+                  <span style={{ color: "var(--fg-subtle)", fontSize: "0.75rem" }}>
                     ({result.duration}ms)
                   </span>
                 )}

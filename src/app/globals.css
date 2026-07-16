@@ -2,47 +2,50 @@
 
 /* ═══════════════════════════════════════════════════════════════
    RYC — Design Tokens
-   
-   To re-theme the entire app, change only the HUE values in
-   the PALETTE section below (0–360). Every accent, badge,
-   button, and status color derives from these five numbers.
-   
-   Surface/foreground tokens control the neutral canvas and
-   are independent of the color palette.
+
+   ALL color identity lives in the PALETTE block below.
+   To re-theme the entire app, change ONLY the hue angles here.
+   Every accent, badge, surface, text, and shadow derives from
+   these 6 numbers.
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
   /* ─────────────────────────────────────────────
-     🎨 PALETTE — Change these to re-theme RYC
-     
-     Each value is an OKLCh hue angle (0–360).
-     Chroma and lightness per role are fixed below.
+     PALETTE — OKLCh Hue Angles (0–360)
+
+     Brand & status hues
+       --hue-primary    accent, CTA, links, active states
+       --hue-secondary  secondary badges, pills
+       --hue-success    positive states, confirmations
+       --hue-warning    caution, low-stock, pending
+       --hue-danger     errors, destructive actions
+
+     Neutral hue
+       --hue-neutral    surfaces, text, borders, shadows
+                        (low chroma — hue tint is subtle)
      ───────────────────────────────────────────── */
   --hue-primary:   255;
   --hue-secondary: 170;
   --hue-success:   145;
   --hue-warning:   80;
   --hue-danger:    25;
+  --hue-neutral:   250;
 
   /* ─────────────────────────────────────────────
-     DERIVED COLORS — built from palette hues
-     
-     Structure per color family:
-       soft  → backgrounds, pills, icons
-       base  → buttons, links, active states
-       hover → hover / pressed states
-     ───────────────────────────────────────────── */
+     DERIVED — Brand colors (from palette hues)
 
-  /* Primary / Accent */
+     Each family follows: soft → base → hover
+       soft  = backgrounds, pills, icon fills
+       base  = buttons, links, active states
+       hover = hover / pressed states
+     ───────────────────────────────────────────── */
   --accent:       oklch(58% 0.18 var(--hue-primary));
   --accent-hover: oklch(52% 0.20 var(--hue-primary));
   --accent-soft:  oklch(92% 0.06 var(--hue-primary));
 
-  /* Secondary */
   --secondary:      oklch(62% 0.12 var(--hue-secondary));
   --secondary-soft: oklch(93% 0.04 var(--hue-secondary));
 
-  /* Status */
   --success:      oklch(62% 0.17 var(--hue-success));
   --success-soft: oklch(93% 0.06 var(--hue-success));
   --warning:      oklch(72% 0.16 var(--hue-warning));
@@ -50,28 +53,33 @@
   --danger:       oklch(60% 0.20 var(--hue-danger));
   --danger-soft:  oklch(93% 0.06 var(--hue-danger));
 
-  /* Border focus follows primary */
   --border-focus: oklch(58% 0.18 var(--hue-primary));
 
+  /* Text on accent-colored backgrounds */
+  --fg-on-accent: oklch(100% 0 0);
+
+  /* Overlays */
+  --overlay:       oklch(0% 0 0 / 0.4);
+  --overlay-heavy: oklch(0% 0 0 / 0.5);
+  --camera-bg:     oklch(0% 0 0);
+
   /* ─────────────────────────────────────────────
-     SURFACES — neutral canvas (independent of palette)
+     DERIVED — Neutral canvas (from --hue-neutral)
      ───────────────────────────────────────────── */
-  --bg:        oklch(99% 0.002 240);
-  --surface:   oklch(100% 0 0);
-  --surface-dim: oklch(96% 0.004 240);
+  --bg:           oklch(99% 0.002 var(--hue-neutral));
+  --surface:      oklch(100% 0 0);
+  --surface-dim:  oklch(96% 0.004 var(--hue-neutral));
   --surface-raised: oklch(100% 0 0);
 
-  /* ─────────────────────────────────────────────
-     FOREGROUND — text hierarchy
-     ───────────────────────────────────────────── */
-  --fg:        oklch(18% 0.012 250);
-  --fg-muted:  oklch(54% 0.012 250);
-  --fg-subtle: oklch(72% 0.008 250);
+  --fg:        oklch(18% 0.012 var(--hue-neutral));
+  --fg-muted:  oklch(54% 0.012 var(--hue-neutral));
+  --fg-subtle: oklch(72% 0.008 var(--hue-neutral));
 
-  /* ─────────────────────────────────────────────
-     BORDERS
-     ───────────────────────────────────────────── */
-  --border: oklch(92% 0.005 250);
+  --border: oklch(92% 0.005 var(--hue-neutral));
+
+  --shadow-sm: 0 1px 2px oklch(50% 0.012 var(--hue-neutral) / 0.04);
+  --shadow-md: 0 4px 12px oklch(50% 0.012 var(--hue-neutral) / 0.06);
+  --shadow-lg: 0 12px 32px oklch(50% 0.012 var(--hue-neutral) / 0.08);
 
   /* ─────────────────────────────────────────────
      TYPOGRAPHY
@@ -104,13 +112,6 @@
   --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-full: 9999px;
-
-  /* ─────────────────────────────────────────────
-     SHADOWS
-     ───────────────────────────────────────────── */
-  --shadow-sm: 0 1px 2px oklch(50% 0.012 250 / 0.04);
-  --shadow-md: 0 4px 12px oklch(50% 0.012 250 / 0.06);
-  --shadow-lg: 0 12px 32px oklch(50% 0.012 250 / 0.08);
 }
 
 @theme inline {
@@ -119,10 +120,10 @@
 }
 
 /* ═══════════════════════════════════════════════
-   DARK MODE — same palette hues, different lightness
+   DARK MODE — same palette hues, different lightness/chroma
    ═══════════════════════════════════════════════ */
 :root[data-theme="dark"] {
-  /* Derived colors (dark variants) */
+  /* Brand colors — hue angles inherited, lightness/chroma adjusted */
   --accent:       oklch(64% 0.16 var(--hue-primary));
   --accent-hover: oklch(70% 0.14 var(--hue-primary));
   --accent-soft:  oklch(24% 0.06 var(--hue-primary));
@@ -139,21 +140,114 @@
 
   --border-focus: oklch(58% 0.18 var(--hue-primary));
 
-  /* Surfaces */
-  --bg:        oklch(14% 0.012 250);
-  --surface:   oklch(18% 0.014 250);
-  --surface-dim: oklch(16% 0.012 250);
-  --surface-raised: oklch(20% 0.016 250);
+  --fg-on-accent: oklch(100% 0 0);
 
-  /* Foreground */
-  --fg:        oklch(96% 0.004 250);
-  --fg-muted:  oklch(68% 0.012 250);
-  --fg-subtle: oklch(48% 0.012 250);
+  --overlay:       oklch(0% 0 0 / 0.5);
+  --overlay-heavy: oklch(0% 0 0 / 0.6);
+  --camera-bg:     oklch(0% 0 0);
 
-  /* Borders */
-  --border: oklch(26% 0.014 250);
+  /* Neutral canvas — hue inherited from --hue-neutral */
+  --bg:           oklch(14% 0.012 var(--hue-neutral));
+  --surface:      oklch(18% 0.014 var(--hue-neutral));
+  --surface-dim:  oklch(16% 0.012 var(--hue-neutral));
+  --surface-raised: oklch(20% 0.016 var(--hue-neutral));
 
-  /* Shadows */
+  --fg:        oklch(96% 0.004 var(--hue-neutral));
+  --fg-muted:  oklch(68% 0.012 var(--hue-neutral));
+  --fg-subtle: oklch(48% 0.012 var(--hue-neutral));
+
+  --border: oklch(26% 0.014 var(--hue-neutral));
+
+  --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.12);
+  --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.18);
+  --shadow-lg: 0 12px 32px oklch(0% 0 0 / 0.24);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DUNKIN PALETTE — [data-palette="dunkin"]
+   Warm coffee/cream neutrals + Dunkin Pink/Orange brand.
+   Overrides hue angles + derived tokens. Combine with
+   [data-theme="dark"] for dark-dunkin variant.
+   ═══════════════════════════════════════════════════════════════ */
+:root[data-palette="dunkin"] {
+  --hue-primary:   8;
+  --hue-secondary: 55;
+  --hue-success:   145;
+  --hue-warning:   80;
+  --hue-danger:    25;
+  --hue-neutral:   65;
+
+  --accent:       oklch(64% 0.25 var(--hue-primary));
+  --accent-hover: oklch(58% 0.28 var(--hue-primary));
+  --accent-soft:  oklch(95% 0.06 var(--hue-primary));
+
+  --secondary:      oklch(76% 0.19 var(--hue-secondary));
+  --secondary-soft: oklch(96% 0.05 var(--hue-secondary));
+
+  --success:      oklch(68% 0.18 var(--hue-success));
+  --success-soft: oklch(95% 0.06 var(--hue-success));
+  --warning:      oklch(80% 0.18 var(--hue-warning));
+  --warning-soft: oklch(96% 0.05 var(--hue-warning));
+  --danger:       oklch(63% 0.22 var(--hue-danger));
+  --danger-soft:  oklch(95% 0.06 var(--hue-danger));
+
+  --border-focus: var(--accent);
+  --fg-on-accent: oklch(100% 0 0);
+
+  --overlay:       oklch(0% 0 0 / 0.40);
+  --overlay-heavy: oklch(0% 0 0 / 0.55);
+  --camera-bg:     oklch(0% 0 0);
+
+  --bg:           oklch(98.7% 0.004 var(--hue-neutral));
+  --surface:      oklch(100% 0 0);
+  --surface-dim:  oklch(96.5% 0.006 var(--hue-neutral));
+  --surface-raised: oklch(100% 0 0);
+
+  --fg:        oklch(22% 0.014 var(--hue-neutral));
+  --fg-muted:  oklch(50% 0.014 var(--hue-neutral));
+  --fg-subtle: oklch(72% 0.010 var(--hue-neutral));
+
+  --border: oklch(91% 0.006 var(--hue-neutral));
+
+  --shadow-sm: 0 1px 2px  oklch(35% 0.015 var(--hue-neutral) / 0.05);
+  --shadow-md: 0 6px 16px oklch(35% 0.015 var(--hue-neutral) / 0.08);
+  --shadow-lg: 0 18px 40px oklch(35% 0.015 var(--hue-neutral) / 0.12);
+}
+
+/* Dunkin + dark mode combined */
+:root[data-palette="dunkin"][data-theme="dark"] {
+  --accent:       oklch(70% 0.20 var(--hue-primary));
+  --accent-hover: oklch(76% 0.18 var(--hue-primary));
+  --accent-soft:  oklch(28% 0.08 var(--hue-primary));
+
+  --secondary:      oklch(72% 0.14 var(--hue-secondary));
+  --secondary-soft: oklch(25% 0.06 var(--hue-secondary));
+
+  --success:      oklch(66% 0.16 var(--hue-success));
+  --success-soft: oklch(22% 0.06 var(--hue-success));
+  --warning:      oklch(76% 0.16 var(--hue-warning));
+  --warning-soft: oklch(24% 0.06 var(--hue-warning));
+  --danger:       oklch(66% 0.20 var(--hue-danger));
+  --danger-soft:  oklch(24% 0.06 var(--hue-danger));
+
+  --border-focus: var(--accent);
+  --fg-on-accent: oklch(100% 0 0);
+
+  --overlay:       oklch(0% 0 0 / 0.5);
+  --overlay-heavy: oklch(0% 0 0 / 0.6);
+  --camera-bg:     oklch(0% 0 0);
+
+  --bg:           oklch(16% 0.012 var(--hue-neutral));
+  --surface:      oklch(20% 0.014 var(--hue-neutral));
+  --surface-dim:  oklch(18% 0.012 var(--hue-neutral));
+  --surface-raised: oklch(22% 0.016 var(--hue-neutral));
+
+  --fg:        oklch(96% 0.004 var(--hue-neutral));
+  --fg-muted:  oklch(70% 0.012 var(--hue-neutral));
+  --fg-subtle: oklch(50% 0.012 var(--hue-neutral));
+
+  --border: oklch(30% 0.014 var(--hue-neutral));
+
   --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.12);
   --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.18);
   --shadow-lg: 0 12px 32px oklch(0% 0 0 / 0.24);
@@ -220,7 +314,7 @@ a {
 
 .btn-primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--fg-on-accent);
   border: none;
   border-radius: var(--radius-full);
   padding: 0.625rem 1.25rem;
@@ -291,6 +385,44 @@ a {
 }
 
 :root[data-theme="dark"] .btn-theme .icon-sun {
+  display: block;
+}
+
+/* ─────────────────────────────────────────────
+   Palette toggle
+   ───────────────────────────────────────────── */
+
+.btn-palette {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--fg-muted);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-palette:hover {
+  border-color: var(--fg-subtle);
+  color: var(--fg);
+  background: var(--surface-dim);
+}
+
+.btn-palette .icon-default,
+.btn-palette .icon-dunkin {
+  display: none;
+}
+
+:root:not([data-palette="dunkin"]) .btn-palette .icon-dunkin {
+  display: block;
+}
+
+:root[data-palette="dunkin"] .btn-palette .icon-default {
   display: block;
 }
 
@@ -851,6 +983,12 @@ a {
   font-family: var(--font-display);
 }
 
+.mkt-section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .mkt-section-action {
   background: none;
   border: none;
@@ -859,6 +997,24 @@ a {
   color: var(--accent);
   cursor: pointer;
   transition: opacity 0.15s;
+}
+
+.mkt-clear-list-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.mkt-clear-list-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .mkt-section-action:hover {
@@ -1197,7 +1353,7 @@ a {
 .mkt-add-row-btn {
   background: var(--accent);
   border: none;
-  color: #fff;
+  color: var(--fg-on-accent);
   border-radius: var(--radius-full);
   width: 32px;
   height: 32px;
@@ -1713,7 +1869,7 @@ a {
   display: none;
   position: fixed;
   inset: 0;
-  background: oklch(0% 0 0 / 0.4);
+  background: var(--overlay);
   z-index: 100;
   align-items: flex-end;
   justify-content: center;
@@ -1844,7 +2000,7 @@ a {
   border: none;
   border-radius: var(--radius-md);
   background: var(--accent);
-  color: #fff;
+  color: var(--fg-on-accent);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -2110,7 +2266,7 @@ a {
   height: 56px;
   border-radius: var(--radius-full);
   background: var(--accent);
-  color: #fff;
+  color: var(--fg-on-accent);
   border: none;
   display: flex;
   align-items: center;
@@ -2149,7 +2305,7 @@ a {
   align-items: center;
   gap: 0.5rem;
   background: var(--accent);
-  color: #fff;
+  color: var(--fg-on-accent);
   border: none;
   border-radius: var(--radius-full);
   padding: 0.625rem 1.25rem;
@@ -2567,7 +2723,7 @@ a {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: oklch(0% 0 0 / 0.5);
+  background: var(--overlay-heavy);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -2632,7 +2788,7 @@ a {
   width: 100%;
   min-height: 280px;
   position: relative;
-  background: #000;
+  background: var(--camera-bg);
   overflow: hidden;
 }
 
@@ -2808,7 +2964,7 @@ a {
   border: none;
   border-radius: var(--radius-md);
   background: var(--accent);
-  color: #fff;
+  color: var(--fg-on-accent);
   font-size: 0.9375rem;
   font-weight: 600;
   font-family: var(--font-body);

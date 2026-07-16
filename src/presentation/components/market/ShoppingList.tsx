@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BarcodeScanner } from "./BarcodeScanner";
 import type { ShoppingItem } from "./types";
 
+const STORAGE_KEY = "ryc-shopping-list";
+
 interface ProductResult {
   readonly id: string;
   readonly name: string;
@@ -30,8 +32,39 @@ function isAlreadyInList(item: ProductResult | { productId: string | null; name:
   );
 }
 
+function loadList(): ShoppingItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item: Record<string, unknown>) => ({
+      id: String(item.id ?? crypto.randomUUID()),
+      productId: item.productId != null ? String(item.productId) : null,
+      name: String(item.name ?? ""),
+      brand: String(item.brand ?? ""),
+      presentationQuantity: item.presentationQuantity != null ? Number(item.presentationQuantity) : null,
+      unitSymbol: item.unitSymbol != null ? String(item.unitSymbol) : null,
+      checked: Boolean(item.checked),
+      quantity: Math.max(1, Number(item.quantity) || 1),
+    })) as ShoppingItem[];
+  } catch {
+    return [];
+  }
+}
+
+function saveList(items: readonly ShoppingItem[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch {
+    // quota exceeded or private mode — silently ignore
+  }
+}
+
 export function ShoppingList() {
   const [items, setItems] = useState<readonly ShoppingItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
   const [searchMode, setSearchMode] = useState<"name" | "barcode">("name");
   const [searchQuery, setSearchQuery] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
@@ -43,6 +76,17 @@ export function ShoppingList() {
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Hydrate from localStorage on mount
+  useEffect(() => {
+    setItems(loadList());
+    setHydrated(true);
+  }, []);
+
+  // Persist to localStorage on every change (after hydration)
+  useEffect(() => {
+    if (hydrated) saveList(items);
+  }, [items, hydrated]);
 
   const addItem = (product?: ProductResult) => {
     if (product) {
@@ -200,13 +244,29 @@ export function ShoppingList() {
   const pending = items.filter((i) => !i.checked);
   const done = items.filter((i) => i.checked);
 
+  const clearList = () => {
+    setItems([]);
+    setSearchQuery("");
+    setBarcodeInput("");
+    setResults([]);
+    setShowResults(false);
+    setDuplicateWarning(null);
+  };
+
   return (
     <div className="mkt-section">
       <div className="mkt-section-header">
         <h2 className="mkt-section-title">Lista de compras</h2>
-        {items.length > 0 && (
-          <span className="mkt-section-meta">{pending.length} pendientes</span>
-        )}
+        <div className="mkt-section-header-actions">
+          {items.length > 0 && (
+            <span className="mkt-section-meta">{pending.length} pendientes</span>
+          )}
+          {items.length > 0 && (
+            <button type="button" className="mkt-clear-list-btn" onClick={clearList}>
+              Limpiar lista
+            </button>
+          )}
+        </div>
       </div>
       <div className="mkt-card">
         {items.length === 0 && !searchQuery && !barcodeInput && (

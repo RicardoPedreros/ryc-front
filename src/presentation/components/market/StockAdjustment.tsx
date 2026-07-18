@@ -42,10 +42,13 @@ export function StockAdjustment() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const getInitialStockTypeId = useCallback(() => {
-    if (!movementTypes) return null;
-    return movementTypes.find((mt) => mt.code === "INITIAL_STOCK")?.id ?? null;
-  }, [movementTypes]);
+  const getMovementTypeId = useCallback(
+    (code: string) => {
+      if (!movementTypes) return null;
+      return movementTypes.find((mt) => mt.code === code)?.id ?? null;
+    },
+    [movementTypes]
+  );
 
   const filtered = (products ?? []).filter((p) => {
     if (search) {
@@ -87,16 +90,17 @@ export function StockAdjustment() {
   }
 
   async function handleSave() {
-    const typeId = getInitialStockTypeId();
-    if (!typeId || pendingAdjustments.length === 0) return;
+    const inTypeId = getMovementTypeId("ADJUSTMENT_IN");
+    const outTypeId = getMovementTypeId("ADJUSTMENT_OUT");
+    if (!inTypeId || !outTypeId || pendingAdjustments.length === 0) return;
 
     setSaving(true);
     try {
       const movements = pendingAdjustments.map((a) => ({
         productId: a.productId,
         quantity: Math.abs(a.delta),
-        movementTypeId: typeId,
-        notes: a.delta > 0 ? "Ajuste de stock inicial (+)" : "Ajuste de stock inicial (-)",
+        movementTypeId: a.delta > 0 ? inTypeId : outTypeId,
+        notes: a.delta > 0 ? "Ajuste de stock (+)" : "Ajuste de stock (-)",
       }));
 
       const res = await fetch("/api/market/inventory/adjust", {

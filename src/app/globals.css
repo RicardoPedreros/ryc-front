@@ -351,79 +351,15 @@ a {
 }
 
 /* ─────────────────────────────────────────────
-   Theme toggle
+   Slider toggles (theme + palette)
    ───────────────────────────────────────────── */
 
-.btn-theme {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--fg-muted);
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  flex-shrink: 0;
-}
-
-.btn-theme:hover {
-  border-color: var(--fg-subtle);
-  color: var(--fg);
-  background: var(--surface-dim);
-}
-
-.btn-theme .icon-sun,
-.btn-theme .icon-moon {
-  display: none;
-}
-
-:root:not([data-theme="dark"]) .btn-theme .icon-moon {
-  display: block;
-}
-
-:root[data-theme="dark"] .btn-theme .icon-sun {
-  display: block;
-}
-
-/* ─────────────────────────────────────────────
-   Palette toggle
-   ───────────────────────────────────────────── */
-
-.btn-palette {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-full);
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--fg-muted);
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  flex-shrink: 0;
-}
-
-.btn-palette:hover {
-  border-color: var(--fg-subtle);
-  color: var(--fg);
-  background: var(--surface-dim);
-}
-
-.btn-palette .icon-default,
-.btn-palette .icon-dunkin {
-  display: none;
-}
-
-:root:not([data-palette="dunkin"]) .btn-palette .icon-dunkin {
-  display: block;
-}
-
-:root[data-palette="dunkin"] .btn-palette .icon-default {
-  display: block;
+/* ── MUI Switch overrides for theme/palette toggles ── */
+.MuiSwitch-root {
+  &.MuiSwitch-sizeSmall {
+    width: 46;
+    height: 24;
+  }
 }
 
 /* ─────────────────────────────────────────────

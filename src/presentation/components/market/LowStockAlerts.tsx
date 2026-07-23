@@ -1,10 +1,14 @@
 "use client";
 
 import { useFetch } from "@/presentation/hooks/useFetch";
+import { BrandChip, buildBrandPathLookup } from "@/presentation/components/market/BrandChip";
 import type { InventoryStock } from "@/domain/market/entities/inventory-movement";
+import type { Brand } from "@/domain/market/entities/brand";
 
 export function LowStockAlerts() {
   const { data: stock, loading } = useFetch<readonly InventoryStock[]>("/api/market/inventory");
+  const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
+  const brandPaths = buildBrandPathLookup(brands ?? []);
 
   if (loading || !stock) return null;
 
@@ -24,13 +28,15 @@ export function LowStockAlerts() {
           const presentation = item.presentationQuantity && item.unitSymbol
             ? `${item.presentationQuantity}${item.unitSymbol}`
             : null;
+          const brandPath = item.brand ? brandPaths.byName.get(item.brand) ?? null : null;
           return (
             <div key={item.id} className="mkt-alert-item">
               <span className={`mkt-alert-dot ${isOut ? "danger" : "warning"}`} />
               <div className="mkt-alert-body">
                 <span className="mkt-alert-text">
                   {item.name}
-                  {item.brand && ` — ${item.brand}`}
+                  {item.brand && " — "}
+                  {item.brand && <BrandChip brandName={item.brand} brandPath={brandPath} />}
                   {presentation && ` (${presentation})`}
                 </span>
                 <span className="mkt-alert-sub">

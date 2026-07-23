@@ -167,6 +167,26 @@ function ProductForm({
     setBarcode(code);
   }, []);
 
+  const parentBrands = brands.filter((b) => !b.parentBrandId);
+  const childrenMap = new Map<string, Brand[]>();
+  for (const b of brands) {
+    if (b.parentBrandId) {
+      if (!childrenMap.has(b.parentBrandId)) childrenMap.set(b.parentBrandId, []);
+      childrenMap.get(b.parentBrandId)!.push(b);
+    }
+  }
+
+  const brandOptions: { readonly brand: Brand; readonly depth: number }[] = [];
+  function collectBrandOptions(parentId: string | null, depth: number) {
+    const list = parentId === null ? parentBrands : (childrenMap.get(parentId) ?? []);
+    const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    for (const b of sorted) {
+      brandOptions.push({ brand: b, depth });
+      collectBrandOptions(b.id, depth + 1);
+    }
+  }
+  collectBrandOptions(null, 0);
+
   return (
     <>
       <h2>Agregar producto</h2>
@@ -202,10 +222,15 @@ function ProductForm({
             <label className="mkt-form-label">Marca (opcional)</label>
             <select name="brandId" className="mkt-form-select" defaultValue="">
               <option value="" disabled>Seleccionar...</option>
-              {brands.map((brand) => (
-                <option key={brand.id} value={brand.id}>{brand.name}</option>
+              {brandOptions.map(({ brand, depth }) => (
+                <option key={brand.id} value={brand.id}>
+                  {"  ".repeat(depth)}{depth > 0 ? "└ " : ""}{brand.name}
+                </option>
               ))}
             </select>
+            {brandOptions.some((o) => o.depth > 0) && (
+              <span className="mkt-form-hint">Las submarcas están indentadas con └</span>
+            )}
           </div>
           <div className="mkt-form-group">
             <label className="mkt-form-label">Categoría</label>

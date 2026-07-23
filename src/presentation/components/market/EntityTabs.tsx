@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
+import { BrandChip, buildBrandPathLookup } from "@/presentation/components/market/BrandChip";
 import type { Product } from "@/domain/market/entities/product";
 import type { Store } from "@/domain/market/entities/store";
 import type { Category } from "@/domain/market/entities/category";
@@ -30,7 +31,8 @@ function ProductList({ onAdd }: EntityListProps) {
   const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
 
   const catMap = new Map((categories ?? []).map((c) => [c.id, c.name]));
-  const brandMap = new Map((brands ?? []).map((b) => [b.id, b.name]));
+  const brandNameMap = new Map((brands ?? []).map((b) => [b.id, b.name]));
+  const brandPaths = buildBrandPathLookup(brands ?? []);
   const stockMap = new Map((stock ?? []).map((s) => [s.id, s.currentStock]));
 
   if (loading) return <div className="mkt-empty-state"><p>Cargando...</p></div>;
@@ -50,7 +52,8 @@ function ProductList({ onAdd }: EntityListProps) {
         {products.map((product) => {
           const qty = stockMap.get(product.id) ?? 0;
           const isLow = qty <= 2;
-          const brandName = product.brandId ? brandMap.get(product.brandId) ?? null : null;
+          const brandName = product.brandId ? brandNameMap.get(product.brandId) ?? null : null;
+          const brandPath = product.brandId ? brandPaths.byId.get(product.brandId) ?? null : null;
           return (
             <div key={product.id} className="mkt-entity-item">
               <div className="mkt-entity-icon" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
@@ -63,7 +66,8 @@ function ProductList({ onAdd }: EntityListProps) {
               <div className="mkt-entity-body">
                 <span className="mkt-entity-name">{product.name}</span>
                 <span className="mkt-entity-meta">
-                  {brandName && `${brandName} · `}
+                  {brandName && <BrandChip brandName={brandName} brandPath={brandPath} />}
+                  {brandName && " · "}
                   {catMap.get(product.categoryId) ?? "Sin categoría"}
                 </span>
               </div>

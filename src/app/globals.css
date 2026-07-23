@@ -2327,6 +2327,87 @@ a {
   margin-top: 0.25rem;
 }
 
+/* ── BrandChip (hierarchy indicator + tooltip) ── */
+
+.mkt-brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--surface-dim);
+  font-size: inherit;
+  font-weight: inherit;
+  color: var(--fg-muted);
+  cursor: default;
+  position: relative;
+  white-space: nowrap;
+}
+
+.mkt-brand-chip.sub {
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.mkt-brand-chip-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+.mkt-brand-chip-arrow svg {
+  width: 12px;
+  height: 12px;
+  transform: rotate(0deg);
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mkt-brand-chip-arrow.open svg {
+  transform: rotate(90deg);
+}
+
+.mkt-brand-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.375rem 0.625rem;
+  font-size: 0.6875rem;
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  z-index: 30;
+  pointer-events: none;
+}
+
+.mkt-brand-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--border);
+}
+
+.mkt-brand-tooltip-parent {
+  color: var(--fg-subtle);
+}
+
+.mkt-brand-tooltip-current {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.mkt-brand-tooltip-sep {
+  color: var(--fg-subtle);
+}
+
 /* ── FAB (Floating Action Button) ── */
 
 .mkt-fab {

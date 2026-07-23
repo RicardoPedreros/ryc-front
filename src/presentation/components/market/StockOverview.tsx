@@ -1,10 +1,14 @@
 "use client";
 
 import { useFetch } from "@/presentation/hooks/useFetch";
+import { BrandChip, buildBrandPathLookup } from "@/presentation/components/market/BrandChip";
 import type { InventoryStock } from "@/domain/market/entities/inventory-movement";
+import type { Brand } from "@/domain/market/entities/brand";
 
 export function StockOverview() {
   const { data: stock, loading } = useFetch<readonly InventoryStock[]>("/api/market/inventory");
+  const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
+  const brandPaths = buildBrandPathLookup(brands ?? []);
 
   if (loading) {
     return (
@@ -47,12 +51,20 @@ export function StockOverview() {
         {stock.map((item) => {
           const isLow = item.currentStock <= 2;
           const isOut = item.currentStock === 0;
+          const brandPath = item.brand ? brandPaths.byName.get(item.brand) ?? null : null;
           return (
             <div key={item.id} className="mkt-stock-row">
               <div className="mkt-stock-info">
                 <span className="mkt-stock-name">{item.name}</span>
                 <span className="mkt-stock-brand">
-                  {[item.brand, item.categoryName, item.presentationQuantity && item.unitSymbol ? `${item.presentationQuantity} ${item.unitSymbol}` : item.presentationQuantity ? `${item.presentationQuantity}` : null].filter(Boolean).join(" · ")}
+                  {item.brand && <BrandChip brandName={item.brand} brandPath={brandPath} />}
+                  {item.brand && " · "}
+                  {item.categoryName}
+                  {item.presentationQuantity && item.unitSymbol
+                    ? ` · ${item.presentationQuantity} ${item.unitSymbol}`
+                    : item.presentationQuantity
+                      ? ` · ${item.presentationQuantity}`
+                      : null}
                 </span>
               </div>
               <div className="mkt-stock-right">

@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RYC — Mockup: Jerarquía de Marcas</title>
+  <style>
+    /* ── PALETTE ── */
+    :root {
+      --hue-primary:   255;
+      --hue-secondary: 170;
+      --hue-success:   145;
+      --hue-warning:   80;
+      --hue-danger:    25;
+      --hue-neutral:   250;
+    }
+    /* ── DERIVED — Brand ── */
+    :root {
+      --accent:       oklch(58% 0.18 var(--hue-primary));
+      --accent-hover: oklch(52% 0.20 var(--hue-primary));
+      --accent-soft:  oklch(92% 0.06 var(--hue-primary));
+      --secondary:       oklch(62% 0.12 var(--hue-secondary));
+      --secondary-soft:  oklch(93% 0.04 var(--hue-secondary));
+      --success:      oklch(62% 0.17 var(--hue-success));
+      --success-soft: oklch(93% 0.06 var(--hue-success));
+      --warning:      oklch(72% 0.16 var(--hue-warning));
+      --warning-soft: oklch(94% 0.06 var(--hue-warning));
+      --danger:       oklch(60% 0.20 var(--hue-danger));
+      --danger-soft:  oklch(93% 0.06 var(--hue-danger));
+      --fg-on-accent: oklch(100% 0 0);
+      --overlay:       oklch(0% 0 0 / 0.40);
+      --overlay-heavy: oklch(0% 0 0 / 0.55);
+      /* ── DERIVED — Neutral ── */
+      --bg:              oklch(99% 0.002 var(--hue-neutral));
+      --surface:         oklch(100% 0 0);
+      --surface-dim:     oklch(96% 0.004 var(--hue-neutral));
+      --surface-raised:  oklch(100% 0 0);
+      --fg:         oklch(18% 0.012 var(--hue-neutral));
+      --fg-muted:   oklch(54% 0.012 var(--hue-neutral));
+      --fg-subtle:  oklch(72% 0.008 var(--hue-neutral));
+      --border:      oklch(92% 0.005 var(--hue-neutral));
+      --border-focus: var(--accent);
+      --shadow-sm: 0 1px 2px oklch(35% 0.015 var(--hue-neutral) / 0.05);
+      --shadow-md: 0 6px 16px oklch(35% 0.015 var(--hue-neutral) / 0.08);
+      --shadow-lg: 0 18px 40px oklch(35% 0.015 var(--hue-neutral) / 0.12);
+      --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+    }
+
+    :root[data-theme="dark"] {
+      --accent:       oklch(64% 0.16 var(--hue-primary));
+      --accent-hover: oklch(70% 0.14 var(--hue-primary));
+      --accent-soft:  oklch(24% 0.06 var(--hue-primary));
+      --secondary:       oklch(68% 0.10 var(--hue-secondary));
+      --secondary-soft:  oklch(22% 0.04 var(--hue-secondary));
+      --success-soft: oklch(20% 0.06 var(--hue-success));
+      --warning-soft: oklch(22% 0.06 var(--hue-warning));
+      --danger-soft:  oklch(22% 0.06 var(--hue-danger));
+      --bg:              oklch(14% 0.012 var(--hue-neutral));
+      --surface:         oklch(18% 0.014 var(--hue-neutral));
+      --surface-dim:     oklch(16% 0.012 var(--hue-neutral));
+      --surface-raised:  oklch(20% 0.016 var(--hue-neutral));
+      --fg:        oklch(96% 0.004 var(--hue-neutral));
+      --fg-muted:  oklch(68% 0.012 var(--hue-neutral));
+      --fg-subtle: oklch(48% 0.012 var(--hue-neutral));
+      --border:      oklch(26% 0.014 var(--hue-neutral));
+      --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.12);
+      --shadow-md: 0 6px 16px oklch(0% 0 0 / 0.18);
+      --shadow-lg: 0 18px 40px oklch(0% 0 0 / 0.24);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; }
+
+    /* ── Navbar ── */
+    .navbar {
+      position: sticky; top: 0; z-index: 50;
+      border-bottom: 1px solid var(--border);
+      background: color-mix(in oklch, var(--bg) 80%, transparent);
+      backdrop-filter: blur(12px);
+    }
+    .navbar-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.875rem 1.5rem; max-width: 720px; margin: 0 auto;
+    }
+    .navbar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .navbar-back {
+      background: none; border: 1px solid var(--border);
+      border-radius: var(--radius-full); width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--fg-muted);
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .navbar-back:hover { border-color: var(--fg-subtle); color: var(--fg); }
+    .navbar-title {
+      font-size: 1rem; font-weight: 600; letter-spacing: -0.01em;
+      font-family: var(--font-display);
+    }
+    .btn-theme {
+      background: none; border: 1px solid var(--border);
+      border-radius: var(--radius-full); width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--fg-muted);
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .btn-theme:hover { border-color: var(--fg-subtle); color: var(--fg); background: var(--surface-dim); }
+    .btn-theme .icon-sun, .btn-theme .icon-moon { display: none; }
+    :root:not([data-theme="dark"]) .btn-theme .icon-moon { display: block; }
+    :root[data-theme="dark"] .btn-theme .icon-sun { display: block; }
+
+    /* ── Page ── */
+    .page { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* ── Greeting ── */
+    .greeting { margin-bottom: 2rem; }
+    .greeting h1 {
+      font-size: clamp(1.5rem, 4vw, 1.75rem); font-weight: 700;
+      letter-spacing: -0.02em; font-family: var(--font-display);
+      margin-bottom: 0.25rem;
+    }
+    .greeting p { font-size: 0.9375rem; color: var(--fg-muted); }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex; gap: 0; border-bottom: 1px solid var(--border);
+      margin-bottom: 1.5rem; overflow-x: auto;
+    }
+    .tab-btn {
+      background: none; border: none; padding: 0.75rem 1.25rem;
+      font-size: 0.8125rem; font-weight: 500; color: var(--fg-muted);
+      cursor: pointer; border-bottom: 2px solid transparent;
+      transition: color 0.12s, border-color 0.12s; white-space: nowrap;
+    }
+    .tab-btn:hover { color: var(--fg); }
+    .tab-btn.active {
+      color: var(--accent); border-bottom-color: var(--accent); font-weight: 600;
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Section header ── */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem; gap: 0.5rem;
+    }
+    .section-title {
+      font-size: 1rem; font-weight: 600; font-family: var(--font-display);
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-md); overflow: visible;
+    }
+
+    /* ── List item ── */
+    .list-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.875rem 1rem; transition: background 0.12s;
+    }
+    .list-item:not(:last-child) { border-bottom: 1px solid var(--border); }
+    .list-item:hover { background: var(--surface-dim); }
+
+    /* ── Brand chip (hierarchy) ── */
+    .brand-chip {
+      display: inline-flex; align-items: center; gap: 0.375rem;
+      font-size: 0.8125rem; font-weight: 500; color: var(--fg-muted);
+      position: relative; cursor: default;
+    }
+    .brand-chip-label {
+      display: inline-flex; align-items: center; gap: 0.25rem;
+      padding: 0.1875rem 0.5rem; border-radius: var(--radius-sm);
+      background: var(--surface-dim); border: 1px solid var(--border);
+      transition: background 0.12s, border-color 0.12s;
+      cursor: default;
+    }
+    .brand-chip.is-sub .brand-chip-label {
+      background: var(--accent-soft); border-color: transparent;
+      color: var(--accent);
+    }
+    .brand-chip-arrow {
+      font-size: 0.625rem; line-height: 1; opacity: 0.5;
+      transition: transform 0.2s, opacity 0.2s;
+      user-select: none;
+    }
+    .brand-chip.is-sub .brand-chip-arrow { opacity: 1; }
+    .brand-chip:hover .brand-chip-label { border-color: var(--fg-subtle); }
+    .brand-chip:hover .brand-chip-arrow { opacity: 1; transform: rotate(90deg); }
+
+    /* ── Tooltip ── */
+    .brand-tooltip {
+      display: none; position: absolute; bottom: calc(100% + 6px); left: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 0.5rem 0.75rem;
+      box-shadow: var(--shadow-md); z-index: 30;
+      white-space: nowrap; font-size: 0.75rem; color: var(--fg-muted);
+      pointer-events: none;
+    }
+    .brand-tooltip::after {
+      content: ''; position: absolute; top: 100%; left: 1rem;
+      border: 5px solid transparent; border-top-color: var(--border);
+    }
+    .brand-chip:hover .brand-tooltip { display: block; }
+    .brand-tooltip-path {
+      display: flex; align-items: center; gap: 0.375rem;
+      font-weight: 500;
+    }
+    .brand-tooltip-sep { color: var(--fg-subtle); font-size: 0.625rem; }
+    .brand-tooltip-current { color: var(--accent); font-weight: 600; }
+
+    /* ── Product item ── */
+    .product-body { flex: 1; min-width: 0; }
+    .product-name { font-size: 0.875rem; font-weight: 500; margin-bottom: 0.125rem; }
+    .product-meta {
+      font-size: 0.75rem; color: var(--fg-subtle);
+      display: flex; align-items: center; gap: 0.375rem;
+      flex-wrap: wrap;
+    }
+    .product-meta-dot { width: 3px; height: 3px; border-radius: 50%; background: var(--fg-subtle); }
+    .product-presentation {
+      font-family: var(--font-mono); font-size: 0.6875rem;
+      color: var(--fg-muted); padding: 0.125rem 0.375rem;
+      background: var(--surface-dim); border-radius: 3px;
+    }
+
+    /* ── Stock badge ── */
+    .stock-badge {
+      font-size: 0.75rem; font-weight: 600; font-family: var(--font-mono);
+      padding: 0.25rem 0.625rem; border-radius: var(--radius-full);
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .stock-badge.ok { background: var(--success-soft); color: var(--success); }
+    .stock-badge.low { background: var(--warning-soft); color: var(--warning); }
+    .stock-badge.out { background: var(--danger-soft); color: var(--danger); }
+
+    /* ── Search ── */
+    .search-wrap {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: var(--surface-dim); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 0.5rem 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .search-wrap svg { width: 14px; height: 14px; color: var(--fg-subtle); flex-shrink: 0; }
+    .search-wrap input {
+      flex: 1; border: none; background: none; outline: none;
+      font-size: 0.8125rem; color: var(--fg); font-family: var(--font-body);
+    }
+    .search-wrap input::placeholder { color: var(--fg-subtle); }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 1.25rem; }
+    .form-label {
+      display: block; font-size: 0.8125rem; font-weight: 500;
+      margin-bottom: 0.375rem; color: var(--fg-muted);
+    }
+    .form-input {
+      width: 100%; padding: 0.625rem 0.75rem; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 0.875rem;
+      color: var(--fg); background: var(--surface); font-family: var(--font-body);
+      transition: border-color 0.15s;
+    }
+    .form-input:focus { outline: none; border-color: var(--border-focus); }
+    .form-hint { font-size: 0.75rem; color: var(--fg-subtle); margin-top: 0.25rem; }
+
+    /* ── Hierarchical select (tree dropdown) ── */
+    .brand-select {
+      position: relative;
+    }
+    .brand-select-trigger {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 0.5rem; padding: 0.625rem 0.75rem; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-size: 0.875rem; color: var(--fg);
+      background: var(--surface); cursor: pointer; transition: border-color 0.15s;
+    }
+    .brand-select-trigger:hover { border-color: var(--fg-subtle); }
+    .brand-select-trigger svg { width: 14px; height: 14px; color: var(--fg-subtle); flex-shrink: 0; }
+    .brand-select-trigger.selected { color: var(--fg); }
+    .brand-select-trigger.placeholder { color: var(--fg-subtle); }
+
+    .brand-select-dropdown {
+      display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); box-shadow: var(--shadow-md);
+      z-index: 20; max-height: 280px; overflow-y: auto;
+      padding: 0.25rem 0;
+    }
+    .brand-select.open .brand-select-dropdown { display: block; }
+
+    .brand-option {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem 0.75rem; font-size: 0.8125rem;
+      cursor: pointer; transition: background 0.1s;
+    }
+    .brand-option:hover { background: var(--surface-dim); }
+    .brand-option.selected { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+    .brand-option-level-0 { padding-left: 0.75rem; }
+    .brand-option-level-1 { padding-left: 1.75rem; }
+    .brand-option-level-2 { padding-left: 2.75rem; }
+    .brand-option-level-3 { padding-left: 3.75rem; }
+
+    .brand-option-icon {
+      width: 18px; height: 18px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .brand-option-icon.root { background: var(--accent-soft); color: var(--accent); }
+    .brand-option-icon.sub { background: var(--secondary-soft); color: var(--secondary); }
+    .brand-option-icon svg { width: 12px; height: 12px; }
+
+    .brand-option-label { flex: 1; }
+    .brand-option-path {
+      font-size: 0.6875rem; color: var(--fg-subtle);
+      font-family: var(--font-mono); margin-left: 0.25rem;
+    }
+
+    /* ── Hierarchy hint ── */
+    .hierarchy-hint {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.75rem 1rem; margin-top: 0.75rem;
+      background: var(--accent-soft); border-radius: var(--radius-sm);
+      font-size: 0.75rem; color: var(--accent); font-weight: 500;
+    }
+    .hierarchy-hint svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ── Section ── */
+    .section { margin-bottom: 2.5rem; }
+
+    /* ── Btn primary ── */
+    .btn-primary {
+      background: var(--accent); color: var(--fg-on-accent);
+      border: none; border-radius: var(--radius-full);
+      padding: 0.625rem 1.25rem; font-size: 0.875rem;
+      font-weight: 600; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    /* ── Mockup note ── */
+    .mockup-note {
+      padding: 1.25rem; margin-bottom: 2rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-md); border-left: 3px solid var(--accent);
+    }
+    .mockup-note h3 {
+      font-size: 0.875rem; font-weight: 600; margin-bottom: 0.375rem;
+      color: var(--accent);
+    }
+    .mockup-note p { font-size: 0.8125rem; color: var(--fg-muted); line-height: 1.6; }
+    .mockup-note ul {
+      margin-top: 0.5rem; padding-left: 1.25rem;
+      font-size: 0.8125rem; color: var(--fg-muted); line-height: 1.8;
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 480px) {
+      .page { padding: 1.25rem 1rem 3rem; }
+      .greeting h1 { font-size: 1.375rem; }
+      .brand-tooltip { font-size: 0.6875rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <header class="navbar">
+    <nav class="navbar-inner">
+      <div class="navbar-left">
+        <button class="navbar-back" onclick="history.back()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>
+        </button>
+        <span class="navbar-title">RYC</span>
+      </div>
+      <button class="btn-theme" onclick="toggleTheme()">
+        <span class="icon-moon">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13.5 8.5a5.5 5.5 0 01-7-7A5.5 5.5 0 1013.5 8.5z"/></svg>
+        </span>
+        <span class="icon-sun">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
+        </span>
+      </button>
+    </nav>
+  </header>
+
+  <div class="page">
+    <div class="greeting">
+      <h1>Mockup: Jerarquía de Marcas</h1>
+      <p>Productos e inventario con indicador de submarca + tooltip de ruta completa.</p>
+    </div>
+
+    <!-- Mockup note -->
+    <div class="mockup-note">
+      <h3>Cómo funciona el indicador de marca</h3>
+      <p>Las marcas raíz se muestran con un chip neutro (fondo <code>surface-dim</code>). Las submarcas muestran un chip con fondo <code>accent-soft</code> + color accent + un ícono <strong>▾</strong> que rota 90° al hacer hover.</p>
+      <ul>
+        <li><strong>Hover en el chip</strong> → aparece un tooltip con la ruta completa (Nestlé → Nescafé → Clásico)</li>
+        <li><strong>Marca raíz</strong> → chip simple, sin ▾, sin tooltip</li>
+        <li><strong>Submarca</strong> → chip accent + ▾ + tooltip con ascendencia</li>
+      </ul>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('products')">Productos</button>
+      <button class="tab-btn" onclick="switchTab('inventory')">Inventario</button>
+      <button class="tab-btn" onclick="switchTab('create')">Crear producto</button>
+    </div>
+
+    <!-- ═══ TAB: Productos ═══ -->
+    <div id="tab-products" class="tab-panel active">
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">12 productos</span>
+        </div>
+        <div class="search-wrap">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
+          <input type="text" placeholder="Buscar por nombre o marca..." />
+        </div>
+        <div class="card">
+          <!-- Producto 1 — marca raíz -->
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Leche entera</div>
+              <div class="product-meta">
+                <span class="brand-chip">
+                  <span class="brand-chip-label">La Serenísima</span>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">1L</span>
+              </div>
+            </div>
+            <span class="stock-badge ok">24 u</span>
+          </div>
+
+          <!-- Producto 2 — submarca 2 niveles -->
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Café instantáneo</div>
+              <div class="product-meta">
+                <span class="brand-chip is-sub">
+                  <span class="brand-chip-label">
+                    <span class="brand-chip-arrow">▾</span>
+                    Nescafé
+                  </span>
+                  <div class="brand-tooltip">
+                    <div class="brand-tooltip-path">
+                      <span>Nestlé</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span class="brand-tooltip-current">Nescafé</span>
+                    </div>
+                  </div>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">200g</span>
+              </div>
+            </div>
+            <span class="stock-badge ok">8 u</span>
+          </div>
+
+          <!-- Producto 3 — submarca 3 niveles -->
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Jabón líquido</div>
+              <div class="product-meta">
+                <span class="brand-chip is-sub">
+                  <span class="brand-chip-label">
+                    <span class="brand-chip-arrow">▾</span>
+                    Skip
+                  </span>
+                  <div class="brand-tooltip">
+                    <div class="brand-tooltip-path">
+                      <span>Unilever</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span>P&G</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span class="brand-tooltip-current">Skip</span>
+                    </div>
+                  </div>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">800ml</span>
+              </div>
+            </div>
+            <span class="stock-badge low">2 u</span>
+          </div>
+
+          <!-- Producto 4 — submarca 2 niveles -->
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Pan integral</div>
+              <div class="product-meta">
+                <span class="brand-chip is-sub">
+                  <span class="brand-chip-label">
+                    <span class="brand-chip-arrow">▾</span>
+                    Bimbo
+                  </span>
+                  <div class="brand-tooltip">
+                    <div class="brand-tooltip-path">
+                      <span>Grupo Bimbo</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span class="brand-tooltip-current">Bimbo</span>
+                    </div>
+                  </div>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">680g</span>
+              </div>
+            </div>
+            <span class="stock-badge ok">5 u</span>
+          </div>
+
+          <!-- Producto 5 — marca raíz -->
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Gaseosa cola</div>
+              <div class="product-meta">
+                <span class="brand-chip">
+                  <span class="brand-chip-label">Coca-Cola</span>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">2.25L</span>
+              </div>
+            </div>
+            <span class="stock-badge out">0 u</span>
+          </div>
+
+          <!-- Producto 6 — submarca -->
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Arroz largo fino</div>
+              <div class="product-meta">
+                <span class="brand-chip is-sub">
+                  <span class="brand-chip-label">
+                    <span class="brand-chip-arrow">▾</span>
+                    Don Vicente
+                  </span>
+                  <div class="brand-tooltip">
+                    <div class="brand-tooltip-path">
+                      <span>Molinos Río de la Plata</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span class="brand-tooltip-current">Don Vicente</span>
+                    </div>
+                  </div>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">1kg</span>
+              </div>
+            </div>
+            <span class="stock-badge ok">12 u</span>
+          </div>
+
+          <!-- Producto 7 — submarca 3 niveles -->
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Atún en lata</div>
+              <div class="product-meta">
+                <span class="brand-chip is-sub">
+                  <span class="brand-chip-label">
+                    <span class="brand-chip-arrow">▾</span>
+                    Real
+                  </span>
+                  <div class="brand-tooltip">
+                    <div class="brand-tooltip-path">
+                      <span>Cecinas Behm</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span>Zenu</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span class="brand-tooltip-current">Real</span>
+                    </div>
+                  </div>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">170g</span>
+              </div>
+            </div>
+            <span class="stock-badge low">1 u</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: Inventario ═══ -->
+    <div id="tab-inventory" class="tab-panel">
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Stock actual — 12 productos</span>
+        </div>
+        <div class="search-wrap">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>
+          <input type="text" placeholder="Buscar por nombre o marca..." />
+        </div>
+        <div class="card">
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Leche entera</div>
+              <div class="product-meta">
+                <span class="brand-chip">
+                  <span class="brand-chip-label">La Serenísima</span>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span>Lácteos</span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">1L</span>
+              </div>
+            </div>
+            <span class="stock-badge ok">24 u</span>
+          </div>
+
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Café instantáneo</div>
+              <div class="product-meta">
+                <span class="brand-chip is-sub">
+                  <span class="brand-chip-label">
+                    <span class="brand-chip-arrow">▾</span>
+                    Nescafé
+                  </span>
+                  <div class="brand-tooltip">
+                    <div class="brand-tooltip-path">
+                      <span>Nestlé</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span class="brand-tooltip-current">Nescafé</span>
+                    </div>
+                  </div>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span>Bebidas</span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">200g</span>
+              </div>
+            </div>
+            <span class="stock-badge ok">8 u</span>
+          </div>
+
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Jabón líquido</div>
+              <div class="product-meta">
+                <span class="brand-chip is-sub">
+                  <span class="brand-chip-label">
+                    <span class="brand-chip-arrow">▾</span>
+                    Skip
+                  </span>
+                  <div class="brand-tooltip">
+                    <div class="brand-tooltip-path">
+                      <span>Unilever</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span>P&G</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span class="brand-tooltip-current">Skip</span>
+                    </div>
+                  </div>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span>Limpieza</span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">800ml</span>
+              </div>
+            </div>
+            <span class="stock-badge low">2 u</span>
+          </div>
+
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Pan integral</div>
+              <div class="product-meta">
+                <span class="brand-chip is-sub">
+                  <span class="brand-chip-label">
+                    <span class="brand-chip-arrow">▾</span>
+                    Bimbo
+                  </span>
+                  <div class="brand-tooltip">
+                    <div class="brand-tooltip-path">
+                      <span>Grupo Bimbo</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span class="brand-tooltip-current">Bimbo</span>
+                    </div>
+                  </div>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span>Panadería</span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">680g</span>
+              </div>
+            </div>
+            <span class="stock-badge ok">5 u</span>
+          </div>
+
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Gaseosa cola</div>
+              <div class="product-meta">
+                <span class="brand-chip">
+                  <span class="brand-chip-label">Coca-Cola</span>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span>Bebidas</span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">2.25L</span>
+              </div>
+            </div>
+            <span class="stock-badge out">0 u</span>
+          </div>
+
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Arroz largo fino</div>
+              <div class="product-meta">
+                <span class="brand-chip is-sub">
+                  <span class="brand-chip-label">
+                    <span class="brand-chip-arrow">▾</span>
+                    Don Vicente
+                  </span>
+                  <div class="brand-tooltip">
+                    <div class="brand-tooltip-path">
+                      <span>Molinos Río de la Plata</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span class="brand-tooltip-current">Don Vicente</span>
+                    </div>
+                  </div>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span>Despensa</span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">1kg</span>
+              </div>
+            </div>
+            <span class="stock-badge ok">12 u</span>
+          </div>
+
+          <div class="list-item">
+            <div class="product-body">
+              <div class="product-name">Atún en lata</div>
+              <div class="product-meta">
+                <span class="brand-chip is-sub">
+                  <span class="brand-chip-label">
+                    <span class="brand-chip-arrow">▾</span>
+                    Real
+                  </span>
+                  <div class="brand-tooltip">
+                    <div class="brand-tooltip-path">
+                      <span>Cecinas Behm</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span>Zenu</span>
+                      <span class="brand-tooltip-sep">→</span>
+                      <span class="brand-tooltip-current">Real</span>
+                    </div>
+                  </div>
+                </span>
+                <span class="product-meta-dot"></span>
+                <span>Carnes</span>
+                <span class="product-meta-dot"></span>
+                <span class="product-presentation">170g</span>
+              </div>
+            </div>
+            <span class="stock-badge low">1 u</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: Crear producto ═══ -->
+    <div id="tab-create" class="tab-panel">
+      <div class="section">
+        <div class="section-header">
+          <span class="section-title">Crear producto</span>
+        </div>
+        <div class="card" style="padding: 1.25rem;">
+          <!-- Nombre -->
+          <div class="form-group">
+            <label class="form-label">Nombre del producto</label>
+            <input class="form-input" type="text" placeholder="ej. Café instantáneo" />
+          </div>
+
+          <!-- Marca (selector jerárquico) -->
+          <div class="form-group">
+            <label class="form-label">Marca</label>
+            <div class="brand-select" id="brandSelect">
+              <div class="brand-select-trigger placeholder" onclick="toggleBrandSelect()">
+                <span>Seleccionar marca...</span>
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>
+              </div>
+              <div class="brand-select-dropdown">
+                <!-- Marcas raíz -->
+                <div class="brand-option brand-option-level-0" onclick="selectBrand(this, 'Nestlé')">
+                  <span class="brand-option-icon root">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h8v6H2z"/><path d="M4 4V2h4v2"/></svg>
+                  </span>
+                  <span class="brand-option-label">Nestlé</span>
+                </div>
+                <!-- Submarca Nestlé → Nescafé -->
+                <div class="brand-option brand-option-level-1" onclick="selectBrand(this, 'Nescafé', 'Nestlé')">
+                  <span class="brand-option-icon sub">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2" width="8" height="8" rx="1"/><path d="M6 5v4M4.5 7h3"/></svg>
+                  </span>
+                  <span class="brand-option-label">Nescafé</span>
+                  <span class="brand-option-path">Nestlé ›</span>
+                </div>
+                <!-- Submarca Nestlé → Nescafé → Clásico -->
+                <div class="brand-option brand-option-level-2" onclick="selectBrand(this, 'Clásico', 'Nestlé › Nescafé')">
+                  <span class="brand-option-icon sub">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4"/></svg>
+                  </span>
+                  <span class="brand-option-label">Clásico</span>
+                  <span class="brand-option-path">Nestlé › Nescafé ›</span>
+                </div>
+                <!-- Submarca Nestlé → Nespresso -->
+                <div class="brand-option brand-option-level-1" onclick="selectBrand(this, 'Nespresso', 'Nestlé')">
+                  <span class="brand-option-icon sub">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2" width="8" height="8" rx="1"/><path d="M6 5v4M4.5 7h3"/></svg>
+                  </span>
+                  <span class="brand-option-label">Nespresso</span>
+                  <span class="brand-option-path">Nestlé ›</span>
+                </div>
+
+                <!-- Grupo Bimbo -->
+                <div class="brand-option brand-option-level-0" onclick="selectBrand(this, 'Grupo Bimbo')">
+                  <span class="brand-option-icon root">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h8v6H2z"/><path d="M4 4V2h4v2"/></svg>
+                  </span>
+                  <span class="brand-option-label">Grupo Bimbo</span>
+                </div>
+                <!-- Submarca Grupo Bimbo → Bimbo -->
+                <div class="brand-option brand-option-level-1" onclick="selectBrand(this, 'Bimbo', 'Grupo Bimbo')">
+                  <span class="brand-option-icon sub">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2" width="8" height="8" rx="1"/><path d="M6 5v4M4.5 7h3"/></svg>
+                  </span>
+                  <span class="brand-option-label">Bimbo</span>
+                  <span class="brand-option-path">Grupo Bimbo ›</span>
+                </div>
+
+                <!-- La Serenísima (raíz) -->
+                <div class="brand-option brand-option-level-0" onclick="selectBrand(this, 'La Serenísima')">
+                  <span class="brand-option-icon root">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h8v6H2z"/><path d="M4 4V2h4v2"/></svg>
+                  </span>
+                  <span class="brand-option-label">La Serenísima</span>
+                </div>
+
+                <!-- Coca-Cola (raíz) -->
+                <div class="brand-option brand-option-level-0" onclick="selectBrand(this, 'Coca-Cola')">
+                  <span class="brand-option-icon root">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h8v6H2z"/><path d="M4 4V2h4v2"/></svg>
+                  </span>
+                  <span class="brand-option-label">Coca-Cola</span>
+                </div>
+
+                <!-- Molinos Río de la Plata -->
+                <div class="brand-option brand-option-level-0" onclick="selectBrand(this, 'Molinos Río de la Plata')">
+                  <span class="brand-option-icon root">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h8v6H2z"/><path d="M4 4V2h4v2"/></svg>
+                  </span>
+                  <span class="brand-option-label">Molinos Río de la Plata</span>
+                </div>
+                <!-- Submarca Molinos → Don Vicente -->
+                <div class="brand-option brand-option-level-1" onclick="selectBrand(this, 'Don Vicente', 'Molinos Río de la Plata')">
+                  <span class="brand-option-icon sub">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2" width="8" height="8" rx="1"/><path d="M6 5v4M4.5 7h3"/></svg>
+                  </span>
+                  <span class="brand-option-label">Don Vicente</span>
+                  <span class="brand-option-path">Molinos Río de la Plata ›</span>
+                </div>
+
+                <!-- Unilever -->
+                <div class="brand-option brand-option-level-0" onclick="selectBrand(this, 'Unilever')">
+                  <span class="brand-option-icon root">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h8v6H2z"/><path d="M4 4V2h4v2"/></svg>
+                  </span>
+                  <span class="brand-option-label">Unilever</span>
+                </div>
+
+                <!-- Zenu -->
+                <div class="brand-option brand-option-level-0" onclick="selectBrand(this, 'Zenu')">
+                  <span class="brand-option-icon root">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h8v6H2z"/><path d="M4 4V2h4v2"/></svg>
+                  </span>
+                  <span class="brand-option-label">Zenu</span>
+                </div>
+                <!-- Submarca Zenu → Real -->
+                <div class="brand-option brand-option-level-1" onclick="selectBrand(this, 'Real', 'Zenu')">
+                  <span class="brand-option-icon sub">
+                    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="2" width="8" height="8" rx="1"/><path d="M6 5v4M4.5 7h3"/></svg>
+                  </span>
+                  <span class="brand-option-label">Real</span>
+                  <span class="brand-option-path">Zenu ›</span>
+                </div>
+              </div>
+            </div>
+            <div class="hierarchy-hint">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5M8 11v.5"/></svg>
+              Si es una submarca, seleccioná la marca padre y luego la submarca. La jerarquía se almacena automáticamente.
+            </div>
+          </div>
+
+          <!-- Categoría -->
+          <div class="form-group">
+            <label class="form-label">Categoría</label>
+            <select class="form-input">
+              <option value="">Seleccionar categoría...</option>
+              <option>Lácteos</option>
+              <option>Despensa</option>
+              <option>Bebidas</option>
+              <option>Panadería</option>
+              <option>Carnes</option>
+              <option>Limpieza</option>
+              <option>Higiene</option>
+            </select>
+          </div>
+
+          <!-- Unidad -->
+          <div class="form-group">
+            <label class="form-label">Unidad de medida</label>
+            <select class="form-input">
+              <option value="">Seleccionar unidad...</option>
+              <option>Unidad (u)</option>
+              <option>Kilogramo (kg)</option>
+              <option>Gramo (g)</option>
+              <option>Litro (L)</option>
+              <option>Mililitro (ml)</option>
+            </select>
+          </div>
+
+          <!-- Presentación -->
+          <div class="form-group">
+            <label class="form-label">Cantidad de presentación</label>
+            <input class="form-input" type="number" placeholder="ej. 1000" />
+            <div class="form-hint">Cantidad por unidad de venta (ej: 1000 ml por botella, 80 g por paquete)</div>
+          </div>
+
+          <!-- Código de barras -->
+          <div class="form-group">
+            <label class="form-label">Código de barras (opcional)</label>
+            <input class="form-input" type="text" placeholder="Escribir o escanear..." />
+          </div>
+
+          <button class="btn-primary" style="width:100%; margin-top:0.5rem;">Crear producto</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(id) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + id).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      html.dataset.theme = html.dataset.theme === 'dark' ? 'light' : 'dark';
+    }
+
+    function toggleBrandSelect() {
+      const el = document.getElementById('brandSelect');
+      el.classList.toggle('open');
+    }
+
+    function selectBrand(optionEl, name, path) {
+      const trigger = document.querySelector('.brand-select-trigger');
+      const displayText = path ? `${name} (${path})` : name;
+      trigger.innerHTML = `<span>${displayText}</span><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>`;
+      trigger.classList.remove('placeholder');
+      trigger.classList.add('selected');
+      document.getElementById('brandSelect').classList.remove('open');
+
+      document.querySelectorAll('.brand-option').forEach(o => o.classList.remove('selected'));
+      optionEl.classList.add('selected');
+    }
+
+    document.addEventListener('click', function(e) {
+      const bs = document.getElementById('brandSelect');
+      if (bs && !bs.contains(e.target)) {
+        bs.classList.remove('open');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,9 +1,23 @@
 import type { CreatePurchase, UpdatePurchase } from '@/domain/market/entities/purchase';
-import type { CreatePurchaseItem } from '@/domain/market/entities/purchase-item';
 import type { IPurchaseRepository } from '@/domain/market/repositories/purchase-repository';
+import type { IInventoryRepository } from '@/domain/market/repositories/inventory-repository';
+import type { IProductRepository } from '@/domain/market/repositories/product-repository';
+
+export interface PurchaseItemInput {
+  readonly productId: string;
+  readonly quantity: number;
+  readonly unitPrice: number;
+  readonly discount?: number;
+  readonly expirationDate?: string | null;
+  readonly lot?: string | null;
+}
 
 export class PurchaseUseCases {
-  constructor(private readonly purchaseRepository: IPurchaseRepository) {}
+  constructor(
+    private readonly purchaseRepository: IPurchaseRepository,
+    private readonly inventoryRepository: IInventoryRepository,
+    private readonly productRepository: IProductRepository,
+  ) {}
 
   async findAll() {
     return this.purchaseRepository.findAll();
@@ -14,14 +28,37 @@ export class PurchaseUseCases {
   }
 
   async findItems(purchaseId: string) {
-    return this.purchaseRepository.findItemsByPurchaseId(purchaseId);
+    return this.purchaseRepository.findMovementsByPurchaseId(purchaseId);
   }
 
-  async create(purchase: CreatePurchase) {
+  async create(purchase: CreatePurchase, items?: readonly PurchaseItemInput[]) {
     if (!purchase.purchaseDate) {
       throw new Error('Purchase date is required');
     }
-    return this.purchaseRepository.create(purchase);
+
+    const created = await this.purchaseRepository.create(purchase);
+
+    if (items && items.length > 0) {
+      const purchaseTypeId = await this.getPurchaseMovementTypeId();
+      if (!purchaseTypeId) {
+        throw new Error('Movement type PURCHASE not found');
+      }
+
+      await this.inventoryRepository.createPurchaseMovements(
+        created.id,
+        items.map((item) => ({
+          productId: item.productId,
+          movementTypeId: purchaseTypeId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          discount: item.discount ?? 0,
+          expirationDate: item.expirationDate ?? null,
+          lot: item.lot ?? null,
+        }))
+      );
+    }
+
+    return created;
   }
 
   async update(id: string, purchase: UpdatePurchase) {
@@ -36,20 +73,9 @@ export class PurchaseUseCases {
     return this.purchaseRepository.remove(id);
   }
 
-  async addItem(item: CreatePurchaseItem) {
-    if (!item.productId) {
-      throw new Error('Product is required');
-    }
-    if (item.quantity <= 0) {
-      throw new Error('Quantity must be greater than zero');
-    }
-    if (item.unitPrice < 0) {
-      throw new Error('Unit price cannot be negative');
-    }
-    return this.purchaseRepository.addItem(item);
-  }
-
-  async removeItem(id: string) {
-    return this.purchaseRepository.removeItem(id);
+  private async getPurchaseMovementTypeId(): Promise<string | null> {
+    const sql = (await import('@/infrastructure/market/neon-client')).getSql();
+    const rows = await sql`SELECT id FROM movement_types WHERE code = 'PURCHASE' LIMIT 1`;
+    return rows.length > 0 ? (rows[0] as { id: string }).id : null;
   }
 }

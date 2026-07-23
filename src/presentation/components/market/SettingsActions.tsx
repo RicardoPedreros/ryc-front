@@ -383,6 +383,9 @@ function UnitForm({ onClose, onCreated }: { readonly onClose: () => void; readon
 }
 
 function BrandForm({ onClose, onCreated }: { readonly onClose: () => void; readonly onCreated: () => void }) {
+  const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
+  const parentBrands = (brands ?? []).filter((b) => !b.parentBrandId);
+
   return (
     <>
       <h2>Agregar marca</h2>
@@ -395,7 +398,10 @@ function BrandForm({ onClose, onCreated }: { readonly onClose: () => void; reado
           await fetch("/api/market/brands", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name }),
+            body: JSON.stringify({
+              name,
+              parentBrandId: form.get("parentBrandId") || null,
+            }),
           });
           onClose();
           onCreated();
@@ -404,6 +410,16 @@ function BrandForm({ onClose, onCreated }: { readonly onClose: () => void; reado
         <div className="mkt-form-group">
           <label className="mkt-form-label">Nombre</label>
           <input name="name" className="mkt-form-input" type="text" placeholder="ej. La Serenísima" required />
+        </div>
+        <div className="mkt-form-group">
+          <label className="mkt-form-label">Marca padre (opcional)</label>
+          <select name="parentBrandId" className="mkt-form-select" defaultValue="">
+            <option value="">Sin marca padre</option>
+            {parentBrands.map((brand) => (
+              <option key={brand.id} value={brand.id}>{brand.name}</option>
+            ))}
+          </select>
+          <span className="mkt-form-hint">Dejá vacío para una marca principal. Seleccioná una para crear una submarca.</span>
         </div>
         <div className="mkt-modal-actions">
           <button type="button" className="mkt-btn-cancel" onClick={onClose}>Cancelar</button>

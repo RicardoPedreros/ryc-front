@@ -235,22 +235,40 @@ function BrandList({ onAdd }: EntityListProps) {
     );
   }
 
+  const parentBrands = brands.filter((b) => !b.parentBrandId);
+  const childrenMap = new Map<string, Brand[]>();
+  for (const brand of brands) {
+    if (brand.parentBrandId) {
+      if (!childrenMap.has(brand.parentBrandId)) childrenMap.set(brand.parentBrandId, []);
+      childrenMap.get(brand.parentBrandId)!.push(brand);
+    }
+  }
+
+  function renderBrand(brand: Brand, depth: number) {
+    const children = childrenMap.get(brand.id) ?? [];
+    return (
+      <div key={brand.id}>
+        <div className="mkt-entity-item" style={{ paddingLeft: `${1 + depth * 1.5}rem` }}>
+          <div className="mkt-entity-icon" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+              <line x1="7" y1="7" x2="7.01" y2="7" />
+            </svg>
+          </div>
+          <div className="mkt-entity-body">
+            <span className="mkt-entity-name">{brand.name}</span>
+            {depth > 0 && <span className="mkt-entity-meta">submarca</span>}
+          </div>
+        </div>
+        {children.map((child) => renderBrand(child, depth + 1))}
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="mkt-entity-list">
-        {brands.map((brand) => (
-          <div key={brand.id} className="mkt-entity-item">
-            <div className="mkt-entity-icon" style={{ background: "var(--accent-soft)", color: "var(--accent)" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
-                <line x1="7" y1="7" x2="7.01" y2="7" />
-              </svg>
-            </div>
-            <div className="mkt-entity-body">
-              <span className="mkt-entity-name">{brand.name}</span>
-            </div>
-          </div>
-        ))}
+        {parentBrands.map((brand) => renderBrand(brand, 0))}
       </div>
       <button type="button" className="mkt-add-entity-btn" onClick={() => onAdd("marcas")}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

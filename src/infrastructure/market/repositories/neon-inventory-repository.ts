@@ -5,9 +5,13 @@ import { getSql } from '../neon-client';
 interface InventoryMovementRow {
   id: string;
   product_id: string;
-  purchase_item_id: string | null;
+  purchase_id: string | null;
   movement_type_id: string;
   quantity: number;
+  unit_price: number | null;
+  discount: number | null;
+  expiration_date: Date | null;
+  lot: string | null;
   movement_date: Date;
   notes: string | null;
 }
@@ -26,9 +30,15 @@ function toInventoryMovement(row: InventoryMovementRow): InventoryMovement {
   return {
     id: row.id,
     productId: row.product_id,
-    purchaseItemId: row.purchase_item_id,
+    purchaseId: row.purchase_id,
     movementTypeId: row.movement_type_id,
     quantity: row.quantity,
+    unitPrice: row.unit_price,
+    discount: row.discount,
+    expirationDate: row.expiration_date instanceof Date
+      ? row.expiration_date.toISOString().split('T')[0]
+      : row.expiration_date ? String(row.expiration_date) : null,
+    lot: row.lot,
     movementDate: row.movement_date,
     notes: row.notes,
   };
@@ -59,6 +69,18 @@ export class NeonInventoryRepository implements IInventoryRepository {
     return rows.map(toInventoryMovement);
   }
 
+  async findMovementsByPurchaseId(purchaseId: string): Promise<readonly InventoryMovement[]> {
+    const sql = getSql();
+    const rows = await sql`
+      SELECT im.*, p.name AS product_name
+      FROM inventory_movements im
+      JOIN products p ON p.id = im.product_id
+      WHERE im.purchase_id = ${purchaseId}
+      ORDER BY im.movement_date DESC
+    ` as InventoryMovementRow[];
+    return rows.map(toInventoryMovement);
+  }
+
   async getStock(): Promise<readonly InventoryStock[]> {
     const sql = getSql();
     const rows = await sql`
@@ -84,8 +106,8 @@ export class NeonInventoryRepository implements IInventoryRepository {
   async createMovement(movement: CreateInventoryMovement): Promise<InventoryMovement> {
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO inventory_movements (product_id, purchase_item_id, movement_type_id, quantity, notes)
-      VALUES (${movement.productId}, ${movement.purchaseItemId ?? null}, ${movement.movementTypeId}, ${movement.quantity}, ${movement.notes ?? null})
+      INSERT INTO inventory_movements (product_id, purchase_id, movement_type_id, quantity, unit_price, discount, expiration_date, lot, notes)
+      VALUES (${movement.productId}, ${movement.purchaseId ?? null}, ${movement.movementTypeId}, ${movement.quantity}, ${movement.unitPrice ?? null}, ${movement.discount ?? 0}, ${movement.expirationDate ?? null}, ${movement.lot ?? null}, ${movement.notes ?? null})
       RETURNING *
     ` as InventoryMovementRow[];
     return toInventoryMovement(rows[0]);
@@ -99,6 +121,24 @@ export class NeonInventoryRepository implements IInventoryRepository {
       const rows = await sql`
         INSERT INTO inventory_movements (product_id, movement_type_id, quantity, notes)
         VALUES (${m.productId}, ${m.movementTypeId}, ${m.quantity}, ${m.notes ?? null})
+        RETURNING *
+      ` as InventoryMovementRow[];
+      results.push(toInventoryMovement(rows[0]));
+    }
+    return results;
+  }
+
+  async createPurchaseMovements(
+    purchaseId: string,
+    items: readonly { productId: string; movementTypeId: string; quantity: number; unitPrice: number; discount: number; expirationDate: string | null; lot: string | null }[]
+  ): Promise<readonly InventoryMovement[]> {
+    if (items.length === 0) return [];
+    const sql = getSql();
+    const results: InventoryMovement[] = [];
+    for (const item of items) {
+      const rows = await sql`
+        INSERT INTO inventory_movements (product_id, purchase_id, movement_type_id, quantity, unit_price, discount, expiration_date, lot)
+        VALUES (${item.productId}, ${purchaseId}, ${item.movementTypeId}, ${item.quantity}, ${item.unitPrice}, ${item.discount}, ${item.expirationDate ?? null}, ${item.lot ?? null})
         RETURNING *
       ` as InventoryMovementRow[];
       results.push(toInventoryMovement(rows[0]));

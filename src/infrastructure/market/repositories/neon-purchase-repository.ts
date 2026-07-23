@@ -1,5 +1,5 @@
 import type { Purchase, CreatePurchase, UpdatePurchase } from '@/domain/market/entities/purchase';
-import type { PurchaseItem, CreatePurchaseItem } from '@/domain/market/entities/purchase-item';
+import type { InventoryMovement } from '@/domain/market/entities/inventory-movement';
 import type { IPurchaseRepository } from '@/domain/market/repositories/purchase-repository';
 import { getSql } from '../neon-client';
 
@@ -13,16 +13,18 @@ interface PurchaseRow {
   created_at: Date;
 }
 
-interface PurchaseItemRow {
+interface InventoryMovementRow {
   id: string;
-  purchase_id: string;
   product_id: string;
+  purchase_id: string | null;
+  movement_type_id: string;
   quantity: number;
-  unit_price: number;
-  discount: number;
+  unit_price: number | null;
+  discount: number | null;
   expiration_date: Date | null;
   lot: string | null;
-  total_price: number;
+  movement_date: Date;
+  notes: string | null;
 }
 
 function toPurchase(row: PurchaseRow): Purchase {
@@ -39,11 +41,12 @@ function toPurchase(row: PurchaseRow): Purchase {
   };
 }
 
-function toPurchaseItem(row: PurchaseItemRow): PurchaseItem {
+function toInventoryMovement(row: InventoryMovementRow): InventoryMovement {
   return {
     id: row.id,
-    purchaseId: row.purchase_id,
     productId: row.product_id,
+    purchaseId: row.purchase_id,
+    movementTypeId: row.movement_type_id,
     quantity: row.quantity,
     unitPrice: row.unit_price,
     discount: row.discount,
@@ -51,7 +54,8 @@ function toPurchaseItem(row: PurchaseItemRow): PurchaseItem {
       ? row.expiration_date.toISOString().split('T')[0]
       : row.expiration_date ? String(row.expiration_date) : null,
     lot: row.lot,
-    totalPrice: row.total_price,
+    movementDate: row.movement_date,
+    notes: row.notes,
   };
 }
 
@@ -68,10 +72,15 @@ export class NeonPurchaseRepository implements IPurchaseRepository {
     return rows.length > 0 ? toPurchase(rows[0]) : null;
   }
 
-  async findItemsByPurchaseId(purchaseId: string): Promise<readonly PurchaseItem[]> {
+  async findMovementsByPurchaseId(purchaseId: string): Promise<readonly InventoryMovement[]> {
     const sql = getSql();
-    const rows = await sql`SELECT * FROM purchase_items WHERE purchase_id = ${purchaseId}` as PurchaseItemRow[];
-    return rows.map(toPurchaseItem);
+    const rows = await sql`
+      SELECT im.*
+      FROM inventory_movements im
+      WHERE im.purchase_id = ${purchaseId}
+      ORDER BY im.movement_date DESC
+    ` as InventoryMovementRow[];
+    return rows.map(toInventoryMovement);
   }
 
   async create(purchase: CreatePurchase): Promise<Purchase> {
@@ -103,22 +112,6 @@ export class NeonPurchaseRepository implements IPurchaseRepository {
   async remove(id: string): Promise<boolean> {
     const sql = getSql();
     const rows = await sql`DELETE FROM purchases WHERE id = ${id} RETURNING id`;
-    return rows.length > 0;
-  }
-
-  async addItem(item: CreatePurchaseItem): Promise<PurchaseItem> {
-    const sql = getSql();
-    const rows = await sql`
-      INSERT INTO purchase_items (purchase_id, product_id, quantity, unit_price, discount, expiration_date, lot)
-      VALUES (${item.purchaseId}, ${item.productId}, ${item.quantity}, ${item.unitPrice}, ${item.discount ?? 0}, ${item.expirationDate ?? null}, ${item.lot ?? null})
-      RETURNING *
-    ` as PurchaseItemRow[];
-    return toPurchaseItem(rows[0]);
-  }
-
-  async removeItem(id: string): Promise<boolean> {
-    const sql = getSql();
-    const rows = await sql`DELETE FROM purchase_items WHERE id = ${id} RETURNING id`;
     return rows.length > 0;
   }
 }

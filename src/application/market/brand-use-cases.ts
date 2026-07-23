@@ -12,9 +12,19 @@ export class BrandUseCases {
     return this.brandRepository.findById(id);
   }
 
+  async findHierarchy() {
+    return this.brandRepository.findHierarchy();
+  }
+
   async create(brand: CreateBrand) {
     if (!brand.name.trim()) {
       throw new Error('Brand name is required');
+    }
+    if (brand.parentBrandId) {
+      const parent = await this.brandRepository.findById(brand.parentBrandId);
+      if (!parent) {
+        throw new Error('Parent brand not found');
+      }
     }
     return this.brandRepository.create(brand);
   }

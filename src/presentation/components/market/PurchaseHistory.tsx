@@ -3,8 +3,14 @@
 import { useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
 import type { Purchase } from "@/domain/market/entities/purchase";
+import type { InventoryMovement } from "@/domain/market/entities/inventory-movement";
 import type { Store } from "@/domain/market/entities/store";
 import type { PaymentMethod } from "@/domain/market/entities/payment-method";
+import type { Product } from "@/domain/market/entities/product";
+
+interface PurchaseWithItems extends Purchase {
+  readonly items?: readonly InventoryMovement[];
+}
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr + "T00:00:00");
@@ -16,14 +22,20 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString("es-AR", { day: "numeric", month: "short" });
 }
 
+function formatCurrency(amount: number): string {
+  return `$${amount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
+}
+
 export function PurchaseHistory() {
-  const { data: purchases, loading } = useFetch<readonly Purchase[]>("/api/market/purchases");
+  const { data: purchases, loading } = useFetch<readonly PurchaseWithItems[]>("/api/market/purchases");
   const { data: stores } = useFetch<readonly Store[]>("/api/market/stores");
   const { data: paymentMethods } = useFetch<readonly PaymentMethod[]>("/api/market/payment-methods");
+  const { data: products } = useFetch<readonly Product[]>("/api/market/products");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const storeMap = new Map((stores ?? []).map((s) => [s.id, s.name]));
   const pmMap = new Map((paymentMethods ?? []).map((pm) => [pm.id, pm.name]));
+  const productMap = new Map((products ?? []).map((p) => [p.id, p.name]));
 
   if (loading) {
     return (
@@ -65,6 +77,8 @@ export function PurchaseHistory() {
           const isExpanded = expandedId === purchase.id;
           const storeName = purchase.storeId ? storeMap.get(purchase.storeId) ?? "Sin tienda" : "Sin tienda";
           const pmName = purchase.paymentMethodId ? pmMap.get(purchase.paymentMethodId) ?? "—" : "—";
+          const items = purchase.items ?? [];
+
           return (
             <div key={purchase.id} className="mkt-purchase-row">
               <button
@@ -75,12 +89,18 @@ export function PurchaseHistory() {
                 <div className="mkt-purchase-body">
                   <span className="mkt-purchase-store">{storeName}</span>
                   <span className="mkt-purchase-detail">
-                    {pmName}
-                    {purchase.total != null && ` · $${purchase.total.toLocaleString("es-AR")}`}
+                    {formatDate(purchase.purchaseDate)} · {pmName}
                   </span>
+                  {items.length > 0 && (
+                    <span className="mkt-purchase-items-count">
+                      {items.length} producto{items.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
                 </div>
                 <div className="mkt-purchase-right">
-                  <span className="mkt-purchase-date">{formatDate(purchase.purchaseDate)}</span>
+                  {purchase.total != null && (
+                    <span className="mkt-purchase-total">{formatCurrency(purchase.total)}</span>
+                  )}
                   <svg
                     width="14"
                     height="14"
@@ -99,7 +119,30 @@ export function PurchaseHistory() {
               {isExpanded && (
                 <div className="mkt-purchase-expanded">
                   {purchase.notes && <p className="mkt-purchase-notes">{purchase.notes}</p>}
-                  <span className="mkt-purchase-id">ID: {purchase.id.slice(0, 8)}</span>
+                  {items.length > 0 ? (
+                    <div className="mkt-purchase-items">
+                      {items.map((item) => {
+                        const productName = productMap.get(item.productId) ?? "Producto desconocido";
+                        const lineTotal = (item.unitPrice ?? 0) * item.quantity - (item.discount ?? 0);
+                        return (
+                          <div key={item.id} className="mkt-purchase-item">
+                            <div className="mkt-purchase-item-body">
+                              <span className="mkt-purchase-item-name">{productName}</span>
+                              <span className="mkt-purchase-item-meta">
+                                {item.quantity} × {formatCurrency(item.unitPrice ?? 0)}
+                                {(item.discount ?? 0) > 0 && ` (−${formatCurrency(item.discount ?? 0)})`}
+                                {item.lot && ` · Lote: ${item.lot}`}
+                                {item.expirationDate && ` · Vence: ${item.expirationDate}`}
+                              </span>
+                            </div>
+                            <span className="mkt-purchase-item-total">{formatCurrency(lineTotal)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="mkt-purchase-no-items">Sin productos detallados</p>
+                  )}
                 </div>
               )}
             </div>

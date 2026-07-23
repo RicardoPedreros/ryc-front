@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PurchaseUseCases } from '@/application/market/purchase-use-cases';
 import { NeonPurchaseRepository } from '@/infrastructure/market/repositories/neon-purchase-repository';
+import { NeonInventoryRepository } from '@/infrastructure/market/repositories/neon-inventory-repository';
+import { NeonProductRepository } from '@/infrastructure/market/repositories/neon-product-repository';
 
-const purchaseUseCases = new PurchaseUseCases(new NeonPurchaseRepository());
+const purchaseUseCases = new PurchaseUseCases(
+  new NeonPurchaseRepository(),
+  new NeonInventoryRepository(),
+  new NeonProductRepository(),
+);
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,7 +36,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const purchase = await purchaseUseCases.create(body);
+    const { items, ...purchaseData } = body;
+    const purchase = await purchaseUseCases.create(purchaseData, items);
     return NextResponse.json(purchase, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal server error';

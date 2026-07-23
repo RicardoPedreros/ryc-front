@@ -4,8 +4,16 @@ import { NeonBrandRepository } from '@/infrastructure/market/repositories/neon-b
 
 const brandUseCases = new BrandUseCases(new NeonBrandRepository());
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const hierarchy = searchParams.get('hierarchy');
+
+    if (hierarchy === 'true') {
+      const tree = await brandUseCases.findHierarchy();
+      return NextResponse.json(tree);
+    }
+
     const brands = await brandUseCases.findAll();
     return NextResponse.json(brands);
   } catch (error) {
@@ -21,7 +29,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(brand, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal server error';
-    const status = message.includes('required') ? 400 : 500;
+    const status = message.includes('required') || message.includes('not found') ? 400 : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

@@ -1,18 +1,26 @@
 export interface InventoryMovement {
   readonly id: string;
   readonly productId: string;
-  readonly purchaseItemId: string | null;
+  readonly purchaseId: string | null;
   readonly movementTypeId: string;
   readonly quantity: number;
+  readonly unitPrice: number | null;
+  readonly discount: number | null;
+  readonly expirationDate: string | null;
+  readonly lot: string | null;
   readonly movementDate: Date;
   readonly notes: string | null;
 }
 
 export interface CreateInventoryMovement {
   readonly productId: string;
-  readonly purchaseItemId?: string | null;
+  readonly purchaseId?: string | null;
   readonly movementTypeId: string;
   readonly quantity: number;
+  readonly unitPrice?: number | null;
+  readonly discount?: number | null;
+  readonly expirationDate?: string | null;
+  readonly lot?: string | null;
   readonly notes?: string | null;
 }
 

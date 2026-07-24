@@ -24,9 +24,30 @@ interface MovementType {
 interface PendingAdjustment {
   readonly productId: string;
   readonly delta: number;
+  readonly expirationDate: string | null;
+}
+
+interface ExpiryInfo {
+  readonly hasExpiry: boolean;
+  readonly date: string;
 }
 
 type Filter = "all" | "no_stock" | "low_stock";
+
+function daysUntil(dateStr: string): number {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const target = new Date(dateStr);
+  target.setHours(0, 0, 0, 0);
+  return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function expiryBadgeClass(dateStr: string): string {
+  const days = daysUntil(dateStr);
+  if (days < 0) return "expired";
+  if (days <= 30) return "soon";
+  return "ok";
+}
 
 export function StockAdjustment() {
   const { data: products, loading } = useFetch<readonly ProductWithStock[]>(
@@ -39,6 +60,7 @@ export function StockAdjustment() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [adjustments, setAdjustments] = useState<Map<string, number>>(new Map());
+  const [expiryMap, setExpiryMap] = useState<Map<string, ExpiryInfo>>(new Map());
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -77,7 +99,15 @@ export function StockAdjustment() {
     adjustments.entries()
   )
     .filter(([, delta]) => delta !== 0)
-    .map(([productId, delta]) => ({ productId, delta }));
+    .map(([productId, delta]) => {
+      const exp = expiryMap.get(productId);
+      return {
+        productId,
+        delta,
+        expirationDate:
+          exp?.hasExpiry && exp.date ? exp.date : null,
+      };
+    });
 
   function handleDelta(productId: string, delta: number) {
     if (saved) setSaved(false);
@@ -85,6 +115,37 @@ export function StockAdjustment() {
       const next = new Map(prev);
       const current = next.get(productId) ?? 0;
       next.set(productId, current + delta);
+      return next;
+    });
+    setExpiryMap((prev) => {
+      if (prev.has(productId)) return prev;
+      const next = new Map(prev);
+      next.set(productId, { hasExpiry: true, date: "" });
+      return next;
+    });
+  }
+
+  function handleToggleExpiry(productId: string) {
+    setExpiryMap((prev) => {
+      const next = new Map(prev);
+      const current = next.get(productId);
+      if (current?.hasExpiry) {
+        next.set(productId, { hasExpiry: false, date: "" });
+      } else {
+        next.set(productId, { hasExpiry: true, date: current?.date ?? "" });
+      }
+      return next;
+    });
+  }
+
+  function handleExpiryDate(productId: string, date: string) {
+    setExpiryMap((prev) => {
+      const next = new Map(prev);
+      const current = next.get(productId);
+      next.set(productId, {
+        hasExpiry: current?.hasExpiry ?? true,
+        date,
+      });
       return next;
     });
   }
@@ -101,6 +162,7 @@ export function StockAdjustment() {
         quantity: Math.abs(a.delta),
         movementTypeId: a.delta > 0 ? inTypeId : outTypeId,
         notes: a.delta > 0 ? "Ajuste de stock (+)" : "Ajuste de stock (-)",
+        expirationDate: a.expirationDate,
       }));
 
       const res = await fetch("/api/market/inventory/adjust", {
@@ -115,9 +177,10 @@ export function StockAdjustment() {
       }
 
       setAdjustments(new Map());
+      setExpiryMap(new Map());
       setSaved(true);
     } catch {
-      // Error silently — the API will return an error message
+      // Error silently
     } finally {
       setSaving(false);
     }
@@ -125,6 +188,7 @@ export function StockAdjustment() {
 
   function handleCancel() {
     setAdjustments(new Map());
+    setExpiryMap(new Map());
   }
 
   if (loading) {
@@ -220,46 +284,102 @@ export function StockAdjustment() {
             const isModified = delta !== 0;
             const isOut = effectiveStock === 0;
             const isLow = effectiveStock > 0 && effectiveStock <= 2;
+            const expiry = expiryMap.get(product.id);
+            const showExpiry = isModified && expiry?.hasExpiry;
+            const expiryDays =
+              expiry?.date && expiry.hasExpiry
+                ? daysUntil(expiry.date)
+                : null;
 
             return (
               <div
                 key={product.id}
-                className={`mkt-adjust-row ${isModified ? "modified" : ""}`}
+                className={`mkt-adjust-row-wrap ${isModified ? "modified" : ""}`}
               >
-                <div className="mkt-adjust-info">
-                  <span className="mkt-adjust-name">{product.name}</span>
-                  <span className="mkt-adjust-meta">
-                    {[product.brand, product.categoryName, product.presentationQuantity && product.unitSymbol ? `${product.presentationQuantity} ${product.unitSymbol}` : product.presentationQuantity ? `${product.presentationQuantity}` : null].filter(Boolean).join(" · ")}
-                  </span>
-                </div>
-                <div className="mkt-adjust-controls">
-                  {isModified && (
-                    <span className="mkt-adjust-delta">
-                      {delta > 0 ? "+" : ""}{delta}
+                <div className="mkt-adjust-row">
+                  <div className="mkt-adjust-info">
+                    <span className="mkt-adjust-name">{product.name}</span>
+                    <span className="mkt-adjust-meta">
+                      {[product.brand, product.categoryName, product.presentationQuantity && product.unitSymbol ? `${product.presentationQuantity} ${product.unitSymbol}` : product.presentationQuantity ? `${product.presentationQuantity}` : null].filter(Boolean).join(" · ")}
                     </span>
-                  )}
-                  <div className="mkt-adjust-stepper">
-                    <button
-                      className="mkt-adjust-step-btn"
-                      onClick={() => handleDelta(product.id, -1)}
-                      disabled={effectiveStock <= 0}
-                    >
-                      −
-                    </button>
-                    <span
-                      className={`mkt-adjust-stock ${isOut ? "zero" : ""} ${isLow ? "low" : ""}`}
-                    >
-                      {effectiveStock}
-                    </span>
-                    <button
-                      className="mkt-adjust-step-btn"
-                      onClick={() => handleDelta(product.id, 1)}
-                    >
-                      +
-                    </button>
                   </div>
-                  <span className="mkt-adjust-unit">uds</span>
+                  <div className="mkt-adjust-controls">
+                {isModified && delta > 0 && (
+                      <span className="mkt-adjust-delta">
+                        {delta > 0 ? "+" : ""}{delta}
+                      </span>
+                    )}
+                    <div className="mkt-adjust-stepper">
+                      <button
+                        className="mkt-adjust-step-btn"
+                        onClick={() => handleDelta(product.id, -1)}
+                        disabled={effectiveStock <= 0}
+                      >
+                        −
+                      </button>
+                      <span
+                        className={`mkt-adjust-stock ${isOut ? "zero" : ""} ${isLow ? "low" : ""}`}
+                      >
+                        {effectiveStock}
+                      </span>
+                      <button
+                        className="mkt-adjust-step-btn"
+                        onClick={() => handleDelta(product.id, 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="mkt-adjust-unit">uds</span>
+                  </div>
                 </div>
+
+                {isModified && delta > 0 && (
+                  <div className="mkt-adjust-expiry-row">
+                    <button
+                      className={`mkt-adjust-expiry-toggle ${expiry?.hasExpiry ? "active" : ""}`}
+                      onClick={() => handleToggleExpiry(product.id)}
+                    >
+                      <span className="mkt-adjust-expiry-switch">
+                        <span className="mkt-adjust-expiry-switch-thumb" />
+                      </span>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="1.5" y="2.5" width="11" height="10" rx="1.5" />
+                        <path d="M4 1v2.5M10 1v2.5M1.5 6.5h11" />
+                      </svg>
+                      <span>Tiene fecha de vencimiento</span>
+                    </button>
+
+                    {showExpiry && (
+                      <div className="mkt-adjust-expiry-fields">
+                        <input
+                          type="date"
+                          className="mkt-adjust-date-input"
+                          value={expiry?.date ?? ""}
+                          onChange={(e) =>
+                            handleExpiryDate(product.id, e.target.value)
+                          }
+                        />
+                        {expiry?.date && expiryDays !== null && (
+                          <span
+                            className={`mkt-adjust-expiry-badge ${expiryBadgeClass(expiry.date)}`}
+                          >
+                            {expiryDays < 0
+                              ? `Venció hace ${Math.abs(expiryDays)}d`
+                              : expiryDays === 0
+                                ? "Vence hoy"
+                                : `${expiryDays}d`}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {!expiry?.hasExpiry && expiry !== undefined && (
+                      <span className="mkt-adjust-expiry-sin-fecha">
+                        Sin fecha de vencimiento
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })

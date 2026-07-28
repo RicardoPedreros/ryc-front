@@ -69,6 +69,28 @@ export class NeonProductRepository implements IProductRepository {
     return rows.length > 0 ? toProduct(rows[0]) : null;
   }
 
+  async findAllWithDetails(): Promise<readonly ProductSearchResult[]> {
+    const sql = getSql();
+    const rows = await sql`
+      SELECT
+        p.id,
+        p.name,
+        p.brand_id AS "brandId",
+        b.name AS "brandName",
+        c.name AS "categoryName",
+        u.symbol AS "unitSymbol",
+        p.presentation_quantity AS "presentationQuantity",
+        p.barcode
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN units u ON p.unit_id = u.id
+      WHERE p.is_active = true
+      ORDER BY p.name
+    ` as ProductSearchResult[];
+    return rows;
+  }
+
   async searchByName(query: string): Promise<readonly ProductSearchResult[]> {
     const sql = getSql();
     const pattern = `%${query}%`;
@@ -76,6 +98,7 @@ export class NeonProductRepository implements IProductRepository {
       SELECT
         p.id,
         p.name,
+        p.brand_id AS "brandId",
         b.name AS "brandName",
         c.name AS "categoryName",
         u.symbol AS "unitSymbol",
@@ -99,6 +122,7 @@ export class NeonProductRepository implements IProductRepository {
       SELECT
         p.id,
         p.name,
+        p.brand_id AS "brandId",
         b.name AS "brandName",
         c.name AS "categoryName",
         u.symbol AS "unitSymbol",

@@ -54,8 +54,9 @@ interface BatchAdjustmentItem {
   readonly productId: string;
   readonly quantity: number;
   readonly movementTypeId: string;
-  readonly notes?: string | null;
   readonly expirationDate?: string | null;
+  readonly lot?: string | null;
+  readonly notes?: string | null;
 }
 
 export async function POST(request: NextRequest) {
@@ -75,8 +76,8 @@ export async function POST(request: NextRequest) {
 
     for (const m of valid) {
       const rows = await sql`
-        INSERT INTO inventory_movements (product_id, movement_type_id, quantity, notes, expiration_date)
-        VALUES (${m.productId}, ${m.movementTypeId}, ${m.quantity}, ${m.notes ?? null}, ${m.expirationDate ?? null})
+        INSERT INTO inventory_movements (product_id, movement_type_id, quantity, notes, expiration_date, lot)
+        VALUES (${m.productId}, ${m.movementTypeId}, ${m.quantity}, ${m.notes ?? null}, ${m.expirationDate ?? null}, ${m.lot ?? null})
         RETURNING *
       ` as AdjustMovementRow[];
       results.push(rows[0]);

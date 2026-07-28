@@ -8,6 +8,10 @@ export class InventoryUseCases {
     return this.inventoryRepository.getStock();
   }
 
+  async getStockLots(productId?: string) {
+    return this.inventoryRepository.getStockLots(productId);
+  }
+
   async findAllMovements() {
     return this.inventoryRepository.findAllMovements();
   }

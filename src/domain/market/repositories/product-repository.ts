@@ -3,6 +3,7 @@ import type { Product, CreateProduct, UpdateProduct } from '../entities/product'
 export interface ProductSearchResult {
   readonly id: string;
   readonly name: string;
+  readonly brandId: string | null;
   readonly brandName: string | null;
   readonly categoryName: string | null;
   readonly unitSymbol: string | null;
@@ -12,6 +13,7 @@ export interface ProductSearchResult {
 
 export interface IProductRepository {
   findAll(): Promise<readonly Product[]>;
+  findAllWithDetails(): Promise<readonly ProductSearchResult[]>;
   findById(id: string): Promise<Product | null>;
   searchByName(query: string): Promise<readonly ProductSearchResult[]>;
   findByBarcode(barcode: string): Promise<ProductSearchResult | null>;

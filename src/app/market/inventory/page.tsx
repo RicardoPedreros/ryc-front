@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { StockOverview } from "@/presentation/components/market/StockOverview";
-import { LowStockAlerts } from "@/presentation/components/market/LowStockAlerts";
+import { InventoryAlerts } from "@/presentation/components/market/InventoryAlerts";
 
 export default function InventoryPage() {
   return (
@@ -8,13 +8,13 @@ export default function InventoryPage() {
       <div className="mkt-page-header">
         <div>
           <h1>Inventario</h1>
-          <p>Stock actual y alertas de reposición</p>
+          <p>Stock actual y alertas</p>
         </div>
         <Link href="/market/inventory/ajuste" className="mkt-btn-primary">
           Ajustar stock
         </Link>
       </div>
-      <LowStockAlerts />
+      <InventoryAlerts />
       <StockOverview />
     </>
   );

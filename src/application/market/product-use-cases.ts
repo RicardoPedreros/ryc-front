@@ -8,6 +8,10 @@ export class ProductUseCases {
     return this.productRepository.findAll();
   }
 
+  async findAllWithDetails() {
+    return this.productRepository.findAllWithDetails();
+  }
+
   async findById(id: string) {
     return this.productRepository.findById(id);
   }

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RYC — Inventario con Vencimientos</title>
+  <style>
+    :root {
+      --hue-primary: 255; --hue-secondary: 170; --hue-success: 145;
+      --hue-warning: 80; --hue-danger: 25; --hue-neutral: 250;
+
+      --accent: oklch(58% 0.18 var(--hue-primary)); --accent-hover: oklch(52% 0.20 var(--hue-primary)); --accent-soft: oklch(92% 0.06 var(--hue-primary));
+      --secondary: oklch(62% 0.12 var(--hue-secondary)); --secondary-soft: oklch(93% 0.04 var(--hue-secondary));
+      --success: oklch(62% 0.17 var(--hue-success)); --success-soft: oklch(93% 0.06 var(--hue-success));
+      --warning: oklch(72% 0.16 var(--hue-warning)); --warning-soft: oklch(94% 0.06 var(--hue-warning));
+      --danger: oklch(60% 0.20 var(--hue-danger)); --danger-soft: oklch(93% 0.06 var(--hue-danger));
+
+      --bg: oklch(98.7% 0.004 var(--hue-neutral)); --surface: oklch(100% 0 0); --surface-dim: oklch(96.5% 0.006 var(--hue-neutral)); --surface-raised: oklch(100% 0 0);
+      --fg: oklch(22% 0.014 var(--hue-neutral)); --fg-muted: oklch(50% 0.014 var(--hue-neutral)); --fg-subtle: oklch(72% 0.010 var(--hue-neutral)); --fg-on-accent: oklch(100% 0 0);
+      --border: oklch(91% 0.006 var(--hue-neutral)); --border-focus: var(--accent);
+      --overlay: oklch(0% 0 0 / 0.40);
+
+      --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+      --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+      --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 9999px;
+      --shadow-sm: 0 1px 2px oklch(35% 0.015 var(--hue-neutral) / 0.05);
+      --shadow-md: 0 4px 12px oklch(35% 0.015 var(--hue-neutral) / 0.08);
+    }
+    :root[data-theme="dark"] {
+      --accent: oklch(64% 0.16 var(--hue-primary)); --accent-hover: oklch(70% 0.14 var(--hue-primary)); --accent-soft: oklch(24% 0.06 var(--hue-primary));
+      --secondary: oklch(68% 0.10 var(--hue-secondary)); --secondary-soft: oklch(22% 0.04 var(--hue-secondary));
+      --success: oklch(68% 0.16 var(--hue-success)); --success-soft: oklch(20% 0.06 var(--hue-success));
+      --warning: oklch(78% 0.14 var(--hue-warning)); --warning-soft: oklch(22% 0.06 var(--hue-warning));
+      --danger: oklch(65% 0.18 var(--hue-danger)); --danger-soft: oklch(22% 0.06 var(--hue-danger));
+      --bg: oklch(15% 0.012 var(--hue-neutral)); --surface: oklch(18% 0.014 var(--hue-neutral)); --surface-dim: oklch(16% 0.012 var(--hue-neutral)); --surface-raised: oklch(20% 0.016 var(--hue-neutral));
+      --fg: oklch(93% 0.004 var(--hue-neutral)); --fg-muted: oklch(68% 0.012 var(--hue-neutral)); --fg-subtle: oklch(48% 0.012 var(--hue-neutral));
+      --border: oklch(26% 0.014 var(--hue-neutral)); --overlay: oklch(0% 0 0 / 0.50);
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--fg); font-family: var(--font-body); line-height: 1.5; -webkit-font-smoothing: antialiased; min-height: 100vh; }
+    button { font-family: inherit; }
+
+    /* ── Theme toggle ── */
+    .theme-toggle { position: fixed; top: 1rem; right: 1rem; z-index: 100; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-full); width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--fg-muted); box-shadow: var(--shadow-sm); transition: border-color 0.15s, color 0.15s; }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+    .theme-toggle svg { width: 18px; height: 18px; }
+    .theme-toggle .icon-sun, .theme-toggle .icon-moon { display: none; }
+    :root:not([data-theme="dark"]) .theme-toggle .icon-moon { display: block; }
+    :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+
+    .page { max-width: 780px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
+    .page-header { margin-bottom: 2rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-display); }
+    .page-header p { font-size: 0.875rem; color: var(--fg-muted); margin-top: 0.25rem; line-height: 1.6; max-width: 540px; }
+
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 2rem; overflow-x: auto; }
+    .tab { background: none; border: none; padding: 0.75rem 1.25rem; font-size: 0.8125rem; font-weight: 500; color: var(--fg-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.12s, border-color 0.12s; white-space: nowrap; }
+    .tab:hover { color: var(--fg); }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── Card ── */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+
+    /* ── Section headers ── */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; gap: 0.5rem; }
+    .section-title { font-size: 0.9375rem; font-weight: 600; font-family: var(--font-display); display: flex; align-items: center; gap: 0.5rem; }
+    .section-count { font-size: 0.6875rem; font-weight: 700; color: var(--fg-muted); background: var(--surface-dim); padding: 0.125rem 0.5rem; border-radius: var(--radius-full); }
+    .section-desc { font-size: 0.8125rem; color: var(--fg-muted); margin-bottom: 1.25rem; line-height: 1.6; }
+
+    /* ── Alert banner ── */
+    .alert-banner { display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1rem; }
+    .alert-banner.danger { background: var(--danger-soft); border: 1px solid oklch(85% 0.06 var(--hue-danger)); }
+    .alert-banner.warning { background: var(--warning-soft); border: 1px solid oklch(88% 0.05 var(--hue-warning)); }
+    .alert-banner-icon { width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; }
+    .alert-banner.danger .alert-banner-icon { color: var(--danger); }
+    .alert-banner.warning .alert-banner-icon { color: var(--warning); }
+    .alert-banner-body { flex: 1; }
+    .alert-banner-title { font-size: 0.8125rem; font-weight: 600; margin-bottom: 0.125rem; }
+    .alert-banner.danger .alert-banner-title { color: var(--danger); }
+    .alert-banner.warning .alert-banner-title { color: var(--warning); }
+    .alert-banner-text { font-size: 0.8125rem; color: var(--fg-muted); line-height: 1.5; }
+
+    /* ── Alert list item ── */
+    .alert-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); transition: background 0.12s; }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-item:hover { background: var(--surface-dim); }
+    .alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .alert-dot.danger { background: var(--danger); }
+    .alert-dot.warning { background: var(--warning); }
+    .alert-item-body { flex: 1; min-width: 0; }
+    .alert-item-name { font-size: 0.8125rem; font-weight: 500; }
+    .alert-item-meta { font-size: 0.75rem; color: var(--fg-subtle); }
+    .alert-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.125rem; flex-shrink: 0; }
+    .alert-item-badge { font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.625rem; border-radius: var(--radius-full); white-space: nowrap; }
+    .alert-item-badge.danger { background: var(--danger-soft); color: var(--danger); }
+    .alert-item-badge.warning { background: var(--warning-soft); color: var(--warning); }
+    .alert-item-date { font-size: 0.6875rem; font-family: var(--font-mono); color: var(--fg-subtle); }
+
+    /* ── Summary row ── */
+    .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; text-align: center; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+    .summary-card:hover { border-color: var(--border-focus); box-shadow: var(--shadow-sm); }
+    .summary-card.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+    .summary-card-value { font-size: 1.5rem; font-weight: 700; font-family: var(--font-display); line-height: 1.1; }
+    .summary-card-label { font-size: 0.6875rem; color: var(--fg-muted); margin-top: 0.25rem; }
+
+    /* ── Progress bar ── */
+    .progress-wrap { margin-bottom: 1.5rem; }
+    .progress-label { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.375rem; }
+    .progress-label span { font-size: 0.75rem; color: var(--fg-muted); }
+    .progress-bar { height: 6px; border-radius: 3px; background: var(--surface-dim); overflow: hidden; display: flex; }
+    .progress-seg { height: 100%; transition: width 0.3s ease; }
+    .progress-seg.danger { background: var(--danger); }
+    .progress-seg.warning { background: var(--warning); }
+    .progress-seg.success { background: var(--success); }
+    .legend { display: flex; align-items: center; gap: 1rem; margin-top: 0.5rem; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 0.375rem; font-size: 0.6875rem; color: var(--fg-muted); }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .legend-dot.danger { background: var(--danger); }
+    .legend-dot.warning { background: var(--warning); }
+    .legend-dot.success { background: var(--success); }
+
+    /* ── Filter chips ── */
+    .filter-bar { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .filter-chip { background: none; border: 1px solid var(--border); border-radius: var(--radius-full); padding: 0.375rem 0.875rem; font-size: 0.75rem; font-weight: 500; color: var(--fg-muted); cursor: pointer; transition: all 0.15s; }
+    .filter-chip:hover { border-color: var(--fg-subtle); color: var(--fg); }
+    .filter-chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+    /* ── Expiry badge ── */
+    .exp-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.625rem; border-radius: var(--radius-full); white-space: nowrap; }
+    .exp-badge.ok { background: var(--success-soft); color: var(--success); }
+    .exp-badge.soon { background: var(--warning-soft); color: var(--warning); }
+    .exp-badge.urgent { background: var(--danger-soft); color: var(--danger); }
+    .exp-badge.expired { background: var(--danger-soft); color: var(--danger); }
+    .exp-badge-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .exp-badge.ok .exp-badge-dot { background: var(--success); }
+    .exp-badge.soon .exp-badge-dot { background: var(--warning); }
+    .exp-badge.urgent .exp-badge-dot, .exp-badge.expired .exp-badge-dot { background: var(--danger); }
+
+    /* ── Stock badge ── */
+    .stock-badge { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; font-weight: 600; padding: 0.1875rem 0.5rem; border-radius: var(--radius-full); }
+    .stock-badge.ok { background: var(--success-soft); color: var(--success); }
+    .stock-badge.low { background: var(--warning-soft); color: var(--warning); }
+    .stock-badge.out { background: var(--danger-soft); color: var(--danger); }
+
+    /* ── Product rows ── */
+    .prod-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); transition: background 0.12s; }
+    .prod-row:last-child { border-bottom: none; }
+    .prod-row:hover { background: var(--surface-dim); }
+    .prod-body { flex: 1; min-width: 0; }
+    .prod-name { font-size: 0.8125rem; font-weight: 500; }
+    .prod-meta { font-size: 0.75rem; color: var(--fg-subtle); margin-top: 1px; }
+    .prod-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; flex-shrink: 0; }
+    .prod-date { font-size: 0.6875rem; font-family: var(--font-mono); color: var(--fg-muted); }
+
+    /* ── Inventory row with expiry border ── */
+    .inv-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem; border-bottom: 1px solid var(--border); transition: background 0.12s; }
+    .inv-row:last-child { border-bottom: none; }
+    .inv-row:hover { background: var(--surface-dim); }
+    .inv-row.border-danger { border-left: 3px solid var(--danger); }
+    .inv-row.border-danger.bg-danger { background: var(--danger-soft); }
+    .inv-row.border-warning { border-left: 3px solid var(--warning); }
+    .inv-row.border-success { border-left: 3px solid var(--success); }
+    .inv-row.border-none { border-left: 3px solid transparent; }
+    .inv-body { flex: 1; min-width: 0; }
+    .inv-name { font-size: 0.8125rem; font-weight: 500; }
+    .inv-meta { font-size: 0.75rem; color: var(--fg-subtle); margin-top: 1px; }
+    .inv-right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; flex-shrink: 0; }
+    .inv-info { display: flex; align-items: center; gap: 0.5rem; }
+
+    /* ── Sticky bar ── */
+    .sticky-bar { position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 0.875rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; border-radius: var(--radius-md); box-shadow: var(--shadow-md); font-size: 0.8125rem; }
+
+    /* ── Toggle ── */
+    .toggle-row { display: flex; align-items: center; gap: 0.625rem; padding: 0.625rem 0; border-bottom: 1px solid var(--border); }
+    .toggle-row:last-child { border-bottom: none; }
+    .toggle-label { font-size: 0.8125rem; color: var(--fg-muted); flex: 1; }
+    .toggle { width: 36px; height: 20px; border-radius: 10px; background: var(--border); cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+    .toggle.on { background: var(--accent); }
+    .toggle-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--fg-on-accent); position: absolute; top: 2px; left: 2px; transition: transform 0.2s; box-shadow: 0 1px 3px oklch(0% 0 0 / 0.15); }
+    .toggle.on .toggle-thumb { transform: translateX(16px); }
+
+    /* ── Search ── */
+    .search-wrap { display: flex; align-items: center; gap: 0.5rem; background: var(--surface-dim); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; margin-bottom: 1rem; }
+    .search-wrap svg { width: 14px; height: 14px; color: var(--fg-subtle); flex-shrink: 0; }
+    .search-wrap input { border: none; background: none; outline: none; font-size: 0.8125rem; color: var(--fg); font-family: var(--font-body); width: 100%; }
+    .search-wrap input::placeholder { color: var(--fg-subtle); }
+
+    @media (max-width: 640px) {
+      .summary-row { grid-template-columns: repeat(2, 1fr); }
+      .inv-row, .alert-item { flex-wrap: wrap; }
+      .inv-right, .alert-item-right { flex-direction: row; width: 100%; justify-content: flex-end; align-items: center; gap: 0.5rem; }
+    }
+    @media (max-width: 480px) {
+      .page { padding: 1.5rem 1rem 5rem; }
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()">
+    <svg class="icon-sun" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="10" cy="10" r="4"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41"/>
+    </svg>
+    <svg class="icon-moon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17.39 15.14A7.5 7.5 0 014.86 2.61 7.5 7.5 0 1017.39 15.14z"/>
+    </svg>
+  </button>
+
+  <div class="page">
+    <div class="page-header">
+      <h1>Gestión de Inventario</h1>
+      <p>Alertas consolidadas de stock y vencimiento. Un solo lugar para ver qué necesita tu atención.</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab(0)">Alertas</button>
+      <button class="tab" onclick="switchTab(1)">Inventario</button>
+    </div>
+
+    <!-- ══════ TAB 1 — ALERTAS CONSOLIDADAS ══════ -->
+    <div class="panel active" id="p0">
+
+      <!-- Banners de resumen -->
+      <div class="alert-banner danger">
+        <svg class="alert-banner-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M10 6v4M10 13h.01"/></svg>
+        <div class="alert-banner-body">
+          <div class="alert-banner-title">3 productos vencidos</div>
+          <div class="alert-banner-text">Yogur frutilla, Crema de leche y Manteca ya pasaron su fecha de consumo.</div>
+        </div>
+      </div>
+
+      <div class="alert-banner warning">
+        <svg class="alert-banner-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M10 6v4M10 13h.01"/></svg>
+        <div class="alert-banner-body">
+          <div class="alert-banner-title">2 productos con stock bajo + 4 por vencer</div>
+          <div class="alert-banner-text">Revisá qué necesitás reponer antes de la próxima compra.</div>
+        </div>
+      </div>
+
+      <!-- Summary cards -->
+      <div class="summary-row">
+        <div class="summary-card">
+          <div class="summary-card-value" style="color: var(--danger);">5</div>
+          <div class="summary-card-label">Requieren atención</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-card-value" style="color: var(--danger);">3</div>
+          <div class="summary-card-label">Vencidos</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-card-value" style="color: var(--warning);">2</div>
+          <div class="summary-card-label">Stock bajo</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-card-value" style="color: var(--warning);">4</div>
+          <div class="summary-card-label">Por vencer</div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span>Distribución de alertas</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-seg danger" style="width: 38%;"></div>
+          <div class="progress-seg warning" style="width: 38%;"></div>
+          <div class="progress-seg success" style="width: 24%;"></div>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot danger"></div> Vencidos / sin stock</div>
+          <div class="legend-item"><div class="legend-dot warning"></div> Stock bajo / por vencer</div>
+          <div class="legend-item"><div class="legend-dot success"></div> OK</div>
+        </div>
+      </div>
+
+      <!-- Filtro -->
+      <div class="filter-bar">
+        <button class="filter-chip active" onclick="filterAlerts(this, 'all')">Todas</button>
+        <button class="filter-chip" onclick="filterAlerts(this, 'stock')">Stock bajo</button>
+        <button class="filter-chip" onclick="filterAlerts(this, 'expiry')">Vencimiento</button>
+        <button class="filter-chip" onclick="filterAlerts(this, 'expired')">Ya vencidos</button>
+      </div>
+
+      <!-- Vencidos -->
+      <div style="margin-bottom: 1.5rem;" data-filter="expiry expired">
+        <div class="section-header">
+          <div class="section-title" style="color: var(--danger);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v3.5M8 10.5h.01"/></svg>
+            Vencidos
+          </div>
+          <div class="section-count">3</div>
+        </div>
+        <div class="card">
+          <div class="alert-item">
+            <div class="alert-dot danger"></div>
+            <div class="alert-item-body">
+              <div class="alert-item-name">Crema de leche — La Serenísima (200ml)</div>
+              <div class="alert-item-meta">Lácteos · Stock: 2 uds</div>
+            </div>
+            <div class="alert-item-right">
+              <span class="alert-item-badge danger">Venció hace 5 días</span>
+              <span class="alert-item-date">15/07/2026</span>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot danger"></div>
+            <div class="alert-item-body">
+              <div class="alert-item-name">Manteca — La Serenísima (200g)</div>
+              <div class="alert-item-meta">Lácteos · Stock: 1 ud</div>
+            </div>
+            <div class="alert-item-right">
+              <span class="alert-item-badge danger">Venció hace 3 días</span>
+              <span class="alert-item-date">17/07/2026</span>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot danger"></div>
+            <div class="alert-item-body">
+              <div class="alert-item-name">Yogur frutilla — Sancor (150g)</div>
+              <div class="alert-item-meta">Lácteos · Stock: 4 uds</div>
+            </div>
+            <div class="alert-item-right">
+              <span class="alert-item-badge danger">Venció hace 1 día</span>
+              <span class="alert-item-date">19/07/2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stock bajo -->
+      <div style="margin-bottom: 1.5rem;" data-filter="stock">
+        <div class="section-header">
+          <div class="section-title" style="color: var(--warning);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="12" height="8" rx="1.5"/><path d="M5 6V4.5a3 3 0 016 0V6"/></svg>
+            Stock bajo
+          </div>
+          <div class="section-count">2</div>
+        </div>
+        <div class="card">
+          <div class="alert-item">
+            <div class="alert-dot warning"></div>
+            <div class="alert-item-body">
+              <div class="alert-item-name">Queso cremoso — Fort (500g)</div>
+              <div class="alert-item-meta">Lácteos · Stock: 1 ud</div>
+            </div>
+            <div class="alert-item-right">
+              <span class="alert-item-badge warning">Quedan 1</span>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot warning"></div>
+            <div class="alert-item-body">
+              <div class="alert-item-name">Detergente líquido — Ala (3L)</div>
+              <div class="alert-item-meta">Limpieza · Stock: 1 ud</div>
+            </div>
+            <div class="alert-item-right">
+              <span class="alert-item-badge warning">Quedan 1</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Por vencer (≤30 días) -->
+      <div style="margin-bottom: 1.5rem;" data-filter="expiry">
+        <div class="section-header">
+          <div class="section-title" style="color: var(--warning);">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5v3.5M8 10.5h.01"/></svg>
+            Próximos a vencer
+          </div>
+          <div class="section-count">4</div>
+        </div>
+        <div class="card">
+          <div class="alert-item">
+            <div class="alert-dot warning"></div>
+            <div class="alert-item-body">
+              <div class="alert-item-name">Pan integral — Bimbo (1 ud)</div>
+              <div class="alert-item-meta">Panadería · Stock: 3 uds</div>
+            </div>
+            <div class="alert-item-right">
+              <span class="alert-item-badge warning">Vence mañana</span>
+              <span class="alert-item-date">22/07/2026</span>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot warning"></div>
+            <div class="alert-item-body">
+              <div class="alert-item-name">Jugo de naranja — Del Valle (1L)</div>
+              <div class="alert-item-meta">Bebidas · Stock: 2 uds</div>
+            </div>
+            <div class="alert-item-right">
+              <span class="alert-item-badge warning">Vence en 2 días</span>
+              <span class="alert-item-date">23/07/2026</span>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot warning"></div>
+            <div class="alert-item-body">
+              <div class="alert-item-name">Leche entera — La Serenísima (1L)</div>
+              <div class="alert-item-meta">Lácteos · Stock: 6 uds</div>
+            </div>
+            <div class="alert-item-right">
+              <span class="alert-item-badge warning">12 días</span>
+              <span class="alert-item-date">02/08/2026</span>
+            </div>
+          </div>
+          <div class="alert-item">
+            <div class="alert-dot warning"></div>
+            <div class="alert-item-body">
+              <div class="alert-item-name">Queso cremoso — Fort (500g)</div>
+              <div class="alert-item-meta">Lácteos · Stock: 1 ud</div>
+            </div>
+            <div class="alert-item-right">
+              <span class="alert-item-badge warning">18 días</span>
+              <span class="alert-item-date">08/08/2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Próxima atención -->
+      <div class="sticky-bar">
+        <span style="color: var(--fg-muted);">Próxima atención: <strong style="color: var(--danger);">Pan integral</strong> — vence mañana</span>
+        <button style="background: var(--accent); color: var(--fg-on-accent); border: none; border-radius: var(--radius-full); padding: 0.5rem 1.25rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer;">Ver inventario →</button>
+      </div>
+    </div>
+
+    <!-- ══════ TAB 2 — INVENTARIO CON INDICADORES ══════ -->
+    <div class="panel" id="p1">
+
+      <!-- Búsqueda -->
+      <div class="search-wrap">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5"/><path d="M14 14l-3.5-3.5"/></svg>
+        <input type="text" placeholder="Buscar por nombre, marca o categoría..." />
+      </div>
+
+      <!-- Filtros -->
+      <div class="filter-bar">
+        <button class="filter-chip active">Todos</button>
+        <button class="filter-chip">Con fecha</button>
+        <button class="filter-chip">Sin fecha</button>
+        <button class="filter-chip">Por vencer</button>
+        <button class="filter-chip">Vencidos</button>
+        <button class="filter-chip">Stock bajo</button>
+      </div>
+
+      <div class="card">
+        <!-- Vencido — fondo rojo + borde rojo -->
+        <div class="inv-row border-danger bg-danger">
+          <div class="inv-body">
+            <div class="inv-name">Yogur frutilla — Sancor</div>
+            <div class="inv-meta">150g · Lácteos · Sancor</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span class="exp-badge expired"><span class="exp-badge-dot"></span> Vencido</span>
+              <span class="inv-meta" style="font-family: var(--font-mono);">19/07</span>
+            </div>
+            <span class="stock-badge ok">4 uds</span>
+          </div>
+        </div>
+
+        <!-- Vencido + stock bajo -->
+        <div class="inv-row border-danger bg-danger">
+          <div class="inv-body">
+            <div class="inv-name">Crema de leche — La Serenísima</div>
+            <div class="inv-meta">200ml · Lácteos · La Serenísima</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span class="exp-badge expired"><span class="exp-badge-dot"></span> Venció hace 5d</span>
+              <span class="inv-meta" style="font-family: var(--font-mono);">15/07</span>
+            </div>
+            <span class="stock-badge low">2 uds</span>
+          </div>
+        </div>
+
+        <!-- Urgente — borde rojo, sin fondo -->
+        <div class="inv-row border-danger">
+          <div class="inv-body">
+            <div class="inv-name">Pan integral — Bimbo</div>
+            <div class="inv-meta">1 ud · Panadería · Bimbo</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span class="exp-badge urgent"><span class="exp-badge-dot"></span> Mañana</span>
+              <span class="inv-meta" style="font-family: var(--font-mono);">22/07</span>
+            </div>
+            <span class="stock-badge ok">3 uds</span>
+          </div>
+        </div>
+
+        <!-- Urgente 2 -->
+        <div class="inv-row border-danger">
+          <div class="inv-body">
+            <div class="inv-name">Jugo de naranja — Del Valle</div>
+            <div class="inv-meta">1L · Bebidas · Del Valle</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span class="exp-badge urgent"><span class="exp-badge-dot"></span> 2 días</span>
+              <span class="inv-meta" style="font-family: var(--font-mono);">23/07</span>
+            </div>
+            <span class="stock-badge ok">2 uds</span>
+          </div>
+        </div>
+
+        <!-- Por vencer + stock bajo — doble alerta -->
+        <div class="inv-row border-warning">
+          <div class="inv-body">
+            <div class="inv-name">Queso cremoso — Fort</div>
+            <div class="inv-meta">500g · Lácteos · Fort</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span class="exp-badge soon"><span class="exp-badge-dot"></span> 18 días</span>
+              <span class="inv-meta" style="font-family: var(--font-mono);">08/08</span>
+            </div>
+            <span class="stock-badge low">1 ud</span>
+          </div>
+        </div>
+
+        <!-- Por vencer -->
+        <div class="inv-row border-warning">
+          <div class="inv-body">
+            <div class="inv-name">Leche entera — La Serenísima</div>
+            <div class="inv-meta">1L · Lácteos · La Serenísima</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span class="exp-badge soon"><span class="exp-badge-dot"></span> 12 días</span>
+              <span class="inv-meta" style="font-family: var(--font-mono);">02/08</span>
+            </div>
+            <span class="stock-badge ok">6 uds</span>
+          </div>
+        </div>
+
+        <!-- Stock bajo sin fecha -->
+        <div class="inv-row border-warning">
+          <div class="inv-body">
+            <div class="inv-name">Detergente líquido — Ala</div>
+            <div class="inv-meta">3L · Limpieza · Ala</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span style="font-size: 0.6875rem; color: var(--fg-subtle); font-style: italic;">Sin fecha</span>
+            </div>
+            <span class="stock-badge low">1 ud</span>
+          </div>
+        </div>
+
+        <!-- OK con fecha -->
+        <div class="inv-row border-success">
+          <div class="inv-body">
+            <div class="inv-name">Arroz largo — Fidel</div>
+            <div class="inv-meta">1kg · Granos · Fidel</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span class="exp-badge ok"><span class="exp-badge-dot"></span> 245 días</span>
+              <span class="inv-meta" style="font-family: var(--font-mono);">15/03/27</span>
+            </div>
+            <span class="stock-badge ok">8 uds</span>
+          </div>
+        </div>
+
+        <!-- OK sin fecha -->
+        <div class="inv-row border-none">
+          <div class="inv-body">
+            <div class="inv-name">Sal fina — Celusal</div>
+            <div class="inv-meta">500g · Condimentos · Celusal</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span style="font-size: 0.6875rem; color: var(--fg-subtle); font-style: italic;">Sin fecha</span>
+            </div>
+            <span class="stock-badge ok">3 uds</span>
+          </div>
+        </div>
+
+        <!-- OK con fecha lejana -->
+        <div class="inv-row border-success">
+          <div class="inv-body">
+            <div class="inv-name">Aceite de oliva — Cocinero</div>
+            <div class="inv-meta">500ml · Aceites · Cocinero</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span class="exp-badge ok"><span class="exp-badge-dot"></span> 310 días</span>
+              <span class="inv-meta" style="font-family: var(--font-mono);">01/06/27</span>
+            </div>
+            <span class="stock-badge ok">2 uds</span>
+          </div>
+        </div>
+
+        <!-- Sin fecha, OK -->
+        <div class="inv-row border-none">
+          <div class="inv-body">
+            <div class="inv-name">Jabón en barra — Rexona</div>
+            <div class="inv-meta">3 uds · Higiene · Rexona</div>
+          </div>
+          <div class="inv-right">
+            <div class="inv-info">
+              <span style="font-size: 0.6875rem; color: var(--fg-subtle); font-style: italic;">Sin fecha</span>
+            </div>
+            <span class="stock-badge ok">5 uds</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Opciones de visualización -->
+      <div class="card" style="margin-top: 1.5rem; padding: 0 1rem;">
+        <div style="padding: 0.75rem 0;">
+          <div style="font-size: 0.8125rem; font-weight: 600;">Opciones de visualización</div>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">Borde lateral por estado de vencimiento</span>
+          <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">Resaltar fila de vencidos</span>
+          <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">Mostrar días restantes</span>
+          <div class="toggle on" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">Ocultar productos sin fecha</span>
+          <div class="toggle" onclick="this.classList.toggle('on')"><div class="toggle-thumb"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function switchTab(index) {
+      document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === index));
+      document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('active', i === index));
+    }
+    function filterAlerts(btn) {
+      btn.parentElement.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    function toggleTheme() {
+      const root = document.documentElement;
+      const isDark = root.getAttribute('data-theme') === 'dark';
+      root.setAttribute('data-theme', isDark ? '' : 'dark');
+      localStorage.setItem('ryc-theme', isDark ? 'light' : 'dark');
+    }
+    (function() {
+      if (localStorage.getItem('ryc-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
+</body>
+</html>

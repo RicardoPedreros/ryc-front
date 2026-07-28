@@ -32,4 +32,15 @@ export interface InventoryStock {
   readonly unitSymbol: string | null;
   readonly presentationQuantity: number | null;
   readonly currentStock: number;
+  readonly nearestExpiry: string | null;
+  readonly daysUntilExpiry: number | null;
+}
+
+export interface ProductLot {
+  readonly productId: string;
+  readonly lot: string;
+  readonly quantity: number;
+  readonly expirationDate: string | null;
+  readonly daysUntilExpiry: number | null;
+  readonly latestMovementDate: string;
 }

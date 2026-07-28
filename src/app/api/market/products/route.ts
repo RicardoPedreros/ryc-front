@@ -23,6 +23,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(products);
     }
 
+    const details = searchParams.get('details');
+    if (details === 'true') {
+      const products = await productUseCases.findAllWithDetails();
+      return NextResponse.json(products);
+    }
+
     const products = await productUseCases.findAll();
     return NextResponse.json(products);
   } catch (error) {

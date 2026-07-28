@@ -3,8 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>RYC — Ajuste de Stock con Caducidad</title>
+  <title>RYC — Ajuste de Stock con Lotes y Caducidad</title>
   <style>
+    /* ═══════════════════════════════════════════════════════════════
+       Design Tokens — verbatim from globals.css
+       ═══════════════════════════════════════════════════════════════ */
     :root {
       --hue-primary: 255; --hue-secondary: 170; --hue-success: 145;
       --hue-warning: 80; --hue-danger: 25; --hue-neutral: 250;
@@ -13,445 +16,617 @@
       --success: oklch(62% 0.17 var(--hue-success)); --success-soft: oklch(93% 0.06 var(--hue-success));
       --warning: oklch(72% 0.16 var(--hue-warning)); --warning-soft: oklch(94% 0.06 var(--hue-warning));
       --danger: oklch(60% 0.20 var(--hue-danger)); --danger-soft: oklch(93% 0.06 var(--hue-danger));
+      --border-focus: var(--accent);
+      --fg-on-accent: oklch(100% 0 0);
+      --overlay: oklch(0% 0 0 / 0.40); --overlay-heavy: oklch(0% 0 0 / 0.55);
       --bg: oklch(98.7% 0.004 var(--hue-neutral)); --surface: oklch(100% 0 0); --surface-dim: oklch(96.5% 0.006 var(--hue-neutral));
       --fg: oklch(22% 0.014 var(--hue-neutral)); --fg-muted: oklch(50% 0.014 var(--hue-neutral)); --fg-subtle: oklch(72% 0.010 var(--hue-neutral));
-      --border: oklch(91% 0.006 var(--hue-neutral)); --border-focus: var(--accent);
+      --border: oklch(91% 0.006 var(--hue-neutral));
       --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
       --font-body: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
       --font-mono: 'JetBrains Mono', ui-monospace, monospace;
       --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px; --radius-full: 9999px;
       --shadow-sm: 0 1px 2px oklch(35% 0.015 var(--hue-neutral) / 0.05);
       --shadow-md: 0 4px 12px oklch(35% 0.015 var(--hue-neutral) / 0.08);
-      --overlay: oklch(0% 0 0 / 0.40); --overlay-heavy: oklch(0% 0 0 / 0.55);
     }
     :root[data-theme="dark"] {
       --accent: oklch(64% 0.16 var(--hue-primary)); --accent-hover: oklch(70% 0.14 var(--hue-primary)); --accent-soft: oklch(24% 0.06 var(--hue-primary));
       --secondary: oklch(68% 0.10 var(--hue-secondary)); --secondary-soft: oklch(22% 0.04 var(--hue-secondary));
       --success-soft: oklch(20% 0.06 var(--hue-success)); --warning-soft: oklch(22% 0.06 var(--hue-warning)); --danger-soft: oklch(22% 0.06 var(--hue-danger));
-      --bg: oklch(15% 0.012 var(--hue-neutral)); --surface: oklch(18% 0.014 var(--hue-neutral)); --surface-dim: oklch(16% 0.012 var(--hue-neutral));
-      --fg: oklch(93% 0.004 var(--hue-neutral)); --fg-muted: oklch(68% 0.012 var(--hue-neutral)); --fg-subtle: oklch(48% 0.012 var(--hue-neutral));
-      --border: oklch(26% 0.014 var(--hue-neutral)); --overlay: oklch(0% 0 0 / 0.50); --overlay-heavy: oklch(0% 0 0 / 0.65);
+      --fg-on-accent: oklch(100% 0 0);
+      --overlay: oklch(0% 0 0 / 0.50); --overlay-heavy: oklch(0% 0 0 / 0.60);
+      --bg: oklch(14% 0.012 var(--hue-neutral)); --surface: oklch(18% 0.014 var(--hue-neutral)); --surface-dim: oklch(16% 0.012 var(--hue-neutral));
+      --fg: oklch(96% 0.004 var(--hue-neutral)); --fg-muted: oklch(68% 0.012 var(--hue-neutral)); --fg-subtle: oklch(48% 0.012 var(--hue-neutral));
+      --border: oklch(26% 0.014 var(--hue-neutral));
+      --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.12); --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.18);
     }
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--bg); color: var(--fg); font-family: var(--font-body); line-height: 1.5; -webkit-font-smoothing: antialiased; min-height: 100vh; }
-    button { font-family: inherit; }
 
-    .page { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 6rem; }
-    .back-link { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 0.8125rem; font-weight: 500; color: var(--fg-muted); cursor: pointer; margin-bottom: 1.25rem; }
-    .back-link:hover { color: var(--accent); }
-    .back-link svg { width: 14px; height: 14px; }
-    .page-header { margin-bottom: 2rem; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--fg); font-family: var(--font-body); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* ── Navbar ── */
+    .navbar { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid var(--border); background: color-mix(in oklch, var(--bg) 80%, transparent); backdrop-filter: blur(12px); }
+    .navbar-inner { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 1.5rem; max-width: 840px; margin: 0 auto; }
+    .navbar-left { display: flex; align-items: center; gap: 0.75rem; }
+    .navbar-back { background: none; border: 1px solid var(--border); border-radius: var(--radius-full); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--fg-muted); }
+    .navbar-back:hover { border-color: var(--fg-subtle); color: var(--fg); }
+    .navbar-title { font-size: 1rem; font-weight: 600; font-family: var(--font-display); }
+    .navbar-right { display: flex; align-items: center; gap: 0.5rem; }
+    .btn-theme { background: none; border: 1px solid var(--border); border-radius: var(--radius-full); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--fg-muted); }
+    .btn-theme:hover { border-color: var(--fg-subtle); color: var(--fg); background: var(--surface-dim); }
+    .btn-theme .icon-sun, .btn-theme .icon-moon { display: none; width: 18px; height: 18px; }
+    :root:not([data-theme="dark"]) .btn-theme .icon-moon { display: block; }
+    :root[data-theme="dark"] .btn-theme .icon-sun { display: block; }
+
+    /* ── Page ── */
+    .page { max-width: 840px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .page-header { margin-bottom: 1.5rem; }
     .page-header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; font-family: var(--font-display); }
     .page-header p { font-size: 0.875rem; color: var(--fg-muted); margin-top: 0.25rem; }
 
-    /* Tabs */
-    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 2rem; overflow-x: auto; }
-    .tab { background: none; border: none; padding: 0.75rem 1.25rem; font-size: 0.8125rem; font-weight: 500; color: var(--fg-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: color 0.12s, border-color 0.12s; white-space: nowrap; }
-    .tab:hover { color: var(--fg); }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-    .panel { display: none; }
-    .panel.active { display: block; }
-    .panel-label { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-subtle); margin-bottom: 0.5rem; }
-    .panel-desc { font-size: 0.875rem; color: var(--fg-muted); margin-bottom: 1.5rem; line-height: 1.6; }
+    /* ── Tabs ── */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; overflow-x: auto; }
+    .tab-btn { background: none; border: none; padding: 0.75rem 1.25rem; font-size: 0.8125rem; font-weight: 500; color: var(--fg-muted); border-bottom: 2px solid transparent; white-space: nowrap; }
+    .tab-btn:hover { color: var(--fg); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
-    /* Card + row */
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); }
-    .row { display: flex; align-items: center; gap: 0.75rem; padding: 0.875rem 1rem; }
-    .row-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.8125rem; font-weight: 700; font-family: var(--font-mono); }
-    .row-body { flex: 1; min-width: 0; }
-    .row-name { font-size: 0.875rem; font-weight: 500; }
-    .row-meta { font-size: 0.75rem; color: var(--fg-subtle); margin-top: 1px; }
-    .row-right { display: flex; align-items: center; gap: 0.625rem; flex-shrink: 0; }
+    /* ── Summary Stats ── */
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; text-align: center; }
+    .stat-value { font-size: 1.5rem; font-weight: 700; font-family: var(--font-display); line-height: 1.1; }
+    .stat-value.danger { color: var(--danger); }
+    .stat-value.warning { color: var(--warning); }
+    .stat-value.success { color: var(--success); }
+    .stat-label { font-size: 0.75rem; color: var(--fg-muted); margin-top: 0.25rem; }
 
-    /* Stepper */
-    .stepper { display: flex; align-items: center; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
-    .stepper-btn { width: 32px; height: 32px; border: none; background: var(--surface-dim); color: var(--fg-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 600; transition: background 0.12s, color 0.12s; }
-    .stepper-btn:hover { background: var(--accent-soft); color: var(--accent); }
-    .stepper-val { width: 40px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 600; font-family: var(--font-mono); background: var(--surface); border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
-    .stepper-val.modified { color: var(--accent); }
+    /* ── Product Card (expandable) ── */
+    .product-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); margin-bottom: 0.75rem; overflow: hidden; }
+    .product-header { display: flex; align-items: center; gap: 0.75rem; padding: 1rem; cursor: pointer; transition: background 0.12s; }
+    .product-header:hover { background: var(--surface-dim); }
+    .product-expand-icon { width: 20px; height: 20px; color: var(--fg-subtle); transition: transform 0.2s; flex-shrink: 0; }
+    .product-card.expanded .product-expand-icon { transform: rotate(90deg); }
+    .product-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .product-name { font-size: 0.9375rem; font-weight: 600; }
+    .product-meta { font-size: 0.8125rem; color: var(--fg-muted); }
+    .product-stock { text-align: right; flex-shrink: 0; }
+    .product-stock-value { font-size: 1.125rem; font-weight: 700; font-family: var(--font-mono); }
+    .product-stock-label { font-size: 0.6875rem; color: var(--fg-subtle); }
+    .product-lots-count { font-size: 0.6875rem; color: var(--fg-subtle); background: var(--surface-dim); padding: 0.125rem 0.5rem; border-radius: var(--radius-full); margin-left: 0.5rem; }
 
-    /* Date input */
-    .date-input { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.375rem 0.625rem; font-size: 0.8125rem; font-family: var(--font-mono); color: var(--fg); background: var(--surface); outline: none; width: 150px; transition: border-color 0.15s; }
-    .date-input:focus { border-color: var(--border-focus); }
-    .date-input::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.5; }
+    /* ── Lots panel ── */
+    .lots-panel { border-top: 1px solid var(--border); padding: 0; }
+    .lot-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem 0.75rem 3rem; border-bottom: 1px solid var(--border); }
+    .lot-row:last-child { border-bottom: none; }
+    .lot-row.expired { background: var(--danger-soft); }
+    .lot-row.urgent { background: var(--warning-soft); }
+    .lot-row.ok { background: var(--success-soft); }
+    .lot-qty { font-size: 0.9375rem; font-weight: 700; font-family: var(--font-mono); min-width: 2.5rem; }
+    .lot-details { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+    .lot-date { font-size: 0.8125rem; font-weight: 500; font-family: var(--font-mono); }
+    .lot-date-label { font-size: 0.75rem; color: var(--fg-muted); }
+    .lot-badge { font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: var(--radius-full); white-space: nowrap; }
+    .lot-badge.expired { background: var(--danger); color: var(--fg-on-accent); }
+    .lot-badge.urgent { background: var(--warning); color: var(--fg); }
+    .lot-badge.ok { background: var(--success); color: var(--fg-on-accent); }
+    .lot-badge.na { background: var(--surface-dim); color: var(--fg-muted); }
+    .lot-actions { display: flex; gap: 0.25rem; }
+    .lot-action-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--fg-muted); }
+    .lot-action-btn:hover { border-color: var(--fg-subtle); color: var(--fg); }
+    .lot-action-btn.danger:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-soft); }
 
-    /* Expiry badge */
-    .exp-badge { font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: var(--radius-full); white-space: nowrap; }
-    .exp-badge.ok { background: var(--success-soft); color: var(--success); }
-    .exp-badge.soon { background: var(--warning-soft); color: var(--warning); }
-    .exp-badge.expired { background: var(--danger-soft); color: var(--danger); }
+    /* ── Add Lot Row ── */
+    .add-lot-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem 0.75rem 3rem; border-top: 1px solid var(--border); }
+    .add-lot-btn { background: none; border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 0.375rem 0.75rem; font-size: 0.75rem; font-weight: 600; color: var(--accent); display: flex; align-items: center; gap: 0.375rem; }
+    .add-lot-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
 
-    /* Calendar icon button */
-    .cal-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--fg-subtle); transition: border-color 0.12s, color 0.12s; position: relative; flex-shrink: 0; }
-    .cal-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .cal-btn.has-date { border-color: var(--warning); color: var(--warning); background: var(--warning-soft); }
-    .cal-btn svg { width: 14px; height: 14px; }
-    .cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--warning); position: absolute; top: -2px; right: -2px; }
+    /* ── Adjustment Panel ── */
+    .adjust-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem; }
+    .adjust-title { font-size: 1rem; font-weight: 600; font-family: var(--font-display); margin-bottom: 1rem; }
+    .adjust-product-select { width: 100%; padding: 0.625rem 0.875rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.875rem; color: var(--fg); background: var(--surface); font-family: var(--font-body); margin-bottom: 1rem; }
+    .adjust-product-select:focus { outline: none; border-color: var(--border-focus); }
 
-    /* Expand trigger */
-    .exp-trigger { background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.6875rem; color: var(--accent); font-weight: 500; padding: 0.25rem 0; transition: opacity 0.12s; }
-    .exp-trigger:hover { opacity: 0.8; }
-    .exp-trigger svg { width: 12px; height: 12px; transition: transform 0.2s ease; }
-    .exp-trigger.open svg { transform: rotate(180deg); }
-    .exp-panel { overflow: hidden; max-height: 0; transition: max-height 0.25s ease; }
-    .exp-panel.open { max-height: 200px; }
-    .exp-inner { padding: 0.75rem 1rem; background: var(--surface-dim); border-top: 1px solid var(--border); display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
-    .exp-inner label { font-size: 0.75rem; color: var(--fg-muted); font-weight: 500; white-space: nowrap; }
+    /* ── Stepper ── */
+    .stepper-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .stepper-label { font-size: 0.8125rem; font-weight: 500; color: var(--fg-muted); }
+    .stepper-row { display: flex; align-items: center; gap: 0; }
+    .stepper-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); background: var(--surface); color: var(--fg); font-size: 1.25rem; font-weight: 600; }
+    .stepper-btn:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+    .stepper-btn:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+    .stepper-btn:hover { background: var(--surface-dim); }
+    .stepper-btn.negative { color: var(--danger); }
+    .stepper-btn.positive { color: var(--success); }
+    .stepper-value { width: 56px; height: 40px; text-align: center; border: 1px solid var(--border); border-left: none; border-right: none; font-size: 1rem; font-weight: 600; font-family: var(--font-mono); background: var(--surface); color: var(--fg); }
 
-    /* Skip link */
-    .skip-link { background: none; border: none; font-size: 0.75rem; color: var(--fg-subtle); cursor: pointer; text-decoration: underline; padding: 0; }
-    .skip-link:hover { color: var(--fg-muted); }
+    /* ── Date Input ── */
+    .date-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .date-row { display: flex; align-items: center; gap: 0.75rem; }
+    .date-input { padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.8125rem; color: var(--fg); background: var(--surface); font-family: var(--font-mono); appearance: auto; -webkit-appearance: auto; }
+    .date-input:focus { outline: none; border-color: var(--border-focus); }
+    .date-input::-webkit-calendar-picker-indicator { opacity: 0.7; cursor: pointer; }
+    :root[data-theme="dark"] .date-input::-webkit-calendar-picker-indicator { filter: invert(0.9); opacity: 0.85; }
+    .no-expiry-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--fg-muted); cursor: pointer; }
+    .no-expiry-toggle input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px; }
 
-    /* Bottom sheet preview */
-    .sheet-preview { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: var(--surface); margin-top: 1.5rem; }
-    .sheet-bg { height: 48px; background: var(--surface-dim); display: flex; align-items: center; justify-content: center; color: var(--fg-subtle); font-size: 0.6875rem; letter-spacing: 0.04em; }
-    .sheet-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0.75rem auto 0; }
-    .sheet-header { padding: 1rem 1.25rem 0.5rem; display: flex; align-items: center; justify-content: space-between; }
-    .sheet-header h3 { font-size: 1rem; font-weight: 600; font-family: var(--font-display); }
-    .sheet-close { background: none; border: none; color: var(--fg-muted); cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-full); }
-    .sheet-close:hover { background: var(--surface-dim); }
-    .sheet-body { padding: 0.5rem 1.25rem 1.5rem; }
-    .sheet-product { font-size: 0.8125rem; color: var(--fg-muted); margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
-    .sheet-product strong { color: var(--fg); }
-    .field { margin-bottom: 1rem; }
-    .field label { display: block; font-size: 0.8125rem; font-weight: 500; margin-bottom: 0.375rem; }
-    .field input, .field select { width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 0.875rem; color: var(--fg); background: var(--surface); outline: none; transition: border-color 0.15s; }
-    .field input:focus { border-color: var(--border-focus); }
-    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .sheet-footer { display: flex; gap: 0.75rem; justify-content: flex-end; padding: 1rem 1.25rem; border-top: 1px solid var(--border); }
-    .btn-primary { background: var(--accent); color: var(--fg-on-accent, #fff); border: none; border-radius: var(--radius-full); padding: 0.5rem 1.25rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    /* ── Lot Selector (for decrease) ── */
+    .lot-selector { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    .lot-selector-label { font-size: 0.8125rem; font-weight: 500; color: var(--fg-muted); }
+    .lot-option { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: border-color 0.12s, background 0.12s; }
+    .lot-option:hover { border-color: var(--fg-subtle); }
+    .lot-option.selected { border-color: var(--accent); background: var(--accent-soft); }
+    .lot-option.disabled { opacity: 0.4; cursor: not-allowed; }
+    .lot-option-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: border-color 0.12s; }
+    .lot-option.selected .lot-option-radio { border-color: var(--accent); }
+    .lot-option.selected .lot-option-radio::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+    .lot-option-info { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+    .lot-option-qty { font-size: 0.875rem; font-weight: 600; font-family: var(--font-mono); }
+    .lot-option-date { font-size: 0.75rem; color: var(--fg-muted); font-family: var(--font-mono); }
+    .lot-option-hint { font-size: 0.6875rem; color: var(--fg-subtle); font-style: italic; }
+
+    /* ── FIFO indicator ── */
+    .fifo-hint { font-size: 0.6875rem; color: var(--fg-subtle); background: var(--surface-dim); padding: 0.375rem 0.75rem; border-radius: var(--radius-sm); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.375rem; }
+    .fifo-hint svg { width: 12px; height: 12px; color: var(--accent); flex-shrink: 0; }
+
+    /* ── Buttons ── */
+    .btn-primary { background: var(--accent); color: var(--fg-on-accent); border: none; border-radius: var(--radius-sm); padding: 0.625rem 1.25rem; font-size: 0.8125rem; font-weight: 600; transition: background 0.12s; }
     .btn-primary:hover { background: var(--accent-hover); }
-    .btn-ghost { background: transparent; color: var(--fg-muted); border: 1px solid var(--border); border-radius: var(--radius-full); padding: 0.5rem 1.25rem; font-size: 0.8125rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s; }
-    .btn-ghost:hover { border-color: var(--fg-subtle); }
+    .btn-ghost { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.625rem 1.25rem; font-size: 0.8125rem; font-weight: 600; color: var(--fg-muted); }
+    .btn-ghost:hover { border-color: var(--fg-subtle); background: var(--surface-dim); }
+    .btn-group { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
 
-    /* Summary */
-    .summary { position: sticky; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 0.875rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.5rem; border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
-    .summary-info { font-size: 0.8125rem; color: var(--fg-muted); }
-    .summary-info strong { color: var(--accent); font-weight: 600; }
-    .summary-actions { display: flex; gap: 0.5rem; }
+    /* ── Movement Timeline ── */
+    .timeline { position: relative; padding-left: 2rem; }
+    .timeline::before { content: ''; position: absolute; left: 0.5rem; top: 0; bottom: 0; width: 2px; background: var(--border); }
+    .timeline-item { position: relative; padding-bottom: 1.5rem; }
+    .timeline-item:last-child { padding-bottom: 0; }
+    .timeline-dot { position: absolute; left: -1.5rem; top: 0.25rem; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--surface); }
+    .timeline-dot.in { background: var(--success); }
+    .timeline-dot.out { background: var(--danger); }
+    .timeline-dot.adjustment { background: var(--accent); }
+    .timeline-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1rem; }
+    .timeline-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+    .timeline-product { font-size: 0.875rem; font-weight: 600; }
+    .timeline-date { font-size: 0.75rem; color: var(--fg-subtle); font-family: var(--font-mono); }
+    .timeline-details { display: flex; flex-wrap: wrap; gap: 0.75rem; font-size: 0.8125rem; color: var(--fg-muted); }
+    .timeline-detail { display: flex; align-items: center; gap: 0.25rem; }
+    .timeline-detail strong { font-weight: 600; color: var(--fg); }
+    .timeline-type { font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: var(--radius-full); }
+    .timeline-type.in { background: var(--success-soft); color: var(--success); }
+    .timeline-type.out { background: var(--danger-soft); color: var(--danger); }
+    .timeline-type.adjustment { background: var(--accent-soft); color: var(--accent); }
 
-    @media (max-width: 480px) {
-      .row { flex-wrap: wrap; }
-      .row-right { width: 100%; justify-content: space-between; }
-      .exp-inner { flex-direction: column; align-items: flex-start; }
-      .field-row { grid-template-columns: 1fr; }
+    /* ── Sticky Summary Bar ── */
+    .sticky-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 0.75rem 1.5rem; display: flex; align-items: center; justify-content: space-between; z-index: 40; box-shadow: 0 -4px 12px oklch(50% 0.012 var(--hue-neutral) / 0.06); }
+    .sticky-bar-left { display: flex; align-items: center; gap: 1rem; }
+    .sticky-bar-stat { font-size: 0.8125rem; color: var(--fg-muted); }
+    .sticky-bar-stat strong { color: var(--fg); font-weight: 600; }
+
+    /* ── Filters ── */
+    .filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+    .filter-chip { padding: 0.375rem 0.75rem; border-radius: var(--radius-full); border: 1px solid var(--border); font-size: 0.75rem; font-weight: 500; color: var(--fg-muted); background: var(--surface); }
+    .filter-chip.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    .filter-chip:hover:not(.active) { border-color: var(--fg-subtle); }
+
+    /* ── Search ── */
+    .search-bar { display: flex; align-items: center; gap: 0.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; margin-bottom: 1rem; }
+    .search-bar svg { width: 16px; height: 16px; color: var(--fg-subtle); flex-shrink: 0; }
+    .search-bar input { border: none; background: none; outline: none; font-size: 0.8125rem; color: var(--fg); font-family: var(--font-body); width: 100%; }
+    .search-bar input::placeholder { color: var(--fg-subtle); }
+
+    @media (max-width: 640px) {
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .lot-row { padding-left: 1.5rem; }
+      .add-lot-row { padding-left: 1.5rem; }
     }
   </style>
 </head>
 <body>
+  <!-- Navbar -->
+  <header class="navbar">
+    <nav class="navbar-inner">
+      <div class="navbar-left">
+        <button class="navbar-back">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4L6 9l5 5"/></svg>
+        </button>
+        <span class="navbar-title">Ajuste de stock</span>
+      </div>
+      <div class="navbar-right">
+        <button class="btn-theme" onclick="document.documentElement.toggleAttribute('data-theme'); if(document.documentElement.hasAttribute('data-theme')) document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme');">
+          <svg class="icon-moon" viewBox="0 0 20 20" fill="currentColor"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.003 8.003 0 1010.586 10.586z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"/></svg>
+        </button>
+      </div>
+    </nav>
+  </header>
+
   <div class="page">
-    <div class="back-link">
-      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2L4.5 7L9 12"/></svg>
-      Inventario
-    </div>
     <div class="page-header">
-      <h1>Ajuste de stock con caducidad</h1>
-      <p>Tres propuestas para integrar la fecha de vencimiento en el ajuste de existencias</p>
+      <h1>Inventario por lotes</h1>
+      <p>Gestioná el stock por unidad y fecha de vencimiento</p>
     </div>
 
+    <!-- Tabs -->
     <div class="tabs">
-      <button class="tab active" onclick="switchTab(0)">A — Inline debajo</button>
-      <button class="tab" onclick="switchTab(1)">B — Expandible</button>
-      <button class="tab" onclick="switchTab(2)">C — Bottom sheet</button>
+      <button class="tab-btn active" onclick="switchTab(event, 'tab-inventory')">Inventario</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab-adjust')">Ajustar stock</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab-movements')">Movimientos</button>
     </div>
 
-    <!-- ══════ APPROACH A ══════ -->
-    <div class="panel active" id="p0">
-      <div class="panel-label">Enfoque A — Fecha inline debajo</div>
-      <div class="panel-desc">
-        La fecha de caducidad aparece directamente debajo de cada producto cuando se modifica el stock.
-        Si el usuario no ingresa fecha, queda vacia (el producto tiene stock sin fecha asociada).
-      </div>
-      <div class="card">
-        <!-- Leche -->
-        <div style="border-bottom: 1px solid var(--border);">
-          <div class="row">
-            <div class="row-icon">12</div>
-            <div class="row-body">
-              <div class="row-name">Leche entera — La Serenissima</div>
-              <div class="row-meta">1L · Lacteos</div>
-            </div>
-            <div class="row-right">
-              <div class="stepper">
-                <button class="stepper-btn">-</button>
-                <div class="stepper-val modified">6</div>
-                <button class="stepper-btn">+</button>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 1rem 0.75rem;">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--fg-subtle)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="11" height="10" rx="1.5"/><path d="M4 1v2.5M10 1v2.5M1.5 6.5h11"/></svg>
-            <span style="font-size:0.75rem; color:var(--fg-subtle); white-space:nowrap;">Vence:</span>
-            <input type="date" class="date-input" value="2026-08-15" />
-            <span class="exp-badge soon">22 dias</span>
-          </div>
-        </div>
-        <!-- Pan -->
-        <div style="border-bottom: 1px solid var(--border);">
-          <div class="row">
-            <div class="row-icon" style="background:var(--secondary-soft); color:var(--secondary);">48</div>
-            <div class="row-body">
-              <div class="row-name">Pan integral Bimbo</div>
-              <div class="row-meta">1ud · Panaderia</div>
-            </div>
-            <div class="row-right">
-              <div class="stepper">
-                <button class="stepper-btn">-</button>
-                <div class="stepper-val">24</div>
-                <button class="stepper-btn">+</button>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 1rem 0.75rem;">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--fg-subtle)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="11" height="10" rx="1.5"/><path d="M4 1v2.5M10 1v2.5M1.5 6.5h11"/></svg>
-            <span style="font-size:0.75rem; color:var(--fg-subtle); white-space:nowrap;">Vence:</span>
-            <input type="date" class="date-input" value="2026-12-20" />
-            <span class="exp-badge ok">149 dias</span>
-            <button class="skip-link">sin fecha</button>
-          </div>
-        </div>
-        <!-- Arroz -->
-        <div>
-          <div class="row">
-            <div class="row-icon" style="background:var(--success-soft); color:var(--success);">3</div>
-            <div class="row-body">
-              <div class="row-name">Arroz largo Fidel</div>
-              <div class="row-meta">1kg · Granos</div>
-            </div>
-            <div class="row-right">
-              <div class="stepper">
-                <button class="stepper-btn">-</button>
-                <div class="stepper-val modified">1</div>
-                <button class="stepper-btn">+</button>
-              </div>
-            </div>
-          </div>
-          <div style="display:flex; align-items:center; gap:0.5rem; padding:0.5rem 1rem 0.75rem;">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="var(--fg-subtle)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="11" height="10" rx="1.5"/><path d="M4 1v2.5M10 1v2.5M1.5 6.5h11"/></svg>
-            <span style="font-size:0.75rem; color:var(--fg-subtle); white-space:nowrap;">Vence:</span>
-            <input type="date" class="date-input" />
-            <button class="skip-link">sin fecha</button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- ═══════ TAB 1: Inventario con lotes ═══════ -->
+    <div class="tab-panel active" id="tab-inventory">
 
-    <!-- ══════ APPROACH B ══════ -->
-    <div class="panel" id="p1">
-      <div class="panel-label">Enfoque B — Panel expandible</div>
-      <div class="panel-desc">
-        Cada producto tiene un boton "Caducidad" que despliega un panel con el campo de fecha.
-        La fila principal queda limpia — solo se expande si el usuario lo necesita.
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-value">8</div><div class="stat-label">Productos</div></div>
+        <div class="stat-card"><div class="stat-value danger">3</div><div class="stat-label">Vencidos</div></div>
+        <div class="stat-card"><div class="stat-value warning">4</div><div class="stat-label">Por vencer</div></div>
+        <div class="stat-card"><div class="stat-value success">12</div><div class="stat-label">Lotes OK</div></div>
       </div>
-      <div class="card">
-        <!-- Leche - expanded -->
-        <div>
-          <div class="row">
-            <div class="row-icon">12</div>
-            <div class="row-body">
-              <div class="row-name">Leche entera — La Serenissima</div>
-              <div class="row-meta">1L · Lacteos</div>
-            </div>
-            <div class="row-right">
-              <button class="exp-trigger open" onclick="this.classList.toggle('open'); this.closest('.row').nextElementSibling.classList.toggle('open')">
-                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5L6 8L9.5 4.5"/></svg>
-                Caducidad
-              </button>
-              <div class="stepper">
-                <button class="stepper-btn">-</button>
-                <div class="stepper-val modified">6</div>
-                <button class="stepper-btn">+</button>
-              </div>
-            </div>
-          </div>
-          <div class="exp-panel open">
-            <div class="exp-inner">
-              <label>Fecha de vencimiento:</label>
-              <input type="date" class="date-input" value="2026-08-15" />
-              <span class="exp-badge soon">22 dias</span>
-            </div>
-          </div>
-        </div>
-        <!-- Pan - collapsed -->
-        <div style="border-top: 1px solid var(--border);">
-          <div class="row">
-            <div class="row-icon" style="background:var(--secondary-soft); color:var(--secondary);">48</div>
-            <div class="row-body">
-              <div class="row-name">Pan integral Bimbo</div>
-              <div class="row-meta">1ud · Panaderia</div>
-            </div>
-            <div class="row-right">
-              <button class="exp-trigger" onclick="this.classList.toggle('open'); this.closest('.row').nextElementSibling.classList.toggle('open')">
-                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5L6 8L9.5 4.5"/></svg>
-                Caducidad
-              </button>
-              <div class="stepper">
-                <button class="stepper-btn">-</button>
-                <div class="stepper-val">24</div>
-                <button class="stepper-btn">+</button>
-              </div>
-            </div>
-          </div>
-          <div class="exp-panel">
-            <div class="exp-inner">
-              <label>Fecha de vencimiento:</label>
-              <input type="date" class="date-input" />
-            </div>
-          </div>
-        </div>
-        <!-- Yogur - expired -->
-        <div style="border-top: 1px solid var(--border);">
-          <div class="row">
-            <div class="row-icon" style="background:var(--danger-soft); color:var(--danger);">0</div>
-            <div class="row-body">
-              <div class="row-name">Yogur frutilla — Sancor</div>
-              <div class="row-meta">150g · Lacteos</div>
-            </div>
-            <div class="row-right">
-              <button class="exp-trigger open" onclick="this.classList.toggle('open'); this.closest('.row').nextElementSibling.classList.toggle('open')">
-                <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 4.5L6 8L9.5 4.5"/></svg>
-                Caducidad
-              </button>
-              <div class="stepper">
-                <button class="stepper-btn">-</button>
-                <div class="stepper-val">0</div>
-                <button class="stepper-btn">+</button>
-              </div>
-            </div>
-          </div>
-          <div class="exp-panel open">
-            <div class="exp-inner">
-              <label>Fecha de vencimiento:</label>
-              <input type="date" class="date-input" value="2026-06-01" />
-              <span class="exp-badge expired">vencido</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- ══════ APPROACH C ══════ -->
-    <div class="panel" id="p2">
-      <div class="panel-label">Enfoque C — Bottom sheet modal</div>
-      <div class="panel-desc">
-        Al tocar el icono de calendario al lado del stepper, se abre un bottom sheet
-        con los campos de caducidad y lote. La fila principal queda completamente limpia.
+      <!-- Search + Filters -->
+      <div class="search-bar">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+        <input type="text" placeholder="Buscar producto, marca o lote..." />
       </div>
-      <div class="card">
-        <div class="row">
-          <div class="row-icon">12</div>
-          <div class="row-body">
-            <div class="row-name">Leche entera — La Serenissima</div>
-            <div class="row-meta">1L · Lacteos</div>
+      <div class="filters">
+        <button class="filter-chip active">Todos</button>
+        <button class="filter-chip">Con lotes</button>
+        <button class="filter-chip">Sin fecha</button>
+        <button class="filter-chip">Próximos a vencer</button>
+        <button class="filter-chip">Vencidos</button>
+      </div>
+
+      <!-- Product 1: Expanded with lots -->
+      <div class="product-card expanded">
+        <div class="product-header" onclick="this.parentElement.classList.toggle('expanded')">
+          <svg class="product-expand-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <div class="product-info">
+            <div class="product-name">Leche entera — La Serenísima</div>
+            <div class="product-meta">1L · Lácteos · 3 lotes <span class="product-lots-count">6 u total</span></div>
           </div>
-          <div class="row-right">
-            <button class="cal-btn has-date">
-              <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="11" height="10" rx="1.5"/><path d="M4 1v2.5M10 1v2.5M1.5 6.5h11"/></svg>
-              <span class="cal-dot"></span>
+          <div class="product-stock">
+            <div class="product-stock-value" style="color:var(--success)">6</div>
+            <div class="product-stock-label">unidades</div>
+          </div>
+        </div>
+        <div class="lots-panel">
+          <div class="lot-row ok">
+            <div class="lot-qty">3</div>
+            <div class="lot-details">
+              <div class="lot-date">15/08/2026</div>
+              <div class="lot-date-label">Vence en 19 días</div>
+            </div>
+            <span class="lot-badge ok">19d</span>
+            <div class="lot-actions">
+              <button class="lot-action-btn" title="Editar lote">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.5 1.5l2 2-8 8H2.5v-2l8-8z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="lot-row urgent">
+            <div class="lot-qty">2</div>
+            <div class="lot-details">
+              <div class="lot-date">02/08/2026</div>
+              <div class="lot-date-label">Vence en 6 días</div>
+            </div>
+            <span class="lot-badge urgent">6d</span>
+            <div class="lot-actions">
+              <button class="lot-action-btn" title="Editar lote">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.5 1.5l2 2-8 8H2.5v-2l8-8z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="lot-row expired">
+            <div class="lot-qty">1</div>
+            <div class="lot-details">
+              <div class="lot-date">20/07/2026</div>
+              <div class="lot-date-label">Venció hace 7 días</div>
+            </div>
+            <span class="lot-badge expired">vencido</span>
+            <div class="lot-actions">
+              <button class="lot-action-btn danger" title="Descartar lote">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h10M5.5 4V2.5h3V4M3.5 4v7.5h7V4"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="add-lot-row">
+            <button class="add-lot-btn">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2v8M2 6h8"/></svg>
+              Agregar lote
             </button>
-            <div class="stepper">
-              <button class="stepper-btn">-</button>
-              <div class="stepper-val modified">6</div>
-              <button class="stepper-btn">+</button>
-            </div>
-          </div>
-        </div>
-        <div style="border-top: 1px solid var(--border);">
-          <div class="row">
-            <div class="row-icon" style="background:var(--secondary-soft); color:var(--secondary);">48</div>
-            <div class="row-body">
-              <div class="row-name">Pan integral Bimbo</div>
-              <div class="row-meta">1ud · Panaderia</div>
-            </div>
-            <div class="row-right">
-              <button class="cal-btn">
-                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="11" height="10" rx="1.5"/><path d="M4 1v2.5M10 1v2.5M1.5 6.5h11"/></svg>
-              </button>
-              <div class="stepper">
-                <button class="stepper-btn">-</button>
-                <div class="stepper-val">24</div>
-                <button class="stepper-btn">+</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div style="border-top: 1px solid var(--border);">
-          <div class="row">
-            <div class="row-icon" style="background:var(--success-soft); color:var(--success);">3</div>
-            <div class="row-body">
-              <div class="row-name">Arroz largo Fidel</div>
-              <div class="row-meta">1kg · Granos</div>
-            </div>
-            <div class="row-right">
-              <button class="cal-btn">
-                <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="11" height="10" rx="1.5"/><path d="M4 1v2.5M10 1v2.5M1.5 6.5h11"/></svg>
-              </button>
-              <div class="stepper">
-                <button class="stepper-btn">-</button>
-                <div class="stepper-val modified">1</div>
-                <button class="stepper-btn">+</button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
 
-      <!-- Bottom sheet preview -->
-      <div class="sheet-preview">
-        <div class="sheet-bg">area del producto detras</div>
-        <div class="sheet-handle"></div>
-        <div class="sheet-header">
-          <h3>Datos de caducidad</h3>
-          <button class="sheet-close">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-          </button>
-        </div>
-        <div class="sheet-body">
-          <div class="sheet-product">
-            <strong>Leche entera — La Serenissima</strong> · 1L · Cantidad: 6 unidades
+      <!-- Product 2: Expanded with lots -->
+      <div class="product-card expanded">
+        <div class="product-header" onclick="this.parentElement.classList.toggle('expanded')">
+          <svg class="product-expand-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <div class="product-info">
+            <div class="product-name">Arroz largo — Molinos Ala</div>
+            <div class="product-meta">1kg · Granos · 2 lotes <span class="product-lots-count">5 u total</span></div>
           </div>
-          <div class="field-row">
-            <div class="field">
-              <label>Fecha de vencimiento</label>
-              <input type="date" value="2026-08-15" />
-            </div>
-            <div class="field">
-              <label>Lote (opcional)</label>
-              <input type="text" placeholder="ej. L2026-08A" />
-            </div>
-          </div>
-          <div class="field">
-            <label>Nota (opcional)</label>
-            <input type="text" placeholder="ej. Comprado en promo x2" />
+          <div class="product-stock">
+            <div class="product-stock-value" style="color:var(--warning)">5</div>
+            <div class="product-stock-label">unidades</div>
           </div>
         </div>
-        <div class="sheet-footer">
+        <div class="lots-panel">
+          <div class="lot-row ok">
+            <div class="lot-qty">3</div>
+            <div class="lot-details">
+              <div class="lot-date">01/12/2026</div>
+              <div class="lot-date-label">Vence en 123 días</div>
+            </div>
+            <span class="lot-badge ok">123d</span>
+            <div class="lot-actions">
+              <button class="lot-action-btn" title="Editar lote">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.5 1.5l2 2-8 8H2.5v-2l8-8z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="lot-row urgent">
+            <div class="lot-qty">2</div>
+            <div class="lot-details">
+              <div class="lot-date">10/08/2026</div>
+              <div class="lot-date-label">Vence en 14 días</div>
+            </div>
+            <span class="lot-badge urgent">14d</span>
+            <div class="lot-actions">
+              <button class="lot-action-btn" title="Editar lote">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.5 1.5l2 2-8 8H2.5v-2l8-8z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="add-lot-row">
+            <button class="add-lot-btn">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2v8M2 6h8"/></svg>
+              Agregar lote
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product 3: No lots -->
+      <div class="product-card">
+        <div class="product-header" onclick="this.parentElement.classList.toggle('expanded')">
+          <svg class="product-expand-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <div class="product-info">
+            <div class="product-name">Aceite de oliva — Da Como</div>
+            <div class="product-meta">500ml · Aceites · Sin lotes registrados</div>
+          </div>
+          <div class="product-stock">
+            <div class="product-stock-value" style="color:var(--fg-subtle)">0</div>
+            <div class="product-stock-label">unidades</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product 4: One lot, no expiry -->
+      <div class="product-card">
+        <div class="product-header" onclick="this.parentElement.classList.toggle('expanded')">
+          <svg class="product-expand-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+          <div class="product-info">
+            <div class="product-name">Papel higiénico — Rollux</div>
+            <div class="product-meta">12 rollos · Higiene · 1 lote</div>
+          </div>
+          <div class="product-stock">
+            <div class="product-stock-value" style="color:var(--success)">4</div>
+            <div class="product-stock-label">unidades</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══════ TAB 2: Ajustar stock ═══════ -->
+    <div class="tab-panel" id="tab-adjust">
+
+      <!-- Panel: Increase stock (new lot) -->
+      <div class="adjust-panel">
+        <div class="adjust-title">Aumentar stock — Nuevo lote</div>
+
+        <select class="adjust-product-select">
+          <option value="">Seleccionar producto...</option>
+          <option selected>Leche entera — La Serenísima (1L)</option>
+          <option>Arroz largo — Molinos Ala (1kg)</option>
+          <option>Aceite de oliva — Da Como (500ml)</option>
+        </select>
+
+        <div class="stepper-group">
+          <div class="stepper-label">Unidades a agregar</div>
+          <div class="stepper-row">
+            <button class="stepper-btn negative">−</button>
+            <input class="stepper-value" type="number" value="4" min="1" />
+            <button class="stepper-btn positive">+</button>
+          </div>
+        </div>
+
+        <div class="date-group">
+          <div class="stepper-label">Fecha de vencimiento</div>
+          <div class="date-row">
+            <input class="date-input" type="date" value="2026-10-15" />
+            <label class="no-expiry-toggle">
+              <input type="checkbox" />
+              Sin fecha de vencimiento
+            </label>
+          </div>
+        </div>
+
+        <div class="btn-group" style="margin-top:0">
+          <button class="btn-primary">Confirmar entrada</button>
           <button class="btn-ghost">Cancelar</button>
-          <button class="btn-primary">Guardar</button>
         </div>
       </div>
+
+      <!-- Panel: Decrease stock (select lot) -->
+      <div class="adjust-panel" style="margin-top:1.5rem">
+        <div class="adjust-title">Disminuir stock — Seleccionar lote</div>
+
+        <select class="adjust-product-select">
+          <option selected>Leche entera — La Serenísima (1L)</option>
+        </select>
+
+        <div class="stepper-group">
+          <div class="stepper-label">Unidades a retirar</div>
+          <div class="stepper-row">
+            <button class="stepper-btn negative">−</button>
+            <input class="stepper-value" type="number" value="2" min="1" />
+            <button class="stepper-btn positive">+</button>
+          </div>
+        </div>
+
+        <div class="lot-selector">
+          <div class="lot-selector-label">¿De qué lote retirar?</div>
+          <div class="fifo-hint">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+            FIFO: se recomienda retirar primero del lote que vence antes
+          </div>
+
+          <div class="lot-option selected">
+            <div class="lot-option-radio"></div>
+            <div class="lot-option-info">
+              <div class="lot-option-qty">2 unidades</div>
+              <div class="lot-option-date">Vence: 02/08/2026 — vence en 6 días</div>
+              <div class="lot-option-hint">Este lote vence primero</div>
+            </div>
+            <span class="lot-badge urgent">6d</span>
+          </div>
+
+          <div class="lot-option">
+            <div class="lot-option-radio"></div>
+            <div class="lot-option-info">
+              <div class="lot-option-qty">3 unidades</div>
+              <div class="lot-option-date">Vence: 15/08/2026 — vence en 19 días</div>
+            </div>
+            <span class="lot-badge ok">19d</span>
+          </div>
+
+          <div class="lot-option disabled">
+            <div class="lot-option-radio"></div>
+            <div class="lot-option-info">
+              <div class="lot-option-qty">1 unidad</div>
+              <div class="lot-option-date">Vence: 20/07/2026 — vencido</div>
+              <div class="lot-option-hint">Lote vencido — no disponible para retiro</div>
+            </div>
+            <span class="lot-badge expired">vencido</span>
+          </div>
+        </div>
+
+        <div class="btn-group" style="margin-top:0">
+          <button class="btn-primary">Confirmar salida</button>
+          <button class="btn-ghost">Cancelar</button>
+        </div>
+      </div>
+
     </div>
 
-    <!-- Summary -->
-    <div class="summary">
-      <div class="summary-info">
-        <strong>3</strong> productos · <strong>2</strong> con fecha de vencimiento
+    <!-- ═══════ TAB 3: Movimientos recientes ═══════ -->
+    <div class="tab-panel" id="tab-movements">
+
+      <div class="filters" style="margin-bottom:1.5rem">
+        <button class="filter-chip active">Todos</button>
+        <button class="filter-chip">Entradas</button>
+        <button class="filter-chip">Salidas</button>
+        <button class="filter-chip">Ajustes</button>
       </div>
-      <div class="summary-actions">
-        <button class="btn-ghost" style="padding:0.5rem 1rem;">Cancelar</button>
-        <button class="btn-primary">Guardar ajuste</button>
+
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot in"></div>
+          <div class="timeline-card">
+            <div class="timeline-header">
+              <div class="timeline-product">Leche entera — La Serenísima</div>
+              <span class="timeline-type in">+entrada</span>
+            </div>
+            <div class="timeline-details">
+              <div class="timeline-detail"><strong>+4</strong> unidades</div>
+              <div class="timeline-detail">Lote: 15/08/2026</div>
+              <div class="timeline-detail">Sin compra asociada</div>
+            </div>
+            <div class="timeline-date" style="margin-top:0.5rem">27/07/2026 · 14:30</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot out"></div>
+          <div class="timeline-card">
+            <div class="timeline-header">
+              <div class="timeline-product">Leche entera — La Serenísima</div>
+              <span class="timeline-type out">−salida</span>
+            </div>
+            <div class="timeline-details">
+              <div class="timeline-detail"><strong>−2</strong> unidades</div>
+              <div class="timeline-detail">Lote: 02/08/2026</div>
+              <div class="timeline-detail">Consumo doméstico</div>
+            </div>
+            <div class="timeline-date" style="margin-top:0.5rem">25/07/2026 · 10:15</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot in"></div>
+          <div class="timeline-card">
+            <div class="timeline-header">
+              <div class="timeline-product">Arroz largo — Molinos Ala</div>
+              <span class="timeline-type in">+compra</span>
+            </div>
+            <div class="timeline-details">
+              <div class="timeline-detail"><strong>+5</strong> unidades</div>
+              <div class="timeline-detail">Lote: 01/12/2026 y 10/08/2026</div>
+              <div class="timeline-detail">Compra #12 — La Anónima</div>
+            </div>
+            <div class="timeline-date" style="margin-top:0.5rem">22/07/2026 · 18:00</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot adjustment"></div>
+          <div class="timeline-card">
+            <div class="timeline-header">
+              <div class="timeline-product">Papel higiénico — Rollux</div>
+              <span class="timeline-type adjustment">±ajuste</span>
+            </div>
+            <div class="timeline-details">
+              <div class="timeline-detail"><strong>+4</strong> unidades</div>
+              <div class="timeline-detail">Sin fecha de vencimiento</div>
+              <div class="timeline-detail">Carga inicial de stock</div>
+            </div>
+            <div class="timeline-date" style="margin-top:0.5rem">20/07/2026 · 09:00</div>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot out"></div>
+          <div class="timeline-card">
+            <div class="timeline-header">
+              <div class="timeline-product">Leche entera — La Serenísima</div>
+              <span class="timeline-type out">−baja</span>
+            </div>
+            <div class="timeline-details">
+              <div class="timeline-detail"><strong>−1</strong> unidades</div>
+              <div class="timeline-detail">Lote: 20/07/2026 — vencido</div>
+              <div class="timeline-detail">Descarte por vencimiento</div>
+            </div>
+            <div class="timeline-date" style="margin-top:0.5rem">20/07/2026 · 08:45</div>
+          </div>
+        </div>
       </div>
+
     </div>
+
   </div>
 
   <script>
-    function switchTab(index) {
-      document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === index));
-      document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('active', i === index));
+    function switchTab(e, tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
     }
-    (function() {
-      if (localStorage.getItem('ryc-theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    })();
   </script>
 </body>
 </html>

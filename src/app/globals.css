@@ -1589,6 +1589,107 @@ a {
   background: var(--surface-dim);
 }
 
+/* ── Alert tabs ── */
+
+.mkt-alert-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+.mkt-alert-tab {
+  background: none;
+  border: none;
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.12s, border-color 0.12s;
+  white-space: nowrap;
+}
+
+.mkt-alert-tab:hover {
+  color: var(--fg);
+}
+
+.mkt-alert-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Alert banners ── */
+
+.mkt-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.mkt-alert-banner.danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.mkt-alert-banner.warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.mkt-alert-banner svg {
+  flex-shrink: 0;
+}
+
+/* ── Alert badges ── */
+
+.mkt-alert-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.mkt-badge.success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+/* ── Stock expiry bar ── */
+
+.mkt-stock-expiry-bar {
+  width: 3px;
+  height: 100%;
+  min-height: 32px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.mkt-stock-expiry-bar.danger {
+  background: var(--danger);
+}
+
+.mkt-stock-expiry-bar.warning {
+  background: var(--warning);
+}
+
+.mkt-stock-expiry-bar.success {
+  background: var(--success);
+}
+
+.mkt-stock-row.expired {
+  background: var(--danger-soft);
+}
+
 /* ── Recent purchases ── */
 
 .mkt-purchase-card {
@@ -1883,6 +1984,27 @@ a {
 
 .mkt-form-input::placeholder {
   color: var(--fg-subtle);
+}
+
+.mkt-form-input[type="date"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+}
+
+.mkt-form-input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.85;
+  filter: invert(0.3);
+  transition: opacity 0.15s;
+}
+
+:root[data-theme="dark"] .mkt-form-input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.9);
+  opacity: 0.9;
+}
+
+.mkt-form-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .mkt-form-select {
@@ -2270,6 +2392,12 @@ a {
 .mkt-purchase-form-item-name {
   font-size: 0.8125rem;
   font-weight: 600;
+}
+
+.mkt-purchase-form-item-meta {
+  font-weight: 400;
+  color: var(--fg-muted);
+  font-size: 0.75rem;
 }
 
 .mkt-purchase-form-item-remove {
@@ -2914,6 +3042,403 @@ a {
   gap: 0.5rem;
 }
 
+/* ── Stock Overview: expandable rows + lots ── */
+
+.mkt-stock-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.mkt-stock-main[role="button"] {
+  cursor: pointer;
+}
+
+.mkt-stock-expand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--fg-subtle);
+  transition: transform 0.2s ease;
+  transform: rotate(0deg);
+  flex-shrink: 0;
+}
+
+.mkt-stock-expand-icon.open {
+  transform: rotate(90deg);
+}
+
+.mkt-stock-lots {
+  width: 100%;
+  padding: 0.5rem 0 0.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: mkt-fade-in 0.15s ease;
+}
+
+.mkt-stock-lot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s;
+}
+
+.mkt-stock-lot:hover {
+  background: var(--surface-dim);
+}
+
+.mkt-stock-lot + .mkt-stock-lot {
+  border-top: 1px solid var(--border);
+}
+
+.mkt-stock-lot-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mkt-stock-lot-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.mkt-stock-lot-expiry {
+  font-size: 0.6875rem;
+  color: var(--fg-subtle);
+}
+
+.mkt-stock-lot-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.mkt-stock-lot-qty {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Adjust: product selector ── */
+
+.mkt-adjust-product-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid var(--border);
+}
+
+.mkt-adjust-product-select:last-child {
+  border-bottom: none;
+}
+
+.mkt-adjust-product-select:hover {
+  background: var(--surface-dim);
+}
+
+.mkt-adjust-product-select-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.mkt-adjust-product-select-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.mkt-adjust-product-select-meta {
+  font-size: 0.75rem;
+  color: var(--fg-subtle);
+}
+
+.mkt-adjust-product-select-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  color: var(--fg-subtle);
+}
+
+.mkt-adjust-product-select-stock {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.mkt-adjust-product-select-stock.zero {
+  color: var(--danger);
+}
+
+.mkt-adjust-product-select-stock.low {
+  color: var(--warning);
+}
+
+/* ── Adjust: selected product + mode switch ── */
+
+.mkt-adjust-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface-dim);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.mkt-adjust-selected-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mkt-adjust-selected-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.mkt-adjust-selected-meta {
+  font-size: 0.75rem;
+  color: var(--fg-subtle);
+}
+
+.mkt-adjust-selected-stock {
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+}
+
+.mkt-adjust-selected-stock strong {
+  color: var(--fg);
+  font-family: var(--font-mono);
+}
+
+.mkt-adjust-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.mkt-adjust-mode-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.mkt-adjust-mode-btn:hover:not(:disabled) {
+  border-color: var(--fg-subtle);
+  color: var(--fg);
+}
+
+.mkt-adjust-mode-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mkt-adjust-mode-btn.active.increase {
+  background: var(--success-soft);
+  border-color: var(--success);
+  color: var(--success);
+  font-weight: 600;
+}
+
+.mkt-adjust-mode-btn.active.decrease {
+  background: var(--danger-soft);
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ── Adjust: form rows ── */
+
+.mkt-adjust-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mkt-adjust-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mkt-adjust-qty-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+}
+
+.mkt-adjust-qty-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  min-width: 2rem;
+  text-align: center;
+}
+
+.mkt-adjust-max-hint {
+  font-size: 0.6875rem;
+  color: var(--fg-subtle);
+  font-family: var(--font-mono);
+}
+
+.mkt-adjust-lot-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.mkt-adjust-lots-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  margin-bottom: 0.25rem;
+}
+
+.mkt-adjust-lot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.mkt-adjust-lot-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid var(--border);
+}
+
+.mkt-adjust-lot-item:last-child {
+  border-bottom: none;
+}
+
+.mkt-adjust-lot-item:hover {
+  background: var(--surface-dim);
+}
+
+.mkt-adjust-lot-item.selected {
+  background: var(--accent-soft);
+}
+
+.mkt-adjust-lot-item.expired {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mkt-adjust-lot-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.mkt-adjust-lot-item.selected .mkt-adjust-lot-radio {
+  border-color: var(--accent);
+}
+
+.mkt-adjust-lot-radio-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.mkt-adjust-lot-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.mkt-adjust-lot-name {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.mkt-adjust-lot-expiry {
+  font-size: 0.6875rem;
+  color: var(--fg-subtle);
+}
+
+.mkt-adjust-lot-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.mkt-adjust-lot-qty {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+.mkt-adjust-decrease-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.mkt-adjust-save-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.mkt-btn-primary.danger {
+  background: var(--danger);
+}
+
+.mkt-btn-primary.danger:hover {
+  background: var(--danger);
+  opacity: 0.9;
+}
+
 /* ── Coming soon note ── */
 
 .mkt-coming-soon-note {
@@ -2993,6 +3518,32 @@ a {
 
   .mkt-adjust-summary-value {
     font-size: 1.25rem;
+  }
+
+  .mkt-adjust-selected {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mkt-adjust-mode-switch {
+    grid-template-columns: 1fr;
+  }
+
+  .mkt-adjust-qty-row {
+    flex-wrap: wrap;
+  }
+
+  .mkt-adjust-max-hint {
+    width: 100%;
+    text-align: right;
+  }
+
+  .mkt-adjust-lot-item {
+    flex-wrap: wrap;
+  }
+
+  .mkt-stock-main {
+    flex-wrap: wrap;
   }
 }
 

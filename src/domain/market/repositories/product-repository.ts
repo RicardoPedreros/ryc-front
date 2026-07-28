@@ -5,10 +5,15 @@ export interface ProductSearchResult {
   readonly name: string;
   readonly brandId: string | null;
   readonly brandName: string | null;
+  readonly parentProductId: string | null;
+  readonly categoryId: string;
   readonly categoryName: string | null;
+  readonly unitId: string;
   readonly unitSymbol: string | null;
   readonly presentationQuantity: number | null;
   readonly stockQuantity: number;
+  readonly minStock: number;
+  readonly minDays: number;
   readonly barcode: string | null;
 }
 

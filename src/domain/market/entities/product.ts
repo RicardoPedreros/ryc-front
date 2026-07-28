@@ -4,8 +4,11 @@ export interface Product {
   readonly unitId: string;
   readonly name: string;
   readonly brandId: string | null;
+  readonly parentProductId: string | null;
   readonly presentationQuantity: number | null;
   readonly stockQuantity: number;
+  readonly minStock: number;
+  readonly minDays: number;
   readonly barcode: string | null;
   readonly isActive: boolean;
   readonly createdAt: Date;
@@ -16,8 +19,11 @@ export interface CreateProduct {
   readonly unitId: string;
   readonly name: string;
   readonly brandId?: string | null;
+  readonly parentProductId?: string | null;
   readonly presentationQuantity?: number | null;
   readonly stockQuantity?: number;
+  readonly minStock?: number;
+  readonly minDays?: number;
   readonly barcode?: string | null;
 }
 
@@ -26,8 +32,11 @@ export interface UpdateProduct {
   readonly unitId?: string;
   readonly name?: string;
   readonly brandId?: string | null;
+  readonly parentProductId?: string | null;
   readonly presentationQuantity?: number | null;
   readonly stockQuantity?: number;
+  readonly minStock?: number;
+  readonly minDays?: number;
   readonly barcode?: string | null;
   readonly isActive?: boolean;
 }

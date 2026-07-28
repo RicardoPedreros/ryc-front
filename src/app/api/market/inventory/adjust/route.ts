@@ -35,14 +35,23 @@ export async function GET() {
         c.name AS "categoryName",
         u.symbol AS "unitSymbol",
         p.presentation_quantity AS "presentationQuantity",
-        p.stock_quantity AS "stockQuantity",
-        COALESCE(inv.current_stock, 0)::int AS "currentStock"
+        1 AS "stockQuantity",
+        COALESCE((
+          SELECT SUM(
+            im2.quantity * mt2.stock_multiplier *
+            CASE WHEN pp.id != p.id THEN COALESCE(pp.stock_quantity, 1) ELSE 1 END
+          )
+          FROM inventory_movements im2
+          JOIN movement_types mt2 ON mt2.id = im2.movement_type_id
+          JOIN products pp ON pp.id = im2.product_id
+          WHERE im2.product_id = p.id OR pp.parent_product_id = p.id
+        ), 0)::int AS "currentStock"
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN units u ON p.unit_id = u.id
-      LEFT JOIN inventory inv ON p.id = inv.id
-      WHERE p.is_active = true
+      WHERE p.parent_product_id IS NULL
+        AND p.is_active = true
       ORDER BY p.name
     ` as ProductWithStock[];
     return NextResponse.json(rows);

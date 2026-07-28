@@ -91,7 +91,7 @@ export function StockOverview() {
       </div>
       <div className="mkt-card">
         {stock.map((item) => {
-          const isLow = item.currentStock <= 2;
+          const isLow = item.currentStock <= item.minStock;
           const isOut = item.currentStock === 0;
           const brandPath = item.brand ? brandPaths.byName.get(item.brand) ?? null : null;
           const hasExpiry = item.daysUntilExpiry !== null;
@@ -115,12 +115,12 @@ export function StockOverview() {
                 onKeyDown={productLots.length > 0 ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleExpand(item.id); } } : undefined}
               >
                 <div className="mkt-stock-info">
-                  <span className="mkt-stock-name">{item.name}</span>
+                  <span className="mkt-stock-name">
+                    {item.name}
+                  </span>
                   <span className="mkt-stock-brand">
                     {item.brand && <BrandChip brandName={item.brand} brandPath={brandPath} />}
-                    {item.brand && " · "}
                     {item.categoryName}
-                    {item.stockQuantity > 1 && ` · pack de ${item.stockQuantity} uds`}
                     {item.presentationQuantity && item.unitSymbol
                       ? ` · ${item.presentationQuantity} ${item.unitSymbol}`
                       : null}
@@ -129,9 +129,6 @@ export function StockOverview() {
                 <div className="mkt-stock-right">
                   <span className="mkt-stock-qty">
                     {item.currentStock}
-                    {item.stockQuantity > 1 && (
-                      <span className="mkt-stock-pack"> ({Math.floor(item.currentStock / item.stockQuantity)} paquete{item.stockQuantity > 1 && Math.floor(item.currentStock / item.stockQuantity) !== 1 ? "s" : ""})</span>
-                    )}
                   </span>
                   {isOut && <span className="mkt-badge danger">Sin stock</span>}
                   {!isOut && isLow && <span className="mkt-badge warning">Bajo</span>}

@@ -13,6 +13,7 @@ interface ProductResult {
   readonly categoryName: string | null;
   readonly unitSymbol: string | null;
   readonly presentationQuantity: number | null;
+  readonly stockQuantity: number;
   readonly barcode: string | null;
 }
 
@@ -456,14 +457,17 @@ export function ShoppingList() {
                           onClick={() => !alreadyAdded && addItem(product)}
                           disabled={alreadyAdded}
                         >
-                          <div className="mkt-search-result-body">
-                            <span className="mkt-search-result-name">{product.name}</span>
-                            <span className="mkt-search-result-meta">
-                              {product.brandName}{product.brandName && product.presentationQuantity != null ? " — " : ""}
-                              {formatPresentation(product.presentationQuantity, product.unitSymbol)}
-                              {product.categoryName ? ` · ${product.categoryName}` : ""}
-                            </span>
-                          </div>
+                           <div className="mkt-search-result-body">
+                             <span className="mkt-search-result-name">
+                               {product.name}
+                               {product.stockQuantity > 1 && <span className="mkt-pack-chip">x{product.stockQuantity}</span>}
+                             </span>
+                             <span className="mkt-search-result-meta">
+                               {product.brandName}{product.brandName && product.presentationQuantity != null ? " — " : ""}
+                               {formatPresentation(product.presentationQuantity, product.unitSymbol)}
+                               {product.categoryName ? ` · ${product.categoryName}` : ""}
+                             </span>
+                           </div>
                           {alreadyAdded ? (
                             <span className="mkt-search-result-badge">En lista</span>
                           ) : (

@@ -265,15 +265,16 @@ export function StockAdjustment() {
                 onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleSelectProduct(product.id); } }}
               >
                 <div className="mkt-adjust-product-select-info">
-                  <span className="mkt-adjust-product-select-name">{product.name}</span>
-                  <span className="mkt-adjust-product-select-meta">
-                    {[
-                      product.brand,
-                      product.categoryName,
-                      product.presentationQuantity && product.unitSymbol ? `${product.presentationQuantity} ${product.unitSymbol}` : null,
-                      product.stockQuantity > 1 ? `pack de ${product.stockQuantity} uds` : null,
-                    ].filter(Boolean).join(" · ")}
-                  </span>
+                    <span className="mkt-adjust-product-select-name">
+                      {product.name}
+                    </span>
+                    <span className="mkt-adjust-product-select-meta">
+                      {[
+                        product.brand,
+                        product.categoryName,
+                        product.presentationQuantity && product.unitSymbol ? `${product.presentationQuantity} ${product.unitSymbol}` : null,
+                      ].filter(Boolean).join(" · ")}
+                    </span>
                 </div>
                 <div className="mkt-adjust-product-select-right">
                   <span className={`mkt-adjust-product-select-stock ${product.currentStock === 0 ? "zero" : product.currentStock <= 2 ? "low" : ""}`}>
@@ -308,26 +309,20 @@ export function StockAdjustment() {
 
       <div className="mkt-adjust-selected">
         <div className="mkt-adjust-selected-info">
-          <span className="mkt-adjust-selected-name">{selectedProduct.name}</span>
+          <span className="mkt-adjust-selected-name">
+            {selectedProduct.name}
+          </span>
           <span className="mkt-adjust-selected-meta">
             {[
               selectedProduct.brand,
               selectedProduct.presentationQuantity && selectedProduct.unitSymbol
                 ? `${selectedProduct.presentationQuantity} ${selectedProduct.unitSymbol}`
                 : null,
-              selectedProduct.stockQuantity > 1
-                ? `pack de ${selectedProduct.stockQuantity} uds`
-                : null,
             ].filter(Boolean).join(" · ")}
           </span>
         </div>
         <span className="mkt-adjust-selected-stock">
           Stock actual: <strong>{selectedProduct.currentStock}</strong> uds
-          {selectedProduct.stockQuantity > 1 && (
-            <span className="mkt-stock-pack">
-              {" "}(<strong>{Math.floor(selectedProduct.currentStock / selectedProduct.stockQuantity)}</strong> paquete{Math.floor(selectedProduct.currentStock / selectedProduct.stockQuantity) !== 1 ? "s" : ""})
-            </span>
-          )}
         </span>
       </div>
 

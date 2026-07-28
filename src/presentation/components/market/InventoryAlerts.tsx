@@ -13,9 +13,7 @@ function getExpiryLabel(days: number | null): string {
   if (days < 0) return `Venció hace ${Math.abs(days)}d`;
   if (days === 0) return "Vence hoy";
   if (days === 1) return "Vence mañana";
-  if (days <= 7) return `Vence en ${days}d`;
-  if (days <= 30) return `Vence en ${days}d`;
-  return `Vence en ${days}d`;
+  return `${days}d`;
 }
 
 function getExpiryBadgeClass(days: number | null): string {
@@ -34,24 +32,35 @@ export function InventoryAlerts() {
 
   if (loading || !stock) return null;
 
-  const lowStockItems = stock.filter((item) => item.currentStock <= 2);
-  const expiryItems = stock.filter(
-    (item) => item.daysUntilExpiry !== null && item.daysUntilExpiry <= 30
+  const lowStockItems = stock.filter(
+    (item) => item.currentStock > 0 && item.currentStock <= item.minStock
   );
-  const allAlerts = [...lowStockItems, ...expiryItems.filter((e) => !lowStockItems.some((l) => l.id === e.id))];
+  const outOfStock = stock.filter((item) => item.currentStock === 0);
+  const expiryItems = stock.filter(
+    (item) => item.daysUntilExpiry !== null && item.daysUntilExpiry <= item.minDays
+  );
+  const allAlerts = [
+    ...outOfStock,
+    ...lowStockItems.filter((l) => !outOfStock.some((o) => o.id === l.id)),
+    ...expiryItems.filter(
+      (e) => !outOfStock.some((o) => o.id === e.id) && !lowStockItems.some((l) => l.id === e.id)
+    ),
+  ];
   const expiredItems = stock.filter(
     (item) => item.daysUntilExpiry !== null && item.daysUntilExpiry <= 0
   );
 
   const filteredItems =
-    filter === "stock" ? lowStockItems
+    filter === "stock" ? [...outOfStock, ...lowStockItems]
     : filter === "expiry" ? expiryItems
     : allAlerts;
 
   const totalCount = filteredItems.length;
 
   const bannerExpired = expiredItems.length;
-  const bannerUrgent = expiryItems.filter((e) => e.daysUntilExpiry !== null && e.daysUntilExpiry > 0 && e.daysUntilExpiry <= 7).length;
+  const bannerUrgent = expiryItems.filter(
+    (e) => e.daysUntilExpiry !== null && e.daysUntilExpiry > 0 && e.daysUntilExpiry <= 7
+  ).length;
 
   return (
     <div className="mkt-section">
@@ -113,17 +122,17 @@ export function InventoryAlerts() {
         <div className="mkt-alert-list">
           {filteredItems.map((item) => {
             const isOut = item.currentStock === 0;
-            const isLow = item.currentStock <= 2;
+            const isLow = item.currentStock > 0 && item.currentStock <= item.minStock;
             const hasExpiry = item.daysUntilExpiry !== null;
             const isExpired = hasExpiry && item.daysUntilExpiry! <= 0;
-            const isExpirySoon = hasExpiry && item.daysUntilExpiry! > 0 && item.daysUntilExpiry! <= 30;
+            const isExpirySoon = hasExpiry && item.daysUntilExpiry! > 0 && item.daysUntilExpiry! <= item.minDays;
 
             const presentation =
               item.presentationQuantity && item.unitSymbol
                 ? `${item.presentationQuantity}${item.unitSymbol}`
                 : null;
 
-            const packInfo = item.stockQuantity > 1 ? ` · pack de ${item.stockQuantity} uds` : "";
+            const packInfo = item.stockQuantity > 1 ? true : false;
 
             const brandPath = item.brand
               ? brandPaths.byName.get(item.brand) ?? null
@@ -154,8 +163,8 @@ export function InventoryAlerts() {
                     {item.brand && (
                       <BrandChip brandName={item.brand} brandPath={brandPath} />
                     )}
+                    {packInfo && <span className="mkt-pack-chip">x{item.stockQuantity}</span>}
                     {presentation && ` (${presentation})`}
-                    {packInfo}
                   </span>
                   <span className="mkt-alert-sub">
                     {subTexts.join(" · ")}

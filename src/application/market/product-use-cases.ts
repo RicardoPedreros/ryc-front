@@ -37,6 +37,12 @@ export class ProductUseCases {
     if (product.stockQuantity != null && product.stockQuantity < 1) {
       throw new Error('Stock quantity must be at least 1');
     }
+    if (product.minStock != null && product.minStock < 1) {
+      throw new Error('Minimum stock must be at least 1');
+    }
+    if (product.minDays != null && product.minDays < 1) {
+      throw new Error('Minimum days must be at least 1');
+    }
     return this.productRepository.create(product);
   }
 

@@ -17,6 +17,7 @@ interface SearchResult {
   readonly brandId: string | null;
   readonly presentationQuantity: number | null;
   readonly unitSymbol: string | null;
+  readonly stockQuantity: number;
   readonly barcode: string | null;
 }
 
@@ -420,13 +421,14 @@ function PurchaseFormInner({
                         disabled={added}
                         onClick={() => { if (!added) addItem(p.id); }}
                       >
-                        <div className="mkt-search-result-body">
-                          <span className="mkt-search-result-name">
-                            {p.name}
-                            {p.brandName ? <>{` `}<BrandChip brandName={p.brandName} brandPath={p.brandId ? (brandPathLookup.byId.get(p.brandId) ?? null) : null} /></> : null}
-                          </span>
-                          {pres && <span className="mkt-search-result-meta">{pres}</span>}
-                        </div>
+                         <div className="mkt-search-result-body">
+                           <span className="mkt-search-result-name">
+                             {p.name}
+                             {p.stockQuantity > 1 && <span className="mkt-pack-chip">x{p.stockQuantity}</span>}
+                             {p.brandName ? <>{` `}<BrandChip brandName={p.brandName} brandPath={p.brandId ? (brandPathLookup.byId.get(p.brandId) ?? null) : null} /></> : null}
+                           </span>
+                           {pres && <span className="mkt-search-result-meta">{pres}</span>}
+                         </div>
                         {added && <span className="mkt-search-result-badge">En la compra</span>}
                       </button>
                     );

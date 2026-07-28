@@ -24,7 +24,7 @@ export function LoginForm({ onLogin, redirectTo }: LoginFormProps) {
     const result = await onLogin(username, password);
 
     if (result.ok) {
-      window.location.href = redirectTo || "/market";
+      window.location.href = redirectTo || "/";
     } else {
       setError(result.error || "Error al iniciar sesión");
       setSubmitting(false);

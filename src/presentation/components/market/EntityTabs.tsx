@@ -37,7 +37,9 @@ function ProductList({ onAdd }: EntityListProps) {
 
   if (loading) return <div className="mkt-empty-state"><p>Cargando...</p></div>;
 
-  if (!products || products.length === 0) {
+  const baseProducts = (products ?? []).filter((p) => p.parentProductId == null);
+
+  if (baseProducts.length === 0) {
     return (
       <div className="mkt-empty-state">
         <p>Sin productos</p>
@@ -49,7 +51,7 @@ function ProductList({ onAdd }: EntityListProps) {
   return (
     <>
       <div className="mkt-entity-list">
-        {products.map((product) => {
+        {baseProducts.map((product) => {
           const qty = stockMap.get(product.id) ?? 0;
           const isLow = qty <= 2;
           const brandName = product.brandId ? brandNameMap.get(product.brandId) ?? null : null;
@@ -63,15 +65,16 @@ function ProductList({ onAdd }: EntityListProps) {
                   <path d="M16 10a4 4 0 01-8 0" />
                 </svg>
               </div>
-              <div className="mkt-entity-body">
-                <span className="mkt-entity-name">{product.name}</span>
-                <span className="mkt-entity-meta">
-                  {brandName && <BrandChip brandName={brandName} brandPath={brandPath} />}
-                  {brandName && " · "}
-                  {catMap.get(product.categoryId) ?? "Sin categoría"}
-                  {product.stockQuantity > 1 && ` · x${product.stockQuantity}`}
-                </span>
-              </div>
+                <div className="mkt-entity-body">
+                  <span className="mkt-entity-name">{product.name}</span>
+                  <span className="mkt-entity-meta">
+                    {brandName && <BrandChip brandName={brandName} brandPath={brandPath} />}
+                    {brandName && " · "}
+                    {catMap.get(product.categoryId) ?? "Sin categoría"}
+                    {product.stockQuantity > 1 && ` · x${product.stockQuantity}`}
+                    {product.parentProductId != null && <span className="mkt-entity-pack-label">Pack</span>}
+                  </span>
+                </div>
               <span className={`mkt-entity-badge ${isLow ? (qty === 0 ? "danger" : "warning") : ""}`}>
                 {qty} uds
               </span>

@@ -28,11 +28,14 @@ export interface InventoryStock {
   readonly id: string;
   readonly name: string;
   readonly brand: string | null;
+  readonly parentProductId: string | null;
   readonly categoryName: string | null;
   readonly unitSymbol: string | null;
   readonly presentationQuantity: number | null;
   readonly stockQuantity: number;
   readonly currentStock: number;
+  readonly minStock: number;
+  readonly minDays: number;
   readonly nearestExpiry: string | null;
   readonly daysUntilExpiry: number | null;
 }

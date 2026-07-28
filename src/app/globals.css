@@ -1965,6 +1965,89 @@ a {
   margin-bottom: 0.375rem;
 }
 
+.mkt-form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+}
+.mkt-form-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mkt-pack-toggle {
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0;
+}
+.mkt-pack-toggle:has(input:checked) {
+  background: transparent;
+}
+.mkt-pack-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+.mkt-pack-toggle-label input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.mkt-pack-toggle-control {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: var(--surface-dim);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+.mkt-pack-toggle-label input:checked + .mkt-pack-toggle-control {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.mkt-pack-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px oklch(0% 0 0 / 0.12);
+}
+.mkt-pack-toggle-label input:checked + .mkt-pack-toggle-control .mkt-pack-toggle-thumb {
+  transform: translateX(16px);
+}
+.mkt-pack-toggle-text {
+  display: inline;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg);
+}
+.mkt-pack-detail {
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.mkt-pack-detail .mkt-form-input {
+  max-width: 180px;
+}
+
 .mkt-form-input {
   width: 100%;
   padding: 0.625rem 0.875rem;
@@ -2230,6 +2313,13 @@ a {
   font-weight: 700;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+.mkt-stock-pack {
+  font-size: 0.75rem;
+  font-weight: 400;
+  font-family: var(--font-body);
+  color: var(--fg-muted);
 }
 
 .mkt-stock-unit {

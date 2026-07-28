@@ -8,6 +8,7 @@ export interface ProductSearchResult {
   readonly categoryName: string | null;
   readonly unitSymbol: string | null;
   readonly presentationQuantity: number | null;
+  readonly stockQuantity: number;
   readonly barcode: string | null;
 }
 

@@ -23,6 +23,7 @@ interface InventoryStockRow {
   categoryName: string | null;
   unitSymbol: string | null;
   presentationQuantity: number | null;
+  stock_quantity: number;
   current_stock: number;
   nearest_expiry: string | null;
   days_until_expiry: number | null;
@@ -54,6 +55,7 @@ function toInventoryStock(row: InventoryStockRow): InventoryStock {
     categoryName: row.categoryName,
     unitSymbol: row.unitSymbol,
     presentationQuantity: row.presentationQuantity,
+    stockQuantity: row.stock_quantity,
     currentStock: row.current_stock,
     nearestExpiry: row.nearest_expiry,
     daysUntilExpiry: row.days_until_expiry,
@@ -119,6 +121,7 @@ export class NeonInventoryRepository implements IInventoryRepository {
         c.name AS "categoryName",
         u.symbol AS "unitSymbol",
         p.presentation_quantity AS "presentationQuantity",
+        p.stock_quantity AS stock_quantity,
         COALESCE(inv.current_stock, 0)::int AS current_stock,
         expiry.nearest_expiry,
         CASE

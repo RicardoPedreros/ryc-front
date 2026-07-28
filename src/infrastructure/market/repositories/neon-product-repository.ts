@@ -9,6 +9,7 @@ interface ProductRow {
   name: string;
   brand_id: string | null;
   presentation_quantity: number | null;
+  stock_quantity: number;
   barcode: string | null;
   is_active: boolean;
   created_at: Date;
@@ -22,6 +23,7 @@ function toProduct(row: ProductRow): Product {
     name: row.name,
     brandId: row.brand_id,
     presentationQuantity: row.presentation_quantity,
+    stockQuantity: row.stock_quantity,
     barcode: row.barcode,
     isActive: row.is_active,
     createdAt: row.created_at,
@@ -44,8 +46,8 @@ export class NeonProductRepository implements IProductRepository {
   async create(product: CreateProduct): Promise<Product> {
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO products (category_id, unit_id, name, brand_id, presentation_quantity, barcode)
-      VALUES (${product.categoryId}, ${product.unitId}, ${product.name}, ${product.brandId ?? null}, ${product.presentationQuantity ?? null}, ${product.barcode ?? null})
+      INSERT INTO products (category_id, unit_id, name, brand_id, presentation_quantity, stock_quantity, barcode)
+      VALUES (${product.categoryId}, ${product.unitId}, ${product.name}, ${product.brandId ?? null}, ${product.presentationQuantity ?? null}, ${product.stockQuantity ?? 1}, ${product.barcode ?? null})
       RETURNING *
     ` as ProductRow[];
     return toProduct(rows[0]);
@@ -61,6 +63,7 @@ export class NeonProductRepository implements IProductRepository {
         name = COALESCE(${product.name}, name),
         brand_id = COALESCE(${product.brandId ?? null}, brand_id),
         presentation_quantity = COALESCE(${product.presentationQuantity ?? null}, presentation_quantity),
+        stock_quantity = COALESCE(${product.stockQuantity ?? null}, stock_quantity),
         barcode = COALESCE(${product.barcode ?? null}, barcode),
         is_active = COALESCE(${product.isActive ?? null}, is_active)
       WHERE id = ${id}
@@ -80,6 +83,7 @@ export class NeonProductRepository implements IProductRepository {
         c.name AS "categoryName",
         u.symbol AS "unitSymbol",
         p.presentation_quantity AS "presentationQuantity",
+        p.stock_quantity AS "stockQuantity",
         p.barcode
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id
@@ -103,6 +107,7 @@ export class NeonProductRepository implements IProductRepository {
         c.name AS "categoryName",
         u.symbol AS "unitSymbol",
         p.presentation_quantity AS "presentationQuantity",
+        p.stock_quantity AS "stockQuantity",
         p.barcode
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id
@@ -127,6 +132,7 @@ export class NeonProductRepository implements IProductRepository {
         c.name AS "categoryName",
         u.symbol AS "unitSymbol",
         p.presentation_quantity AS "presentationQuantity",
+        p.stock_quantity AS "stockQuantity",
         p.barcode
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id

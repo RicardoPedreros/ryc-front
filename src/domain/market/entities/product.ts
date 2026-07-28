@@ -5,6 +5,7 @@ export interface Product {
   readonly name: string;
   readonly brandId: string | null;
   readonly presentationQuantity: number | null;
+  readonly stockQuantity: number;
   readonly barcode: string | null;
   readonly isActive: boolean;
   readonly createdAt: Date;
@@ -16,6 +17,7 @@ export interface CreateProduct {
   readonly name: string;
   readonly brandId?: string | null;
   readonly presentationQuantity?: number | null;
+  readonly stockQuantity?: number;
   readonly barcode?: string | null;
 }
 
@@ -25,6 +27,7 @@ export interface UpdateProduct {
   readonly name?: string;
   readonly brandId?: string | null;
   readonly presentationQuantity?: number | null;
+  readonly stockQuantity?: number;
   readonly barcode?: string | null;
   readonly isActive?: boolean;
 }

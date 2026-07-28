@@ -31,6 +31,7 @@ export interface InventoryStock {
   readonly categoryName: string | null;
   readonly unitSymbol: string | null;
   readonly presentationQuantity: number | null;
+  readonly stockQuantity: number;
   readonly currentStock: number;
   readonly nearestExpiry: string | null;
   readonly daysUntilExpiry: number | null;

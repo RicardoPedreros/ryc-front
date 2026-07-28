@@ -162,6 +162,7 @@ function ProductForm({
   readonly onCreated: () => void;
 }) {
   const [barcode, setBarcode] = useState("");
+  const [isPack, setIsPack] = useState(false);
 
   const handleScan = useCallback((code: string) => {
     setBarcode(code);
@@ -206,6 +207,7 @@ function ProductForm({
               categoryId,
               unitId,
               presentationQuantity: form.get("presentationQuantity") ? Number(form.get("presentationQuantity")) : null,
+              stockQuantity: isPack ? Number(form.get("stockQuantity")) || 2 : 1,
               barcode: barcode || null,
             }),
           });
@@ -255,6 +257,23 @@ function ProductForm({
           <div className="mkt-form-group">
             <label className="mkt-form-label">Presentación</label>
             <input name="presentationQuantity" className="mkt-form-input" type="number" step="0.01" placeholder="ej. 1, 0.5" />
+          </div>
+          <div className="mkt-form-group">
+            <div className="mkt-pack-toggle">
+              <label className="mkt-pack-toggle-label">
+                <input type="checkbox" checked={isPack} onChange={(e) => setIsPack(e.target.checked)} />
+                <span className="mkt-pack-toggle-control">
+                  <span className="mkt-pack-toggle-thumb" />
+                </span>
+                <span className="mkt-pack-toggle-text">Contiene varias unidades</span>
+              </label>
+            </div>
+            {isPack && (
+              <div className="mkt-pack-detail">
+                <input name="stockQuantity" className="mkt-form-input" type="number" min="2" step="1" defaultValue={2} placeholder="ej. 6, 12" />
+                <span className="mkt-form-hint">Cantidad de unidades</span>
+              </div>
+            )}
           </div>
         </div>
         <div className="mkt-form-group">

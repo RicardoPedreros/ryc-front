@@ -69,6 +69,7 @@ function ProductList({ onAdd }: EntityListProps) {
                   {brandName && <BrandChip brandName={brandName} brandPath={brandPath} />}
                   {brandName && " · "}
                   {catMap.get(product.categoryId) ?? "Sin categoría"}
+                  {product.stockQuantity > 1 && ` · x${product.stockQuantity}`}
                 </span>
               </div>
               <span className={`mkt-entity-badge ${isLow ? (qty === 0 ? "danger" : "warning") : ""}`}>

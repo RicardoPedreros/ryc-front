@@ -120,15 +120,19 @@ export function StockOverview() {
                     {item.brand && <BrandChip brandName={item.brand} brandPath={brandPath} />}
                     {item.brand && " · "}
                     {item.categoryName}
+                    {item.stockQuantity > 1 && ` · pack de ${item.stockQuantity} uds`}
                     {item.presentationQuantity && item.unitSymbol
                       ? ` · ${item.presentationQuantity} ${item.unitSymbol}`
-                      : item.presentationQuantity
-                        ? ` · ${item.presentationQuantity}`
-                        : null}
+                      : null}
                   </span>
                 </div>
                 <div className="mkt-stock-right">
-                  <span className="mkt-stock-qty">{item.currentStock}</span>
+                  <span className="mkt-stock-qty">
+                    {item.currentStock}
+                    {item.stockQuantity > 1 && (
+                      <span className="mkt-stock-pack"> ({Math.floor(item.currentStock / item.stockQuantity)} paquete{item.stockQuantity > 1 && Math.floor(item.currentStock / item.stockQuantity) !== 1 ? "s" : ""})</span>
+                    )}
+                  </span>
                   {isOut && <span className="mkt-badge danger">Sin stock</span>}
                   {!isOut && isLow && <span className="mkt-badge warning">Bajo</span>}
                   {hasExpiry && (

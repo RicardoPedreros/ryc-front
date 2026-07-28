@@ -9,6 +9,7 @@ interface ProductWithStock {
   categoryName: string | null;
   unitSymbol: string | null;
   presentationQuantity: number | null;
+  stockQuantity: number;
   currentStock: number;
 }
 
@@ -34,6 +35,7 @@ export async function GET() {
         c.name AS "categoryName",
         u.symbol AS "unitSymbol",
         p.presentation_quantity AS "presentationQuantity",
+        p.stock_quantity AS "stockQuantity",
         COALESCE(inv.current_stock, 0)::int AS "currentStock"
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id

@@ -123,6 +123,8 @@ export function InventoryAlerts() {
                 ? `${item.presentationQuantity}${item.unitSymbol}`
                 : null;
 
+            const packInfo = item.stockQuantity > 1 ? ` · pack de ${item.stockQuantity} uds` : "";
+
             const brandPath = item.brand
               ? brandPaths.byName.get(item.brand) ?? null
               : null;
@@ -153,6 +155,7 @@ export function InventoryAlerts() {
                       <BrandChip brandName={item.brand} brandPath={brandPath} />
                     )}
                     {presentation && ` (${presentation})`}
+                    {packInfo}
                   </span>
                   <span className="mkt-alert-sub">
                     {subTexts.join(" · ")}

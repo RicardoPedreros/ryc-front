@@ -12,6 +12,7 @@ interface ProductWithStock {
   readonly categoryName: string | null;
   readonly unitSymbol: string | null;
   readonly presentationQuantity: number | null;
+  readonly stockQuantity: number;
   readonly currentStock: number;
 }
 
@@ -266,7 +267,12 @@ export function StockAdjustment() {
                 <div className="mkt-adjust-product-select-info">
                   <span className="mkt-adjust-product-select-name">{product.name}</span>
                   <span className="mkt-adjust-product-select-meta">
-                    {[product.brand, product.categoryName, product.presentationQuantity && product.unitSymbol ? `${product.presentationQuantity} ${product.unitSymbol}` : null].filter(Boolean).join(" · ")}
+                    {[
+                      product.brand,
+                      product.categoryName,
+                      product.presentationQuantity && product.unitSymbol ? `${product.presentationQuantity} ${product.unitSymbol}` : null,
+                      product.stockQuantity > 1 ? `pack de ${product.stockQuantity} uds` : null,
+                    ].filter(Boolean).join(" · ")}
                   </span>
                 </div>
                 <div className="mkt-adjust-product-select-right">
@@ -304,11 +310,24 @@ export function StockAdjustment() {
         <div className="mkt-adjust-selected-info">
           <span className="mkt-adjust-selected-name">{selectedProduct.name}</span>
           <span className="mkt-adjust-selected-meta">
-            {[selectedProduct.brand, selectedProduct.presentationQuantity && selectedProduct.unitSymbol ? `${selectedProduct.presentationQuantity} ${selectedProduct.unitSymbol}` : null].filter(Boolean).join(" · ")}
+            {[
+              selectedProduct.brand,
+              selectedProduct.presentationQuantity && selectedProduct.unitSymbol
+                ? `${selectedProduct.presentationQuantity} ${selectedProduct.unitSymbol}`
+                : null,
+              selectedProduct.stockQuantity > 1
+                ? `pack de ${selectedProduct.stockQuantity} uds`
+                : null,
+            ].filter(Boolean).join(" · ")}
           </span>
         </div>
         <span className="mkt-adjust-selected-stock">
           Stock actual: <strong>{selectedProduct.currentStock}</strong> uds
+          {selectedProduct.stockQuantity > 1 && (
+            <span className="mkt-stock-pack">
+              {" "}(<strong>{Math.floor(selectedProduct.currentStock / selectedProduct.stockQuantity)}</strong> paquete{Math.floor(selectedProduct.currentStock / selectedProduct.stockQuantity) !== 1 ? "s" : ""})
+            </span>
+          )}
         </span>
       </div>
 

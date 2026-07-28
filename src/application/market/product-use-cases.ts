@@ -34,6 +34,9 @@ export class ProductUseCases {
     if (!product.unitId) {
       throw new Error('Unit is required');
     }
+    if (product.stockQuantity != null && product.stockQuantity < 1) {
+      throw new Error('Stock quantity must be at least 1');
+    }
     return this.productRepository.create(product);
   }
 

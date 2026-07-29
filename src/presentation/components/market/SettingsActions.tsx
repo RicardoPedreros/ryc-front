@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
 import { EntityTabs } from "@/presentation/components/market/EntityTabs";
 import { BarcodeScanner } from "@/presentation/components/market/BarcodeScanner";
+import Switch from "@mui/material/Switch";
+import Stack from "@mui/material/Stack";
 import type { Store } from "@/domain/market/entities/store";
 import type { Category } from "@/domain/market/entities/category";
 import type { Unit } from "@/domain/market/entities/unit";
@@ -166,6 +168,7 @@ function ProductForm({
   const [packBarcode, setPackBarcode] = useState("");
   const [isPack, setIsPack] = useState(false);
   const [customAlarms, setCustomAlarms] = useState(false);
+  const [notificate, setNotificate] = useState(true);
   const [baseProduct, setBaseProduct] = useState<ProductSearchResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<readonly ProductSearchResult[]>([]);
@@ -293,6 +296,7 @@ function ProductForm({
               stockQuantity: 1,
               minStock: customAlarms ? Number(form.get("minStock")) || 1 : 1,
               minDays: customAlarms ? Number(form.get("minDays")) || 7 : 7,
+              notificate,
               barcode: barcode || null,
             }),
           });
@@ -460,6 +464,10 @@ function ProductForm({
                 <span className="mkt-pack-toggle-text">Contiene varias unidades</span>
               </label>
             </div>
+            <Stack direction="row" spacing={1} sx={{ alignItems: "center", mt: 1 }}>
+              <Switch checked={notificate} onChange={(e) => setNotificate(e.target.checked)} size="small" />
+              <span style={{ fontSize: "0.8125rem", color: "var(--fg)" }}>Notificar si el stock está bajo o por vencer</span>
+            </Stack>
             <div className="mkt-form-group">
               <label className="mkt-form-label">Nombre</label>
               <input name="name" className="mkt-form-input" type="text" placeholder="ej. Leche entera" required />

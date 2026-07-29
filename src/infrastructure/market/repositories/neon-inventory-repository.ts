@@ -27,6 +27,7 @@ interface InventoryStockRow {
   stock_quantity: number;
   min_stock: number;
   min_days: number;
+  notificate: boolean;
   current_stock: number;
   nearest_expiry: string | null;
   days_until_expiry: number | null;
@@ -62,6 +63,7 @@ function toInventoryStock(row: InventoryStockRow): InventoryStock {
     stockQuantity: row.stock_quantity,
     minStock: row.min_stock,
     minDays: row.min_days,
+    notificate: row.notificate,
     currentStock: row.current_stock,
     nearestExpiry: row.nearest_expiry,
     daysUntilExpiry: row.days_until_expiry,
@@ -131,6 +133,7 @@ export class NeonInventoryRepository implements IInventoryRepository {
         1 AS stock_quantity,
         p.min_stock,
         p.min_days,
+        p.notificate,
         COALESCE((
           SELECT SUM(
             im2.quantity * mt2.stock_multiplier *

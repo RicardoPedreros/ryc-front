@@ -32,11 +32,12 @@ export function InventoryAlerts() {
 
   if (loading || !stock) return null;
 
-  const lowStockItems = stock.filter(
+  const notificableStock = stock.filter((item) => item.notificate);
+  const lowStockItems = notificableStock.filter(
     (item) => item.currentStock > 0 && item.currentStock <= item.minStock
   );
-  const outOfStock = stock.filter((item) => item.currentStock === 0);
-  const expiryItems = stock.filter(
+  const outOfStock = notificableStock.filter((item) => item.currentStock === 0);
+  const expiryItems = notificableStock.filter(
     (item) => item.daysUntilExpiry !== null && item.daysUntilExpiry <= item.minDays
   );
   const allAlerts = [
@@ -46,7 +47,7 @@ export function InventoryAlerts() {
       (e) => !outOfStock.some((o) => o.id === e.id) && !lowStockItems.some((l) => l.id === e.id)
     ),
   ];
-  const expiredItems = stock.filter(
+  const expiredItems = notificableStock.filter(
     (item) => item.daysUntilExpiry !== null && item.daysUntilExpiry <= 0
   );
 

@@ -2261,6 +2261,25 @@ a {
   font-weight: 500;
   color: var(--fg);
 }
+.mkt-notificate-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 0;
+  user-select: none;
+}
+.mkt-notificate-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.mkt-notificate-toggle-text {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg);
+}
 .mkt-alarms-detail {
   margin-top: 0.875rem;
   padding: 1rem;

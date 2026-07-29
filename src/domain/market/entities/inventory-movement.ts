@@ -36,6 +36,7 @@ export interface InventoryStock {
   readonly currentStock: number;
   readonly minStock: number;
   readonly minDays: number;
+  readonly notificate: boolean;
   readonly nearestExpiry: string | null;
   readonly daysUntilExpiry: number | null;
 }

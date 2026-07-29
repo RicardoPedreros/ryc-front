@@ -9,6 +9,7 @@ export interface Product {
   readonly stockQuantity: number;
   readonly minStock: number;
   readonly minDays: number;
+  readonly notificate: boolean;
   readonly barcode: string | null;
   readonly isActive: boolean;
   readonly createdAt: Date;
@@ -24,6 +25,7 @@ export interface CreateProduct {
   readonly stockQuantity?: number;
   readonly minStock?: number;
   readonly minDays?: number;
+  readonly notificate?: boolean;
   readonly barcode?: string | null;
 }
 
@@ -37,6 +39,7 @@ export interface UpdateProduct {
   readonly stockQuantity?: number;
   readonly minStock?: number;
   readonly minDays?: number;
+  readonly notificate?: boolean;
   readonly barcode?: string | null;
   readonly isActive?: boolean;
 }

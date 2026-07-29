@@ -13,6 +13,7 @@ interface ProductRow {
   stock_quantity: number;
   min_stock: number;
   min_days: number;
+  notificate: boolean;
   barcode: string | null;
   is_active: boolean;
   created_at: Date;
@@ -30,6 +31,7 @@ function toProduct(row: ProductRow): Product {
     stockQuantity: row.stock_quantity,
     minStock: row.min_stock,
     minDays: row.min_days,
+    notificate: row.notificate,
     barcode: row.barcode,
     isActive: row.is_active,
     createdAt: row.created_at,
@@ -52,8 +54,8 @@ export class NeonProductRepository implements IProductRepository {
   async create(product: CreateProduct): Promise<Product> {
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO products (category_id, unit_id, name, brand_id, parent_product_id, presentation_quantity, stock_quantity, min_stock, min_days, barcode)
-      VALUES (${product.categoryId}, ${product.unitId}, ${product.name}, ${product.brandId ?? null}, ${product.parentProductId ?? null}, ${product.presentationQuantity ?? null}, ${product.stockQuantity ?? 1}, ${product.minStock ?? 1}, ${product.minDays ?? 7}, ${product.barcode ?? null})
+      INSERT INTO products (category_id, unit_id, name, brand_id, parent_product_id, presentation_quantity, stock_quantity, min_stock, min_days, notificate, barcode)
+      VALUES (${product.categoryId}, ${product.unitId}, ${product.name}, ${product.brandId ?? null}, ${product.parentProductId ?? null}, ${product.presentationQuantity ?? null}, ${product.stockQuantity ?? 1}, ${product.minStock ?? 1}, ${product.minDays ?? 7}, ${product.notificate ?? true}, ${product.barcode ?? null})
       RETURNING *
     ` as ProductRow[];
     return toProduct(rows[0]);
@@ -73,6 +75,7 @@ export class NeonProductRepository implements IProductRepository {
         stock_quantity = COALESCE(${product.stockQuantity ?? null}, stock_quantity),
         min_stock = COALESCE(${product.minStock ?? null}, min_stock),
         min_days = COALESCE(${product.minDays ?? null}, min_days),
+        notificate = COALESCE(${product.notificate ?? null}, notificate),
         barcode = COALESCE(${product.barcode ?? null}, barcode),
         is_active = COALESCE(${product.isActive ?? null}, is_active)
       WHERE id = ${id}
@@ -98,6 +101,7 @@ export class NeonProductRepository implements IProductRepository {
         p.stock_quantity AS "stockQuantity",
         p.min_stock AS "minStock",
         p.min_days AS "minDays",
+        p.notificate,
         p.barcode
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id
@@ -127,6 +131,7 @@ export class NeonProductRepository implements IProductRepository {
         p.stock_quantity AS "stockQuantity",
         p.min_stock AS "minStock",
         p.min_days AS "minDays",
+        p.notificate,
         p.barcode
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id
@@ -157,6 +162,7 @@ export class NeonProductRepository implements IProductRepository {
         p.stock_quantity AS "stockQuantity",
         p.min_stock AS "minStock",
         p.min_days AS "minDays",
+        p.notificate,
         p.barcode
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id

@@ -14,6 +14,7 @@ export interface ProductSearchResult {
   readonly stockQuantity: number;
   readonly minStock: number;
   readonly minDays: number;
+  readonly notificate: boolean;
   readonly barcode: string | null;
 }
 

@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
-import { BrandChip, buildBrandPathLookup } from "@/presentation/components/market/BrandChip";
+import { BrandChip } from "@/presentation/components/market/BrandChip";
 import type { InventoryStock } from "@/domain/market/entities/inventory-movement";
-import type { Brand } from "@/domain/market/entities/brand";
 
 type AlertFilter = "all" | "stock" | "expiry";
 
@@ -26,8 +25,6 @@ function getExpiryBadgeClass(days: number | null): string {
 
 export function InventoryAlerts() {
   const { data: stock, loading } = useFetch<readonly InventoryStock[]>("/api/market/inventory");
-  const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
-  const brandPaths = buildBrandPathLookup(brands ?? []);
   const [filter, setFilter] = useState<AlertFilter>("all");
 
   if (loading || !stock) return null;
@@ -139,9 +136,7 @@ export function InventoryAlerts() {
 
             const packInfo = item.stockQuantity > 1 ? true : false;
 
-            const brandPath = item.brand
-              ? brandPaths.byName.get(item.brand) ?? null
-              : null;
+            const brandPath = item.brandPath;
 
             const dotClass =
               (isExpired || isOut) ? "danger"

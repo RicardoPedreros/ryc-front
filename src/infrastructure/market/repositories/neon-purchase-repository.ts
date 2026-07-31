@@ -1,7 +1,8 @@
 import type { Purchase, CreatePurchase, UpdatePurchase } from '@/domain/market/entities/purchase';
 import type { InventoryMovement } from '@/domain/market/entities/inventory-movement';
-import type { IPurchaseRepository } from '@/domain/market/repositories/purchase-repository';
+import type { IPurchaseRepository, PurchaseListItem, PurchaseItemDetail } from '@/domain/market/repositories/purchase-repository';
 import { getSql } from '../neon-client';
+import { toInventoryMovement, type InventoryMovementRow } from './inventory-movement-mapper';
 
 interface PurchaseRow {
   id: string;
@@ -13,18 +14,13 @@ interface PurchaseRow {
   created_at: Date;
 }
 
-interface InventoryMovementRow {
-  id: string;
-  product_id: string;
-  purchase_id: string | null;
-  movement_type_id: string;
-  quantity: number;
-  unit_price: number | null;
-  discount: number | null;
-  expiration_date: Date | null;
-  lot: string | null;
-  movement_date: Date;
-  notes: string | null;
+interface PurchaseListItemRow extends PurchaseRow {
+  store_name: string | null;
+  payment_method_name: string | null;
+}
+
+interface PurchaseItemDetailRow extends InventoryMovementRow {
+  product_name: string;
 }
 
 function toPurchase(row: PurchaseRow): Purchase {
@@ -41,21 +37,18 @@ function toPurchase(row: PurchaseRow): Purchase {
   };
 }
 
-function toInventoryMovement(row: InventoryMovementRow): InventoryMovement {
+function toPurchaseListItem(row: PurchaseListItemRow): PurchaseListItem {
   return {
-    id: row.id,
-    productId: row.product_id,
-    purchaseId: row.purchase_id,
-    movementTypeId: row.movement_type_id,
-    quantity: row.quantity,
-    unitPrice: row.unit_price,
-    discount: row.discount,
-    expirationDate: row.expiration_date instanceof Date
-      ? row.expiration_date.toISOString().split('T')[0]
-      : row.expiration_date ? String(row.expiration_date) : null,
-    lot: row.lot,
-    movementDate: row.movement_date,
-    notes: row.notes,
+    ...toPurchase(row),
+    storeName: row.store_name,
+    paymentMethodName: row.payment_method_name,
+  };
+}
+
+function toPurchaseItemDetail(row: PurchaseItemDetailRow): PurchaseItemDetail {
+  return {
+    ...toInventoryMovement(row),
+    productName: row.product_name,
   };
 }
 
@@ -64,6 +57,27 @@ export class NeonPurchaseRepository implements IPurchaseRepository {
     const sql = getSql();
     const rows = await sql`SELECT * FROM purchases ORDER BY purchase_date DESC` as PurchaseRow[];
     return rows.map(toPurchase);
+  }
+
+  async findAllWithDetails(): Promise<readonly PurchaseListItem[]> {
+    const sql = getSql();
+    const rows = await sql`
+      SELECT
+        p.id,
+        p.store_id,
+        p.purchase_date,
+        p.payment_method_id,
+        p.total,
+        p.notes,
+        p.created_at,
+        s.name AS store_name,
+        pm.name AS payment_method_name
+      FROM purchases p
+      LEFT JOIN stores s ON s.id = p.store_id
+      LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
+      ORDER BY p.purchase_date DESC
+    ` as PurchaseListItemRow[];
+    return rows.map(toPurchaseListItem);
   }
 
   async findById(id: string): Promise<Purchase | null> {
@@ -81,6 +95,31 @@ export class NeonPurchaseRepository implements IPurchaseRepository {
       ORDER BY im.movement_date DESC
     ` as InventoryMovementRow[];
     return rows.map(toInventoryMovement);
+  }
+
+  async findMovementsByPurchaseIds(purchaseIds: readonly string[]): Promise<readonly InventoryMovement[]> {
+    if (purchaseIds.length === 0) return [];
+    const sql = getSql();
+    const rows = await sql`
+      SELECT im.*
+      FROM inventory_movements im
+      WHERE im.purchase_id = ANY(${purchaseIds}::uuid[])
+      ORDER BY im.movement_date DESC
+    ` as InventoryMovementRow[];
+    return rows.map(toInventoryMovement);
+  }
+
+  async findMovementsWithProductByPurchaseIds(purchaseIds: readonly string[]): Promise<readonly PurchaseItemDetail[]> {
+    if (purchaseIds.length === 0) return [];
+    const sql = getSql();
+    const rows = await sql`
+      SELECT im.*, prod.name AS product_name
+      FROM inventory_movements im
+      JOIN products prod ON prod.id = im.product_id
+      WHERE im.purchase_id = ANY(${purchaseIds}::uuid[])
+      ORDER BY im.movement_date DESC
+    ` as PurchaseItemDetailRow[];
+    return rows.map(toPurchaseItemDetail);
   }
 
   async create(purchase: CreatePurchase): Promise<Purchase> {

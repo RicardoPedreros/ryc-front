@@ -2,15 +2,7 @@
 
 import { useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
-import type { Purchase } from "@/domain/market/entities/purchase";
-import type { InventoryMovement } from "@/domain/market/entities/inventory-movement";
-import type { Store } from "@/domain/market/entities/store";
-import type { PaymentMethod } from "@/domain/market/entities/payment-method";
-import type { Product } from "@/domain/market/entities/product";
-
-interface PurchaseWithItems extends Purchase {
-  readonly items?: readonly InventoryMovement[];
-}
+import type { PurchaseWithItems, PurchaseItemDetail } from "@/domain/market/repositories/purchase-repository";
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr + "T00:00:00");
@@ -28,14 +20,7 @@ function formatCurrency(amount: number): string {
 
 export function PurchaseHistory() {
   const { data: purchases, loading } = useFetch<readonly PurchaseWithItems[]>("/api/market/purchases?includeItems=true");
-  const { data: stores } = useFetch<readonly Store[]>("/api/market/stores");
-  const { data: paymentMethods } = useFetch<readonly PaymentMethod[]>("/api/market/payment-methods");
-  const { data: products } = useFetch<readonly Product[]>("/api/market/products");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-
-  const storeMap = new Map((stores ?? []).map((s) => [s.id, s.name]));
-  const pmMap = new Map((paymentMethods ?? []).map((pm) => [pm.id, pm.name]));
-  const productMap = new Map((products ?? []).map((p) => [p.id, p.name]));
 
   if (loading) {
     return (
@@ -75,9 +60,9 @@ export function PurchaseHistory() {
       <div className="mkt-card">
         {purchases.map((purchase) => {
           const isExpanded = expandedId === purchase.id;
-          const storeName = purchase.storeId ? storeMap.get(purchase.storeId) ?? "Sin tienda" : "Sin tienda";
-          const pmName = purchase.paymentMethodId ? pmMap.get(purchase.paymentMethodId) ?? "—" : "—";
-          const items = purchase.items ?? [];
+          const storeName = purchase.storeName ?? "Sin tienda";
+          const pmName = purchase.paymentMethodName ?? "—";
+          const items = purchase.items;
 
           return (
             <div key={purchase.id} className="mkt-purchase-row">
@@ -121,8 +106,8 @@ export function PurchaseHistory() {
                   {purchase.notes && <p className="mkt-purchase-notes">{purchase.notes}</p>}
                   {items.length > 0 ? (
                     <div className="mkt-purchase-items">
-                      {items.map((item) => {
-                        const productName = productMap.get(item.productId) ?? "Producto desconocido";
+                      {items.map((item: PurchaseItemDetail) => {
+                        const productName = item.productName;
                         const lineTotal = (item.unitPrice ?? 0) * item.quantity - (item.discount ?? 0);
                         return (
                           <div key={item.id} className="mkt-purchase-item">

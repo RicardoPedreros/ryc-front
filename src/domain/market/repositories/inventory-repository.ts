@@ -1,4 +1,4 @@
-import type { InventoryMovement, CreateInventoryMovement, InventoryStock, ProductLot } from '../entities/inventory-movement';
+import type { InventoryMovement, CreateInventoryMovement, InventoryStock, ProductLot, AdjustableProduct } from '../entities/inventory-movement';
 
 export interface CreateBatchAdjustment {
   readonly productId: string;
@@ -25,6 +25,7 @@ export interface IInventoryRepository {
   findMovementsByPurchaseId(purchaseId: string): Promise<readonly InventoryMovement[]>;
   getStock(): Promise<readonly InventoryStock[]>;
   getStockLots(productId?: string): Promise<readonly ProductLot[]>;
+  findAdjustableProducts(): Promise<readonly AdjustableProduct[]>;
   createMovement(movement: CreateInventoryMovement): Promise<InventoryMovement>;
   createBatchMovements(movements: readonly CreateBatchAdjustment[]): Promise<readonly InventoryMovement[]>;
   createPurchaseMovements(purchaseId: string, items: readonly CreatePurchaseMovementItem[]): Promise<readonly InventoryMovement[]>;

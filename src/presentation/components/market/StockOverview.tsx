@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
-import { BrandChip, buildBrandPathLookup } from "@/presentation/components/market/BrandChip";
+import { BrandChip } from "@/presentation/components/market/BrandChip";
 import type { InventoryStock, ProductLot } from "@/domain/market/entities/inventory-movement";
-import type { Brand } from "@/domain/market/entities/brand";
 
 function getExpiryLabel(days: number | null): string {
   if (days === null) return "";
@@ -30,8 +29,6 @@ function formatDate(dateStr: string): string {
 export function StockOverview() {
   const { data: stock, loading } = useFetch<readonly InventoryStock[]>("/api/market/inventory");
   const { data: lots } = useFetch<readonly ProductLot[]>("/api/market/inventory/lots");
-  const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
-  const brandPaths = buildBrandPathLookup(brands ?? []);
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -93,7 +90,7 @@ export function StockOverview() {
         {stock.map((item) => {
           const isLow = item.currentStock <= item.minStock;
           const isOut = item.currentStock === 0;
-          const brandPath = item.brand ? brandPaths.byName.get(item.brand) ?? null : null;
+          const brandPath = item.brandPath;
           const hasExpiry = item.daysUntilExpiry !== null;
           const expiryClass = hasExpiry ? getExpiryClass(item.daysUntilExpiry) : "";
           const isExpanded = expanded.has(item.id);
@@ -152,7 +149,7 @@ export function StockOverview() {
                   {productLots.map((lot) => {
                     const lotExpiryClass = lot.daysUntilExpiry !== null ? getExpiryClass(lot.daysUntilExpiry) : "";
                     return (
-                      <div key={lot.lot} className="mkt-stock-lot">
+                      <div key={`${lot.lot}|${lot.expirationDate ?? ""}`} className="mkt-stock-lot">
                         <div className="mkt-stock-lot-info">
                           <span className="mkt-stock-lot-name">
                             {lot.lot === "Sin lote" ? "Sin lote" : `Lote ${lot.lot}`}

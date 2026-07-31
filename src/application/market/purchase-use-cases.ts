@@ -1,7 +1,8 @@
 import type { CreatePurchase, UpdatePurchase } from '@/domain/market/entities/purchase';
-import type { IPurchaseRepository } from '@/domain/market/repositories/purchase-repository';
+import type { InventoryMovement } from '@/domain/market/entities/inventory-movement';
+import type { IPurchaseRepository, PurchaseItemDetail, PurchaseWithItems } from '@/domain/market/repositories/purchase-repository';
 import type { IInventoryRepository } from '@/domain/market/repositories/inventory-repository';
-import type { IProductRepository } from '@/domain/market/repositories/product-repository';
+import type { IMovementTypeRepository } from '@/domain/market/repositories/movement-type-repository';
 
 export interface PurchaseItemInput {
   readonly productId: string;
@@ -16,11 +17,20 @@ export class PurchaseUseCases {
   constructor(
     private readonly purchaseRepository: IPurchaseRepository,
     private readonly inventoryRepository: IInventoryRepository,
-    private readonly productRepository: IProductRepository,
+    private readonly movementTypeRepository: IMovementTypeRepository,
   ) {}
 
   async findAll() {
     return this.purchaseRepository.findAll();
+  }
+
+  async findAllWithItems(): Promise<readonly PurchaseWithItems[]> {
+    const purchases = await this.purchaseRepository.findAllWithDetails();
+    const itemsByPurchase = await this.findItemsWithProductsForPurchases(purchases.map((p) => p.id));
+    return purchases.map((p) => ({
+      ...p,
+      items: itemsByPurchase.get(p.id) ?? [],
+    }));
   }
 
   async findById(id: string) {
@@ -29,6 +39,30 @@ export class PurchaseUseCases {
 
   async findItems(purchaseId: string) {
     return this.purchaseRepository.findMovementsByPurchaseId(purchaseId);
+  }
+
+  async findItemsForPurchases(purchaseIds: readonly string[]): Promise<ReadonlyMap<string, InventoryMovement[]>> {
+    const movements = await this.purchaseRepository.findMovementsByPurchaseIds(purchaseIds);
+    const byPurchase = new Map<string, InventoryMovement[]>();
+    for (const m of movements) {
+      if (m.purchaseId == null) continue;
+      const list = byPurchase.get(m.purchaseId) ?? [];
+      list.push(m);
+      byPurchase.set(m.purchaseId, list);
+    }
+    return byPurchase;
+  }
+
+  async findItemsWithProductsForPurchases(purchaseIds: readonly string[]): Promise<ReadonlyMap<string, PurchaseItemDetail[]>> {
+    const movements = await this.purchaseRepository.findMovementsWithProductByPurchaseIds(purchaseIds);
+    const byPurchase = new Map<string, PurchaseItemDetail[]>();
+    for (const m of movements) {
+      if (m.purchaseId == null) continue;
+      const list = byPurchase.get(m.purchaseId) ?? [];
+      list.push(m);
+      byPurchase.set(m.purchaseId, list);
+    }
+    return byPurchase;
   }
 
   async create(purchase: CreatePurchase, items?: readonly PurchaseItemInput[]) {
@@ -74,8 +108,7 @@ export class PurchaseUseCases {
   }
 
   private async getPurchaseMovementTypeId(): Promise<string | null> {
-    const sql = (await import('@/infrastructure/market/neon-client')).getSql();
-    const rows = await sql`SELECT id FROM movement_types WHERE code = 'PURCHASE' LIMIT 1`;
-    return rows.length > 0 ? (rows[0] as { id: string }).id : null;
+    const movementType = await this.movementTypeRepository.findByCode('PURCHASE');
+    return movementType?.id ?? null;
   }
 }

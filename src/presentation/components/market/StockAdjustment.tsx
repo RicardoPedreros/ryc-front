@@ -53,6 +53,10 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+function lotKey(lot: ProductLot): string {
+  return `${lot.lot}|${lot.expirationDate ?? ""}`;
+}
+
 export function StockAdjustment() {
   const { data: products, loading: loadingProducts } = useFetch<readonly ProductWithStock[]>(
     "/api/market/inventory/adjust"
@@ -146,7 +150,7 @@ export function StockAdjustment() {
 
   const canDecrease = (selectedProduct?.currentStock ?? 0) > 0;
   const availableLots = (lots ?? []).filter((l) => l.quantity > 0);
-  const selectedLotData = availableLots.find((l) => l.lot === selectedLot) ?? null;
+  const selectedLotData = availableLots.find((l) => lotKey(l) === selectedLot) ?? null;
   const maxDecrease = selectedLotData?.quantity ?? 0;
 
   async function handleSave() {
@@ -157,34 +161,40 @@ export function StockAdjustment() {
     if (!inTypeId || !outTypeId) return;
 
     if (mode === "increase" && quantity <= 0) return;
-    if (mode === "decrease" && (!selectedLot || decreaseQty <= 0)) return;
+    if (mode === "decrease" && (!selectedLotData || decreaseQty <= 0)) return;
 
     setSaving(true);
     try {
-      const body = mode === "increase"
-        ? {
-            movements: [
-              {
-                productId: selectedProductId,
-                quantity,
-                movementTypeId: inTypeId,
-                expirationDate: hasExpiry && expiryDate ? expiryDate : null,
-                lot: lotName || null,
-                notes: "Ajuste de stock (+)",
-              },
-            ],
-          }
-        : {
-            movements: [
-              {
-                productId: selectedProductId,
-                quantity: decreaseQty,
-                movementTypeId: outTypeId,
-                lot: selectedLot === "Sin lote" ? null : selectedLot,
-                notes: `Ajuste de stock (-) del lote ${selectedLot}`,
-              },
-            ],
-          };
+      let body: { movements: readonly unknown[] };
+      if (mode === "increase") {
+        body = {
+          movements: [
+            {
+              productId: selectedProductId,
+              quantity,
+              movementTypeId: inTypeId,
+              expirationDate: hasExpiry && expiryDate ? expiryDate : null,
+              lot: lotName || null,
+              notes: "Ajuste de stock (+)",
+            },
+          ],
+        };
+      } else {
+        const lotData = selectedLotData;
+        if (!lotData) return;
+        body = {
+          movements: [
+            {
+              productId: selectedProductId,
+              quantity: decreaseQty,
+              movementTypeId: outTypeId,
+              lot: lotData.lot === "Sin lote" ? null : lotData.lot,
+              expirationDate: lotData.expirationDate,
+              notes: `Ajuste de stock (-) del lote ${lotData.lot}${lotData.expirationDate ? ` (vence ${lotData.expirationDate})` : ""}`,
+            },
+          ],
+        };
+      }
 
       const res = await fetch("/api/market/inventory/adjust", {
         method: "POST",
@@ -454,17 +464,17 @@ export function StockAdjustment() {
 
               <div className="mkt-adjust-lot-list">
                 {availableLots.map((lot) => {
-                  const isSelected = selectedLot === lot.lot;
+                  const isSelected = selectedLot === lotKey(lot);
                   const lotExpiryClass = lot.daysUntilExpiry !== null && lot.expirationDate ? expiryBadgeClass(lot.expirationDate) : "";
                   return (
                     <div
-                      key={lot.lot}
+                      key={lotKey(lot)}
                       className={`mkt-adjust-lot-item ${isSelected ? "selected" : ""} ${lot.daysUntilExpiry !== null && lot.daysUntilExpiry <= 0 ? "expired" : ""}`}
-                      onClick={() => { setSelectedLot(lot.lot); setDecreaseQty(1); }}
+                      onClick={() => { setSelectedLot(lotKey(lot)); setDecreaseQty(1); }}
                       role="radio"
                       aria-checked={isSelected}
                       tabIndex={0}
-                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedLot(lot.lot); setDecreaseQty(1); } }}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedLot(lotKey(lot)); setDecreaseQty(1); } }}
                     >
                       <div className="mkt-adjust-lot-radio">
                         {isSelected && <span className="mkt-adjust-lot-radio-dot" />}
@@ -492,11 +502,11 @@ export function StockAdjustment() {
                 })}
               </div>
 
-              {selectedLot && (
+              {selectedLot && selectedLotData && (
                 <div className="mkt-adjust-decrease-form">
                   <div className="mkt-adjust-qty-row">
                     <span className="mkt-adjust-qty-label">
-                      Unidades a retirar de <strong>{selectedLot === "Sin lote" ? "Sin lote" : selectedLot}</strong>
+                      Unidades a retirar de <strong>{selectedLotData.lot}{selectedLotData.expirationDate ? ` · vence ${formatDate(selectedLotData.expirationDate)}` : ""}</strong>
                     </span>
                     <div className="mkt-adjust-stepper">
                       <button

@@ -28,6 +28,7 @@ export interface InventoryStock {
   readonly id: string;
   readonly name: string;
   readonly brand: string | null;
+  readonly brandPath: string | null;
   readonly parentProductId: string | null;
   readonly categoryName: string | null;
   readonly unitSymbol: string | null;
@@ -48,4 +49,16 @@ export interface ProductLot {
   readonly expirationDate: string | null;
   readonly daysUntilExpiry: number | null;
   readonly latestMovementDate: string;
+}
+
+export interface AdjustableProduct {
+  readonly id: string;
+  readonly name: string;
+  readonly brand: string | null;
+  readonly brandId: string | null;
+  readonly categoryName: string | null;
+  readonly unitSymbol: string | null;
+  readonly presentationQuantity: number | null;
+  readonly stockQuantity: number;
+  readonly currentStock: number;
 }

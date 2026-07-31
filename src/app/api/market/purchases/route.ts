@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PurchaseUseCases } from '@/application/market/purchase-use-cases';
 import { NeonPurchaseRepository } from '@/infrastructure/market/repositories/neon-purchase-repository';
 import { NeonInventoryRepository } from '@/infrastructure/market/repositories/neon-inventory-repository';
-import { NeonProductRepository } from '@/infrastructure/market/repositories/neon-product-repository';
+import { NeonMovementTypeRepository } from '@/infrastructure/market/repositories/neon-movement-type-repository';
 
 const purchaseUseCases = new PurchaseUseCases(
   new NeonPurchaseRepository(),
   new NeonInventoryRepository(),
-  new NeonProductRepository(),
+  new NeonMovementTypeRepository(),
 );
 
 export async function GET(request: NextRequest) {
@@ -26,18 +26,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ...purchase, items });
     }
 
-    const purchases = await purchaseUseCases.findAll();
-
     if (includeItems) {
-      const withItems = await Promise.all(
-        purchases.map(async (p) => {
-          const items = await purchaseUseCases.findItems(p.id);
-          return { ...p, items };
-        }),
-      );
-      return NextResponse.json(withItems);
+      const purchases = await purchaseUseCases.findAllWithItems();
+      return NextResponse.json(purchases);
     }
 
+    const purchases = await purchaseUseCases.findAll();
     return NextResponse.json(purchases);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal server error';

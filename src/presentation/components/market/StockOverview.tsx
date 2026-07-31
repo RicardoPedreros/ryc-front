@@ -102,9 +102,9 @@ export function StockOverview() {
           return (
             <div
               key={item.id}
-              className={`mkt-stock-row ${hasExpiry && item.daysUntilExpiry! <= 0 ? "expired" : ""}`}
+              className={`mkt-stock-row ${hasExpiry && item.currentStock > 0 && item.daysUntilExpiry! <= 0 ? "expired" : ""}`}
             >
-              {hasExpiry && (
+              {hasExpiry && item.currentStock > 0 && (
                 <span className={`mkt-stock-expiry-bar ${expiryClass}`} />
               )}
               <div
@@ -132,7 +132,7 @@ export function StockOverview() {
                   </span>
                   {isOut && <span className="mkt-badge danger">Sin stock</span>}
                   {!isOut && isLow && <span className="mkt-badge warning">Bajo</span>}
-                  {hasExpiry && (
+                  {hasExpiry && item.currentStock > 0 && (
                     <span className={`mkt-badge ${expiryClass}`}>
                       {getExpiryLabel(item.daysUntilExpiry)}
                     </span>

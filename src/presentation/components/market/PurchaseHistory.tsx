@@ -27,7 +27,7 @@ function formatCurrency(amount: number): string {
 }
 
 export function PurchaseHistory() {
-  const { data: purchases, loading } = useFetch<readonly PurchaseWithItems[]>("/api/market/purchases");
+  const { data: purchases, loading } = useFetch<readonly PurchaseWithItems[]>("/api/market/purchases?includeItems=true");
   const { data: stores } = useFetch<readonly Store[]>("/api/market/stores");
   const { data: paymentMethods } = useFetch<readonly PaymentMethod[]>("/api/market/payment-methods");
   const { data: products } = useFetch<readonly Product[]>("/api/market/products");

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { StockOverview } from "@/presentation/components/market/StockOverview";
 import { InventoryAlerts } from "@/presentation/components/market/InventoryAlerts";
-import { StatsBar } from "@/presentation/components/market/StatsBar";
 
 export default function InventoryPage() {
   return (
@@ -15,7 +14,6 @@ export default function InventoryPage() {
           Ajustar stock
         </Link>
       </div>
-      <StatsBar />
       <InventoryAlerts />
       <StockOverview />
     </>

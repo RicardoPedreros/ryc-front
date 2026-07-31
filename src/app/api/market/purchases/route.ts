@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    const includeItems = searchParams.get('includeItems') === 'true';
 
     if (id) {
       const purchase = await purchaseUseCases.findById(id);
@@ -26,6 +27,17 @@ export async function GET(request: NextRequest) {
     }
 
     const purchases = await purchaseUseCases.findAll();
+
+    if (includeItems) {
+      const withItems = await Promise.all(
+        purchases.map(async (p) => {
+          const items = await purchaseUseCases.findItems(p.id);
+          return { ...p, items };
+        }),
+      );
+      return NextResponse.json(withItems);
+    }
+
     return NextResponse.json(purchases);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal server error';

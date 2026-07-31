@@ -40,6 +40,7 @@ export function InventoryAlerts() {
   const expiryItems = notificableStock.filter(
     (item) => item.daysUntilExpiry !== null && item.daysUntilExpiry <= item.minDays
   );
+  const stockAlerts = [...outOfStock, ...lowStockItems];
   const allAlerts = [
     ...outOfStock,
     ...lowStockItems.filter((l) => !outOfStock.some((o) => o.id === l.id)),
@@ -51,12 +52,15 @@ export function InventoryAlerts() {
     (item) => item.daysUntilExpiry !== null && item.daysUntilExpiry <= 0
   );
 
+  const allCount = allAlerts.length;
+  const stockCount = stockAlerts.length;
+  const expiryCount = expiryItems.length;
+  const hasAnyAlert = allCount > 0;
+
   const filteredItems =
-    filter === "stock" ? [...outOfStock, ...lowStockItems]
+    filter === "stock" ? stockAlerts
     : filter === "expiry" ? expiryItems
     : allAlerts;
-
-  const totalCount = filteredItems.length;
 
   const bannerExpired = expiredItems.length;
   const bannerUrgent = expiryItems.filter(
@@ -90,30 +94,30 @@ export function InventoryAlerts() {
       {/* Tabs + header */}
       <div className="mkt-section-header">
         <h2 className="mkt-section-title">Alertas</h2>
-        {totalCount > 0 && (
-          <span className="mkt-section-count danger">{totalCount}</span>
-        )}
       </div>
 
-      {totalCount > 0 && (
+      {hasAnyAlert && (
         <div className="mkt-alert-tabs">
           <button
             className={`mkt-alert-tab ${filter === "all" ? "active" : ""}`}
             onClick={() => setFilter("all")}
           >
             Todas
+            <span className="mkt-alert-tab-count">{allCount}</span>
           </button>
           <button
             className={`mkt-alert-tab ${filter === "stock" ? "active" : ""}`}
             onClick={() => setFilter("stock")}
           >
             Stock bajo
+            <span className="mkt-alert-tab-count">{stockCount}</span>
           </button>
           <button
             className={`mkt-alert-tab ${filter === "expiry" ? "active" : ""}`}
             onClick={() => setFilter("expiry")}
           >
             Vencimiento
+            <span className="mkt-alert-tab-count">{expiryCount}</span>
           </button>
         </div>
       )}
@@ -184,15 +188,20 @@ export function InventoryAlerts() {
             );
           })}
         </div>
-      ) : (
-        totalCount === 0 && (
-          <div className="mkt-card">
-            <div className="mkt-empty-state">
-              <p>Sin alertas por ahora</p>
-              <p className="mkt-empty-sub">Todo está en orden con tu inventario</p>
-            </div>
+      ) : hasAnyAlert ? (
+        <div className="mkt-card">
+          <div className="mkt-empty-state">
+            <p>Sin alertas en esta categoría</p>
+            <p className="mkt-empty-sub">Probá con otra pestaña</p>
           </div>
-        )
+        </div>
+      ) : (
+        <div className="mkt-card">
+          <div className="mkt-empty-state">
+            <p>Sin alertas por ahora</p>
+            <p className="mkt-empty-sub">Todo está en orden con tu inventario</p>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -134,34 +134,13 @@ export class NeonInventoryRepository implements IInventoryRepository {
         FROM brands b
         JOIN brand_paths bp ON b.parent_brand_id = bp.id
       ),
-      stock_agg AS (
+      balance_agg AS (
         SELECT
-          CASE WHEN pp.parent_product_id IS NOT NULL THEN pp.parent_product_id ELSE pp.id END AS product_id,
-          SUM(im.quantity * mt.stock_multiplier *
-            CASE WHEN pp.parent_product_id IS NOT NULL THEN COALESCE(pp.stock_quantity, 1) ELSE 1 END
-          )::int AS current_stock
-        FROM inventory_movements im
-        JOIN movement_types mt ON mt.id = im.movement_type_id
-        JOIN products pp ON pp.id = im.product_id
-        GROUP BY 1
-      ),
-      expiry_agg AS (
-        SELECT e.product_id, MIN(e.date) AS nearest_expiry
-        FROM (
-          SELECT
-            CASE WHEN pp.parent_product_id IS NOT NULL THEN pp.parent_product_id ELSE pp.id END AS product_id,
-            im.expiration_date AS date,
-            SUM(im.quantity * mt.stock_multiplier *
-              CASE WHEN pp.parent_product_id IS NOT NULL THEN COALESCE(pp.stock_quantity, 1) ELSE 1 END
-            )::int AS balance
-          FROM inventory_movements im
-          JOIN movement_types mt ON mt.id = im.movement_type_id
-          JOIN products pp ON pp.id = im.product_id
-          WHERE im.expiration_date IS NOT NULL
-          GROUP BY 1, 2
-        ) e
-        WHERE e.balance > 0
-        GROUP BY e.product_id
+          product_id,
+          SUM(current_stock)::int AS current_stock,
+          MIN(CASE WHEN expiration_date < DATE '9999-12-31' AND current_stock > 0 THEN expiration_date END) AS nearest_expiry
+        FROM inventory_balance
+        GROUP BY product_id
       )
       SELECT
         p.id,
@@ -180,11 +159,11 @@ export class NeonInventoryRepository implements IInventoryRepository {
         p.min_stock,
         p.min_days,
         p.notificate,
-        COALESCE(sa.current_stock, 0) AS current_stock,
-        ea.nearest_expiry,
+        COALESCE(ba.current_stock, 0) AS current_stock,
+        ba.nearest_expiry,
         CASE
-          WHEN ea.nearest_expiry IS NOT NULL
-            THEN (ea.nearest_expiry::date - CURRENT_DATE)
+          WHEN ba.nearest_expiry IS NOT NULL
+            THEN (ba.nearest_expiry::date - CURRENT_DATE)
           ELSE NULL
         END::int AS days_until_expiry
       FROM products p
@@ -192,8 +171,7 @@ export class NeonInventoryRepository implements IInventoryRepository {
       LEFT JOIN brand_paths bp ON bp.id = p.brand_id
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN units u ON p.unit_id = u.id
-      LEFT JOIN stock_agg sa ON sa.product_id = p.id
-      LEFT JOIN expiry_agg ea ON ea.product_id = p.id
+      LEFT JOIN balance_agg ba ON ba.product_id = p.id
       WHERE p.parent_product_id IS NULL
         AND p.is_active = true
       ORDER BY p.name
@@ -204,16 +182,10 @@ export class NeonInventoryRepository implements IInventoryRepository {
   async findAdjustableProducts(): Promise<readonly AdjustableProduct[]> {
     const sql = getSql();
     const rows = await sql`
-      WITH stock_agg AS (
-        SELECT
-          CASE WHEN pp.parent_product_id IS NOT NULL THEN pp.parent_product_id ELSE pp.id END AS product_id,
-          SUM(im.quantity * mt.stock_multiplier *
-            CASE WHEN pp.parent_product_id IS NOT NULL THEN COALESCE(pp.stock_quantity, 1) ELSE 1 END
-          )::int AS current_stock
-        FROM inventory_movements im
-        JOIN movement_types mt ON mt.id = im.movement_type_id
-        JOIN products pp ON pp.id = im.product_id
-        GROUP BY 1
+      WITH balance_agg AS (
+        SELECT product_id, SUM(current_stock)::int AS current_stock
+        FROM inventory_balance
+        GROUP BY product_id
       )
       SELECT
         p.id,
@@ -224,12 +196,12 @@ export class NeonInventoryRepository implements IInventoryRepository {
         u.symbol AS "unitSymbol",
         p.presentation_quantity AS "presentationQuantity",
         1 AS stock_quantity,
-        COALESCE(sa.current_stock, 0) AS current_stock
+        COALESCE(ba.current_stock, 0) AS current_stock
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN units u ON p.unit_id = u.id
-      LEFT JOIN stock_agg sa ON sa.product_id = p.id
+      LEFT JOIN balance_agg ba ON ba.product_id = p.id
       WHERE p.parent_product_id IS NULL
         AND p.is_active = true
       ORDER BY p.name
@@ -241,36 +213,33 @@ export class NeonInventoryRepository implements IInventoryRepository {
     const sql = getSql();
     const rows = await sql`
       SELECT
-        CASE WHEN pp.parent_product_id IS NOT NULL THEN pp.parent_product_id ELSE im.product_id END AS product_id,
-        COALESCE(im.lot, 'Sin lote') AS lot,
-        SUM(im.quantity * mt.stock_multiplier *
-          CASE WHEN pp.parent_product_id IS NOT NULL THEN COALESCE(pp.stock_quantity, 1) ELSE 1 END
-        )::int AS quantity,
-        im.expiration_date AS expiration_date,
+        ib.product_id,
+        COALESCE(latest.lot, 'Sin lote') AS lot,
+        ib.current_stock::int AS quantity,
+        ib.expiration_date AS expiration_date,
         CASE
-          WHEN im.expiration_date IS NOT NULL
-            THEN (im.expiration_date::date - CURRENT_DATE)
+          WHEN ib.expiration_date < DATE '9999-12-31'
+            THEN (ib.expiration_date::date - CURRENT_DATE)
           ELSE NULL
         END::int AS days_until_expiry,
-        MAX(im.movement_date) AS latest_movement_date
-      FROM inventory_movements im
-      JOIN movement_types mt ON mt.id = im.movement_type_id
-      JOIN products pp ON pp.id = im.product_id
+        COALESCE(latest.movement_date, ib.updated_at) AS latest_movement_date
+      FROM inventory_balance ib
+      LEFT JOIN LATERAL (
+        SELECT im.lot, im.movement_date
+        FROM inventory_movements im
+        LEFT JOIN products pp ON pp.id = im.product_id
+        WHERE COALESCE(pp.parent_product_id, im.product_id) = ib.product_id
+          AND COALESCE(im.expiration_date, DATE '9999-12-31') = ib.expiration_date
+        ORDER BY im.movement_date DESC
+        LIMIT 1
+      ) latest ON true
+      WHERE ib.current_stock > 0
       ${productId != null
         ? sql`
-            WHERE im.product_id = ${productId} OR pp.parent_product_id = ${productId}
+            AND ib.product_id = ${productId}
           `
         : sql``}
-      GROUP BY
-        CASE WHEN pp.parent_product_id IS NOT NULL THEN pp.parent_product_id ELSE im.product_id END,
-        COALESCE(im.lot, 'Sin lote'),
-        im.expiration_date
-      HAVING SUM(im.quantity * mt.stock_multiplier *
-        CASE WHEN pp.parent_product_id IS NOT NULL THEN COALESCE(pp.stock_quantity, 1) ELSE 1 END
-      ) > 0
-      ORDER BY
-        CASE WHEN pp.parent_product_id IS NOT NULL THEN pp.parent_product_id ELSE im.product_id END,
-        im.expiration_date ASC NULLS LAST
+      ORDER BY ib.product_id, ib.expiration_date ASC NULLS LAST
     ` as ProductLotRow[];
     return rows.map(toProductLot);
   }

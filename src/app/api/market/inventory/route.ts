@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InventoryUseCases } from '@/application/market/inventory-use-cases';
 import { NeonInventoryRepository } from '@/infrastructure/market/repositories/neon-inventory-repository';
+import { getUserIdFromSession } from '@/shared/auth';
 
 const inventoryUseCases = new InventoryUseCases(new NeonInventoryRepository());
 
@@ -24,8 +25,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = getUserIdFromSession(request);
     const body = await request.json();
-    const movement = await inventoryUseCases.createMovement(body);
+    const movement = await inventoryUseCases.createMovement({ ...body, createdBy: userId });
     return NextResponse.json(movement, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal server error';

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UnitUseCases } from '@/application/market/unit-use-cases';
 import { NeonUnitRepository } from '@/infrastructure/market/repositories/neon-unit-repository';
+import { getSessionFromRequest } from '@/shared/auth';
 
 const unitUseCases = new UnitUseCases(new NeonUnitRepository());
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const units = await unitUseCases.findAll();
+    const session = getSessionFromRequest(request);
+    const units = await unitUseCases.findManyWithVisibility(session?.id ?? null, session?.roleCode ?? null);
     return NextResponse.json(units);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal server error';
@@ -16,8 +18,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = getSessionFromRequest(request);
     const body = await request.json();
-    const unit = await unitUseCases.create(body);
+    const unit = await unitUseCases.create({ ...body, createdBy: session?.id ?? null });
     return NextResponse.json(unit, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal server error';

@@ -22,6 +22,7 @@ export interface CreateInventoryMovement {
   readonly expirationDate?: string | null;
   readonly lot?: string | null;
   readonly notes?: string | null;
+  readonly createdBy?: string | null;
 }
 
 export interface InventoryStock {
@@ -29,6 +30,7 @@ export interface InventoryStock {
   readonly name: string;
   readonly brand: string | null;
   readonly brandPath: string | null;
+  readonly brandIcon: string | null;
   readonly parentProductId: string | null;
   readonly categoryName: string | null;
   readonly unitSymbol: string | null;

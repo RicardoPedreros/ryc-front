@@ -1,5 +1,5 @@
 import type { InventoryMovement, CreateInventoryMovement, InventoryStock, ProductLot, AdjustableProduct } from '@/domain/market/entities/inventory-movement';
-import type { IInventoryRepository, CreateBatchAdjustment } from '@/domain/market/repositories/inventory-repository';
+import type { IInventoryRepository, CreateBatchAdjustment, CreatePurchaseMovementItem } from '@/domain/market/repositories/inventory-repository';
 import { getSql } from '../neon-client';
 import { toInventoryMovement, type InventoryMovementRow } from './inventory-movement-mapper';
 
@@ -8,6 +8,7 @@ interface InventoryStockRow {
   name: string;
   brand: string | null;
   brandPath: string | null;
+  brandIcon: string | null;
   parentProductId: string | null;
   categoryName: string | null;
   unitSymbol: string | null;
@@ -27,6 +28,7 @@ function toInventoryStock(row: InventoryStockRow): InventoryStock {
     name: row.name,
     brand: row.brand,
     brandPath: row.brandPath,
+    brandIcon: row.brandIcon,
     parentProductId: row.parentProductId,
     categoryName: row.categoryName,
     unitSymbol: row.unitSymbol,
@@ -146,6 +148,7 @@ export class NeonInventoryRepository implements IInventoryRepository {
         p.id,
         p.name,
         b.name AS brand,
+        b.icon AS "brandIcon",
         CASE
           WHEN b.id IS NULL THEN NULL
           WHEN b.parent_brand_id IS NULL THEN NULL
@@ -214,7 +217,7 @@ export class NeonInventoryRepository implements IInventoryRepository {
     const rows = await sql`
       SELECT
         ib.product_id,
-        COALESCE(latest.lot, 'Sin lote') AS lot,
+        COALESCE(ib.lot, 'Sin lote') AS lot,
         ib.current_stock::int AS quantity,
         ib.expiration_date AS expiration_date,
         CASE
@@ -229,6 +232,7 @@ export class NeonInventoryRepository implements IInventoryRepository {
         FROM inventory_movements im
         LEFT JOIN products pp ON pp.id = im.product_id
         WHERE COALESCE(pp.parent_product_id, im.product_id) = ib.product_id
+          AND COALESCE(im.lot, '') = COALESCE(ib.lot, '')
           AND COALESCE(im.expiration_date, DATE '9999-12-31') = ib.expiration_date
         ORDER BY im.movement_date DESC
         LIMIT 1
@@ -247,8 +251,8 @@ export class NeonInventoryRepository implements IInventoryRepository {
   async createMovement(movement: CreateInventoryMovement): Promise<InventoryMovement> {
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO inventory_movements (product_id, purchase_id, movement_type_id, quantity, unit_price, discount, expiration_date, lot, notes)
-      VALUES (${movement.productId}, ${movement.purchaseId ?? null}, ${movement.movementTypeId}, ${movement.quantity}, ${movement.unitPrice ?? null}, ${movement.discount ?? 0}, ${movement.expirationDate ?? null}, ${movement.lot ?? null}, ${movement.notes ?? null})
+      INSERT INTO inventory_movements (product_id, purchase_id, movement_type_id, quantity, unit_price, discount, expiration_date, lot, notes, created_by)
+      VALUES (${movement.productId}, ${movement.purchaseId ?? null}, ${movement.movementTypeId}, ${movement.quantity}, ${movement.unitPrice ?? null}, ${movement.discount ?? 0}, ${movement.expirationDate ?? null}, ${movement.lot ?? null}, ${movement.notes ?? null}, ${movement.createdBy ?? null})
       RETURNING *
     ` as InventoryMovementRow[];
     return toInventoryMovement(rows[0]);
@@ -258,14 +262,15 @@ export class NeonInventoryRepository implements IInventoryRepository {
     if (movements.length === 0) return [];
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO inventory_movements (product_id, movement_type_id, quantity, expiration_date, lot, notes)
+      INSERT INTO inventory_movements (product_id, movement_type_id, quantity, expiration_date, lot, notes, created_by)
       SELECT * FROM unnest(
         ${movements.map((m) => m.productId)}::uuid[],
         ${movements.map((m) => m.movementTypeId)}::uuid[],
         ${movements.map((m) => m.quantity)}::numeric[],
         ${movements.map((m) => m.expirationDate ?? null)}::date[],
         ${movements.map((m) => m.lot ?? null)}::text[],
-        ${movements.map((m) => m.notes ?? null)}::text[]
+        ${movements.map((m) => m.notes ?? null)}::text[],
+        ${movements.map((m) => m.createdBy ?? null)}::uuid[]
       )
       RETURNING *
     ` as InventoryMovementRow[];
@@ -274,12 +279,12 @@ export class NeonInventoryRepository implements IInventoryRepository {
 
   async createPurchaseMovements(
     purchaseId: string,
-    items: readonly { productId: string; movementTypeId: string; quantity: number; unitPrice: number; discount: number; expirationDate: string | null; lot: string | null }[]
+    items: readonly CreatePurchaseMovementItem[]
   ): Promise<readonly InventoryMovement[]> {
     if (items.length === 0) return [];
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO inventory_movements (product_id, purchase_id, movement_type_id, quantity, unit_price, discount, expiration_date, lot)
+      INSERT INTO inventory_movements (product_id, purchase_id, movement_type_id, quantity, unit_price, discount, expiration_date, lot, created_by)
       SELECT * FROM unnest(
         ${items.map((i) => i.productId)}::uuid[],
         ${Array(items.length).fill(purchaseId)}::uuid[],
@@ -288,7 +293,8 @@ export class NeonInventoryRepository implements IInventoryRepository {
         ${items.map((i) => i.unitPrice)}::numeric[],
         ${items.map((i) => i.discount)}::numeric[],
         ${items.map((i) => i.expirationDate ?? null)}::date[],
-        ${items.map((i) => i.lot ?? null)}::text[]
+        ${items.map((i) => i.lot ?? null)}::text[],
+        ${items.map((i) => i.createdBy ?? null)}::uuid[]
       )
       RETURNING *
     ` as InventoryMovementRow[];

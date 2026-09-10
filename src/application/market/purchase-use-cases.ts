@@ -24,12 +24,24 @@ export class PurchaseUseCases {
     return this.purchaseRepository.findAll();
   }
 
+  async findManyWithVisibility(userId: string | null, roleCode: string | null) {
+    return this.purchaseRepository.findManyWithVisibility(userId, roleCode);
+  }
+
   async findAllWithItems(): Promise<readonly PurchaseWithItems[]> {
-    const purchases = await this.purchaseRepository.findAllWithDetails();
+    return this.findAllWithItemsFiltered(null, null);
+  }
+
+  async findAllWithItemsFiltered(userId: string | null, roleCode: string | null): Promise<readonly PurchaseWithItems[]> {
+    const purchases = await this.purchaseRepository.findManyWithDetailsWithVisibility(userId, roleCode);
     const itemsByPurchase = await this.findItemsWithProductsForPurchases(purchases.map((p) => p.id));
     return purchases.map((p) => ({
       ...p,
       items: itemsByPurchase.get(p.id) ?? [],
+      computedTotal: (itemsByPurchase.get(p.id) ?? []).reduce(
+        (sum, item) => sum + ((item.unitPrice ?? 0) * item.quantity - (item.discount ?? 0)),
+        0,
+      ),
     }));
   }
 
@@ -88,6 +100,7 @@ export class PurchaseUseCases {
           discount: item.discount ?? 0,
           expirationDate: item.expirationDate ?? null,
           lot: item.lot ?? null,
+          createdBy: purchase.createdBy ?? null,
         }))
       );
     }

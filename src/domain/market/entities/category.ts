@@ -4,6 +4,7 @@ export interface Category {
   readonly name: string;
   readonly icon: string | null;
   readonly color: string | null;
+  readonly createdBy: string | null;
   readonly createdAt: Date;
 }
 
@@ -12,6 +13,7 @@ export interface CreateCategory {
   readonly name: string;
   readonly icon?: string | null;
   readonly color?: string | null;
+  readonly createdBy?: string | null;
 }
 
 export interface UpdateCategory {

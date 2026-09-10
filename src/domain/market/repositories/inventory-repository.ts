@@ -7,6 +7,7 @@ export interface CreateBatchAdjustment {
   readonly expirationDate?: string | null;
   readonly lot?: string | null;
   readonly notes?: string | null;
+  readonly createdBy?: string | null;
 }
 
 export interface CreatePurchaseMovementItem {
@@ -17,6 +18,7 @@ export interface CreatePurchaseMovementItem {
   readonly discount: number;
   readonly expirationDate: string | null;
   readonly lot: string | null;
+  readonly createdBy?: string | null;
 }
 
 export interface IInventoryRepository {

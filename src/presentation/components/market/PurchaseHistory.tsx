@@ -83,8 +83,8 @@ export function PurchaseHistory() {
                   )}
                 </div>
                 <div className="mkt-purchase-right">
-                  {purchase.total != null && (
-                    <span className="mkt-purchase-total">{formatCurrency(purchase.total)}</span>
+                  {purchase.items.length > 0 && (
+                    <span className="mkt-purchase-total">{formatCurrency(purchase.computedTotal)}</span>
                   )}
                   <svg
                     width="14"

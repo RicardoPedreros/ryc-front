@@ -8,20 +8,28 @@ export class ProductUseCases {
     return this.productRepository.findAll();
   }
 
+  async findManyWithVisibility(userId: string | null, roleCode: string | null) {
+    return this.productRepository.findManyWithVisibility(userId, roleCode);
+  }
+
   async findAllWithDetails() {
     return this.productRepository.findAllWithDetails();
+  }
+
+  async findManyWithDetailsWithVisibility(userId: string | null, roleCode: string | null) {
+    return this.productRepository.findManyWithDetailsWithVisibility(userId, roleCode);
   }
 
   async findById(id: string) {
     return this.productRepository.findById(id);
   }
 
-  async searchByName(query: string) {
-    return this.productRepository.searchByName(query);
+  async searchByName(query: string, userId: string | null, roleCode: string | null) {
+    return this.productRepository.searchByName(query, userId, roleCode);
   }
 
-  async findByBarcode(barcode: string) {
-    return this.productRepository.findByBarcode(barcode);
+  async findByBarcode(barcode: string, userId: string | null, roleCode: string | null) {
+    return this.productRepository.findByBarcode(barcode, userId, roleCode);
   }
 
   async create(product: CreateProduct) {

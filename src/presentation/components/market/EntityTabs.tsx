@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import Switch from "@mui/material/Switch";
 import Stack from "@mui/material/Stack";
 import { useFetch } from "@/presentation/hooks/useFetch";
@@ -12,7 +12,6 @@ import type { Category } from "@/domain/market/entities/category";
 import type { Unit } from "@/domain/market/entities/unit";
 import type { Brand } from "@/domain/market/entities/brand";
 import type { InventoryStock } from "@/domain/market/entities/inventory-movement";
-import type { ProductSearchResult } from "@/domain/market/repositories/product-repository";
 
 type EntityTab = "productos" | "tiendas" | "categorias" | "unidades" | "marcas";
 
@@ -28,6 +27,12 @@ interface EntityListProps {
   readonly onAdd: (tab: EntityTab) => void;
 }
 
+interface EntityTabsProps {
+  readonly activeTab: EntityTab;
+  readonly onTabChange: (tab: EntityTab) => void;
+  readonly refreshKey: number;
+}
+
 function ProductList({ onAdd }: EntityListProps) {
   const { data: products, loading, refetch: refetchProducts } = useFetch<readonly Product[]>("/api/market/products");
   const { data: stock, refetch: refetchStock } = useFetch<readonly InventoryStock[]>("/api/market/inventory");
@@ -41,6 +46,7 @@ function ProductList({ onAdd }: EntityListProps) {
 
   const catMap = new Map((categories ?? []).map((c) => [c.id, c.name]));
   const brandNameMap = new Map((brands ?? []).map((b) => [b.id, b.name]));
+  const brandIconMap = new Map((brands ?? []).map((b) => [b.id, b.icon]));
   const brandPaths = buildBrandPathLookup(brands ?? []);
   const stockMap = new Map((stock ?? []).map((s) => [s.id, s.currentStock]));
 
@@ -74,6 +80,7 @@ function ProductList({ onAdd }: EntityListProps) {
           const qty = stockMap.get(product.id) ?? 0;
           const isLow = qty <= 2;
           const brandName = product.brandId ? brandNameMap.get(product.brandId) ?? null : null;
+          const brandIcon = product.brandId ? brandIconMap.get(product.brandId) ?? null : null;
           const brandPath = product.brandId ? brandPaths.byId.get(product.brandId) ?? null : null;
           return (
             <div key={product.id} className="mkt-entity-item" role="button" tabIndex={0} onClick={() => openEdit(product)} onKeyDown={(e) => { if (e.key === "Enter") openEdit(product); }}>
@@ -87,7 +94,7 @@ function ProductList({ onAdd }: EntityListProps) {
                 <div className="mkt-entity-body">
                   <span className="mkt-entity-name">{product.name}</span>
                   <span className="mkt-entity-meta">
-                    {brandName && <BrandChip brandName={brandName} brandPath={brandPath} />}
+                    {brandName && <BrandChip brandName={brandName} brandPath={brandPath} brandIcon={brandIcon} />}
                     {brandName && " · "}
                     {catMap.get(product.categoryId) ?? "Sin categoría"}
                     {product.stockQuantity > 1 && ` · x${product.stockQuantity}`}
@@ -555,11 +562,9 @@ function BrandList({ onAdd }: EntityListProps) {
   );
 }
 
-export function EntityTabs() {
-  const [activeTab, setActiveTab] = useState<EntityTab>("productos");
-
+export function EntityTabs({ activeTab, onTabChange, refreshKey }: EntityTabsProps) {
   const handleAdd = (tab: EntityTab) => {
-    setActiveTab(tab);
+    onTabChange(tab);
   };
 
   return (
@@ -570,13 +575,13 @@ export function EntityTabs() {
             key={tab.id}
             type="button"
             className={`mkt-pill-tab ${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => onTabChange(tab.id)}
           >
             {tab.label}
           </button>
         ))}
       </div>
-      <div className="mkt-card">
+      <div className="mkt-card" key={refreshKey}>
         {activeTab === "productos" && <ProductList onAdd={handleAdd} />}
         {activeTab === "tiendas" && <StoreList onAdd={handleAdd} />}
         {activeTab === "categorias" && <CategoryList onAdd={handleAdd} />}

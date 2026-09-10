@@ -12,6 +12,7 @@ export interface PurchaseItemDetail extends InventoryMovement {
 
 export interface PurchaseWithItems extends PurchaseListItem {
   readonly items: readonly PurchaseItemDetail[];
+  readonly computedTotal: number;
 }
 
 export interface IPurchaseRepository {
@@ -21,6 +22,8 @@ export interface IPurchaseRepository {
   findMovementsByPurchaseId(purchaseId: string): Promise<readonly InventoryMovement[]>;
   findMovementsByPurchaseIds(purchaseIds: readonly string[]): Promise<readonly InventoryMovement[]>;
   findMovementsWithProductByPurchaseIds(purchaseIds: readonly string[]): Promise<readonly PurchaseItemDetail[]>;
+  findManyWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly Purchase[]>;
+  findManyWithDetailsWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly PurchaseListItem[]>;
   create(purchase: CreatePurchase): Promise<Purchase>;
   update(id: string, purchase: UpdatePurchase): Promise<Purchase | null>;
   remove(id: string): Promise<boolean>;

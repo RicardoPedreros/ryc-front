@@ -7,8 +7,9 @@ export interface BrandWithChildren extends Brand {
 export interface IBrandRepository {
   findAll(): Promise<readonly Brand[]>;
   findById(id: string): Promise<Brand | null>;
-  findChildren(parentId: string): Promise<readonly Brand[]>;
-  findHierarchy(): Promise<readonly BrandWithChildren[]>;
+  findHierarchy(): Promise<readonly Brand[]>;
+  findManyWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly Brand[]>;
+  findHierarchyWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly Brand[]>;
   create(brand: CreateBrand): Promise<Brand>;
   update(id: string, brand: UpdateBrand): Promise<Brand | null>;
   remove(id: string): Promise<boolean>;

@@ -196,7 +196,7 @@ export function ShoppingList() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       searchProducts(value);
-    }, 300);
+    }, 2500);
   };
 
   const handleNameKeyDown = (e: React.KeyboardEvent) => {

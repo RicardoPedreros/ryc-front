@@ -39,6 +39,7 @@ export function PurchaseModals() {
   const { refetch: refetchPurchases } = useFetch<readonly Purchase[]>("/api/market/purchases");
 
   const brandPathLookup = buildBrandPathLookup(brands ?? []);
+  const brandIcons = new Map<string, string | null>((brands ?? []).map((b) => [b.id, b.icon]));
 
   const openModal = () => {
     setActiveModal("compra");
@@ -62,8 +63,6 @@ export function PurchaseModals() {
       items = [];
     }
 
-    const total = items.reduce((sum, item) => sum + item.unitPrice * item.quantity - item.discount, 0);
-
     await fetch("/api/market/purchases", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -71,7 +70,6 @@ export function PurchaseModals() {
         storeId: form.get("storeId") || null,
         purchaseDate: form.get("purchaseDate") || new Date().toISOString().split("T")[0],
         paymentMethodId: form.get("paymentMethodId") || null,
-        total: total || null,
         notes: form.get("notes") || null,
         items: items.map((item) => ({
           productId: item.productId,
@@ -109,6 +107,7 @@ export function PurchaseModals() {
             paymentMethods={paymentMethods ?? []}
             products={products ?? []}
             brandPathLookup={brandPathLookup}
+            brandIcons={brandIcons}
             onClose={closeModal}
             onSubmit={handleCreatePurchase}
           />
@@ -123,6 +122,7 @@ function PurchaseFormInner({
   paymentMethods,
   products,
   brandPathLookup,
+  brandIcons,
   onClose,
   onSubmit,
 }: {
@@ -130,6 +130,7 @@ function PurchaseFormInner({
   readonly paymentMethods: readonly PaymentMethod[];
   readonly products: readonly ProductSearchResult[];
   readonly brandPathLookup: { readonly byId: ReadonlyMap<string, string>; readonly byName: ReadonlyMap<string, string> };
+  readonly brandIcons: ReadonlyMap<string, string | null>;
   readonly onClose: () => void;
   readonly onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }) {
@@ -213,7 +214,7 @@ function PurchaseFormInner({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       searchProducts(value);
-    }, 300);
+    }, 2500);
   };
 
   const handleNameKeyDown = (e: React.KeyboardEvent) => {
@@ -303,6 +304,7 @@ function PurchaseFormInner({
                           <BrandChip
                             brandName={p.brandName}
                             brandPath={p.brandId ? (brandPathLookup.byId.get(p.brandId) ?? null) : null}
+                            brandIcon={p.brandId ? (brandIcons.get(p.brandId) ?? null) : null}
                           />
                         </span>
                       );
@@ -425,7 +427,7 @@ function PurchaseFormInner({
                            <span className="mkt-search-result-name">
                              {p.name}
                              {p.stockQuantity > 1 && <span className="mkt-pack-chip">x{p.stockQuantity}</span>}
-                             {p.brandName ? <>{` `}<BrandChip brandName={p.brandName} brandPath={p.brandId ? (brandPathLookup.byId.get(p.brandId) ?? null) : null} /></> : null}
+                             {p.brandName ? <>{` `}<BrandChip brandName={p.brandName} brandPath={p.brandId ? (brandPathLookup.byId.get(p.brandId) ?? null) : null} brandIcon={p.brandId ? (brandIcons.get(p.brandId) ?? null) : null} /></> : null}
                            </span>
                            {pres && <span className="mkt-search-result-meta">{pres}</span>}
                          </div>

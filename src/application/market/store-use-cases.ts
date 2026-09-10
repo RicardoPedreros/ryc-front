@@ -8,6 +8,10 @@ export class StoreUseCases {
     return this.storeRepository.findAll();
   }
 
+  async findManyWithVisibility(userId: string | null, roleCode: string | null) {
+    return this.storeRepository.findManyWithVisibility(userId, roleCode);
+  }
+
   async findById(id: string) {
     return this.storeRepository.findById(id);
   }

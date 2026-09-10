@@ -8,6 +8,10 @@ export class CategoryUseCases {
     return this.categoryRepository.findAll();
   }
 
+  async findManyWithVisibility(userId: string | null, roleCode: string | null) {
+    return this.categoryRepository.findManyWithVisibility(userId, roleCode);
+  }
+
   async findById(id: string) {
     return this.categoryRepository.findById(id);
   }

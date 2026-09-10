@@ -71,6 +71,10 @@
   --surface-dim:  oklch(96% 0.004 var(--hue-neutral));
   --surface-raised: oklch(100% 0 0);
 
+  /* Canvas for brand logos — kept light in all themes since logos are
+     designed against white */
+  --logo-bg: oklch(100% 0 0);
+
   --fg:        oklch(18% 0.012 var(--hue-neutral));
   --fg-muted:  oklch(54% 0.012 var(--hue-neutral));
   --fg-subtle: oklch(72% 0.008 var(--hue-neutral));
@@ -2381,6 +2385,63 @@ a {
   background-position: right 0.75rem center;
 }
 
+.mkt-color-field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.mkt-color-field input[type="color"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 30px;
+  flex-shrink: 0;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.mkt-color-field input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.mkt-color-field input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius-sm) - 4px);
+}
+
+.mkt-color-code {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  color: var(--fg-subtle);
+}
+
+.mkt-color-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--fg-subtle);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+}
+
+.mkt-color-clear:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
 .mkt-form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2821,6 +2882,13 @@ a {
   margin-top: 0.25rem;
 }
 
+.mkt-form-error {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--danger);
+  margin-bottom: 0.75rem;
+}
+
 /* ── BrandChip (hierarchy indicator + tooltip) ── */
 
 .mkt-brand-chip {
@@ -2842,6 +2910,10 @@ a {
   background: var(--accent-soft);
   color: var(--accent);
   cursor: pointer;
+}
+
+.mkt-brand-chip.has-logo {
+  padding: 0.125rem 0.375rem;
 }
 
 .mkt-brand-chip-arrow {
@@ -2899,6 +2971,102 @@ a {
 }
 
 .mkt-brand-tooltip-sep {
+  color: var(--fg-subtle);
+}
+
+/* ── BrandLogo (reusable logo image box) ── */
+
+.mkt-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--logo-bg);
+  vertical-align: middle;
+}
+
+.mkt-brand-logo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.mkt-brand-logo img.loaded {
+  opacity: 1;
+}
+
+.mkt-brand-logo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-weight: 700;
+  color: var(--fg-muted);
+  background: var(--surface-dim);
+}
+
+.mkt-brand-chip-logo {
+  border-radius: 3px;
+}
+
+/* ── Brand Logo Preview ── */
+
+.mkt-brand-logo-previews {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.mkt-brand-logo-option {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mkt-brand-logo-option:hover {
+  border-color: var(--accent);
+}
+
+.mkt-brand-logo-option.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.mkt-brand-logo-preview {
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.mkt-brand-logo-label {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 0.625rem;
+  line-height: 1.2;
+  color: var(--fg-subtle);
+}
+
+.mkt-brand-logo-hint {
+  width: 100%;
+  text-align: center;
+  font-size: 0.6875rem;
   color: var(--fg-subtle);
 }
 

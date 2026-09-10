@@ -2,6 +2,7 @@ import type { Purchase, CreatePurchase, UpdatePurchase } from '@/domain/market/e
 import type { InventoryMovement } from '@/domain/market/entities/inventory-movement';
 import type { IPurchaseRepository, PurchaseListItem, PurchaseItemDetail } from '@/domain/market/repositories/purchase-repository';
 import { getSql } from '../neon-client';
+import { getAdminIds } from '@/shared/auth';
 import { toInventoryMovement, type InventoryMovementRow } from './inventory-movement-mapper';
 
 interface PurchaseRow {
@@ -9,8 +10,8 @@ interface PurchaseRow {
   store_id: string | null;
   purchase_date: Date;
   payment_method_id: string | null;
-  total: number | null;
   notes: string | null;
+  created_by: string | null;
   created_at: Date;
 }
 
@@ -31,8 +32,8 @@ function toPurchase(row: PurchaseRow): Purchase {
       ? row.purchase_date.toISOString().split('T')[0]
       : String(row.purchase_date),
     paymentMethodId: row.payment_method_id,
-    total: row.total,
     notes: row.notes,
+    createdBy: row.created_by,
     createdAt: row.created_at,
   };
 }
@@ -67,8 +68,8 @@ export class NeonPurchaseRepository implements IPurchaseRepository {
         p.store_id,
         p.purchase_date,
         p.payment_method_id,
-        p.total,
         p.notes,
+        p.created_by,
         p.created_at,
         s.name AS store_name,
         pm.name AS payment_method_name
@@ -125,8 +126,8 @@ export class NeonPurchaseRepository implements IPurchaseRepository {
   async create(purchase: CreatePurchase): Promise<Purchase> {
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO purchases (store_id, purchase_date, payment_method_id, total, notes)
-      VALUES (${purchase.storeId ?? null}, ${purchase.purchaseDate}, ${purchase.paymentMethodId ?? null}, ${purchase.total ?? null}, ${purchase.notes ?? null})
+      INSERT INTO purchases (store_id, purchase_date, payment_method_id, notes, created_by)
+      VALUES (${purchase.storeId ?? null}, ${purchase.purchaseDate}, ${purchase.paymentMethodId ?? null}, ${purchase.notes ?? null}, ${purchase.createdBy ?? null})
       RETURNING *
     ` as PurchaseRow[];
     return toPurchase(rows[0]);
@@ -140,7 +141,6 @@ export class NeonPurchaseRepository implements IPurchaseRepository {
         store_id = COALESCE(${purchase.storeId ?? null}, store_id),
         purchase_date = COALESCE(${purchase.purchaseDate}, purchase_date),
         payment_method_id = COALESCE(${purchase.paymentMethodId ?? null}, payment_method_id),
-        total = COALESCE(${purchase.total ?? null}, total),
         notes = COALESCE(${purchase.notes ?? null}, notes)
       WHERE id = ${id}
       RETURNING *
@@ -152,5 +152,58 @@ export class NeonPurchaseRepository implements IPurchaseRepository {
     const sql = getSql();
     const rows = await sql`DELETE FROM purchases WHERE id = ${id} RETURNING id`;
     return rows.length > 0;
+  }
+
+  async findManyWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly Purchase[]> {
+    const sql = getSql();
+    if (roleCode === 'admin') {
+      const rows = await sql`SELECT * FROM purchases ORDER BY purchase_date DESC` as PurchaseRow[];
+      return rows.map(toPurchase);
+    }
+    if (!userId) {
+      const rows = await sql`SELECT * FROM purchases WHERE created_by IS NULL ORDER BY purchase_date DESC` as PurchaseRow[];
+      return rows.map(toPurchase);
+    }
+    const adminIds = await getAdminIds();
+    const rows = await sql`SELECT * FROM purchases WHERE created_by IS NULL OR created_by = ${userId} OR created_by = ANY(${adminIds}::uuid[]) ORDER BY purchase_date DESC` as PurchaseRow[];
+    return rows.map(toPurchase);
+  }
+
+  async findManyWithDetailsWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly PurchaseListItem[]> {
+    const sql = getSql();
+    if (roleCode === 'admin') {
+      const rows = await sql`
+        SELECT p.id, p.store_id, p.purchase_date, p.payment_method_id, p.notes, p.created_by, p.created_at,
+          s.name AS store_name, pm.name AS payment_method_name
+        FROM purchases p
+        LEFT JOIN stores s ON s.id = p.store_id
+        LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
+        ORDER BY p.purchase_date DESC
+      ` as PurchaseListItemRow[];
+      return rows.map(toPurchaseListItem);
+    }
+    if (!userId) {
+      const rows = await sql`
+        SELECT p.id, p.store_id, p.purchase_date, p.payment_method_id, p.notes, p.created_by, p.created_at,
+          s.name AS store_name, pm.name AS payment_method_name
+        FROM purchases p
+        LEFT JOIN stores s ON s.id = p.store_id
+        LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
+        WHERE p.created_by IS NULL
+        ORDER BY p.purchase_date DESC
+      ` as PurchaseListItemRow[];
+      return rows.map(toPurchaseListItem);
+    }
+    const adminIds = await getAdminIds();
+    const rows = await sql`
+      SELECT p.id, p.store_id, p.purchase_date, p.payment_method_id, p.notes, p.created_by, p.created_at,
+        s.name AS store_name, pm.name AS payment_method_name
+      FROM purchases p
+      LEFT JOIN stores s ON s.id = p.store_id
+      LEFT JOIN payment_methods pm ON pm.id = p.payment_method_id
+      WHERE p.created_by IS NULL OR p.created_by = ${userId} OR p.created_by = ANY(${adminIds}::uuid[])
+      ORDER BY p.purchase_date DESC
+    ` as PurchaseListItemRow[];
+    return rows.map(toPurchaseListItem);
   }
 }

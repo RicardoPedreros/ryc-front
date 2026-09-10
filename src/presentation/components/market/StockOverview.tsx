@@ -116,7 +116,7 @@ export function StockOverview() {
                     {item.name}
                   </span>
                   <span className="mkt-stock-brand">
-                    {item.brand && <BrandChip brandName={item.brand} brandPath={brandPath} />}
+                    {item.brand && <BrandChip brandName={item.brand} brandPath={brandPath} brandIcon={item.brandIcon} />}
                     {item.categoryName}
                     {item.presentationQuantity && item.unitSymbol
                       ? ` · ${item.presentationQuantity} ${item.unitSymbol}`

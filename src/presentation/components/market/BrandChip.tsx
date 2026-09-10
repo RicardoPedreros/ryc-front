@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { BrandLogo } from "@/presentation/components/market/BrandLogo";
 
 interface BrandChipProps {
   readonly brandName: string;
-  readonly brandPath: string | null;
+  readonly brandPath?: string | null;
+  readonly brandIcon?: string | null;
 }
 
-export function BrandChip({ brandName, brandPath }: BrandChipProps) {
+export function BrandChip({ brandName, brandPath = null, brandIcon = null }: BrandChipProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
   const isSubBrand = brandPath !== null && brandPath.includes(" → ");
+  const hasLogo = typeof brandIcon === "string" && brandIcon.trim() !== "";
 
   useEffect(() => {
     if (!open) return;
@@ -24,12 +27,16 @@ export function BrandChip({ brandName, brandPath }: BrandChipProps) {
   return (
     <span
       ref={ref}
-      className={`mkt-brand-chip ${isSubBrand ? "sub" : ""}`}
+      className={`mkt-brand-chip ${isSubBrand ? "sub" : ""}${hasLogo ? " has-logo" : ""}`}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onClick={() => setOpen((v) => !v)}
     >
-      {brandName}
+      {hasLogo && brandIcon ? (
+        <BrandLogo src={brandIcon} label={brandName} size={18} showFallback className="mkt-brand-chip-logo" />
+      ) : (
+        brandName
+      )}
       {isSubBrand && (
         <span className={`mkt-brand-chip-arrow ${open ? "open" : ""}`}>
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

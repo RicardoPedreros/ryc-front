@@ -8,6 +8,7 @@ import { Navbar } from "@/presentation/components/home/Navbar";
 
 export function LoginPageClient() {
   const { login, loading: sessionLoading } = useAuth();
+  
   const searchParams = useSearchParams();
   const from = searchParams.get("from") || "/";
 

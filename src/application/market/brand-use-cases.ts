@@ -8,12 +8,20 @@ export class BrandUseCases {
     return this.brandRepository.findAll();
   }
 
+  async findManyWithVisibility(userId: string | null, roleCode: string | null) {
+    return this.brandRepository.findManyWithVisibility(userId, roleCode);
+  }
+
   async findById(id: string) {
     return this.brandRepository.findById(id);
   }
 
   async findHierarchy() {
     return this.brandRepository.findHierarchy();
+  }
+
+  async findHierarchyWithVisibility(userId: string | null, roleCode: string | null) {
+    return this.brandRepository.findHierarchyWithVisibility(userId, roleCode);
   }
 
   async create(brand: CreateBrand) {

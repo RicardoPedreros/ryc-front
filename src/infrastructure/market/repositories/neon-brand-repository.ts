@@ -1,11 +1,15 @@
 import type { Brand, CreateBrand, UpdateBrand } from '@/domain/market/entities/brand';
 import type { IBrandRepository, BrandWithChildren } from '@/domain/market/repositories/brand-repository';
 import { getSql } from '../neon-client';
+import { getAdminIds } from '@/shared/auth';
 
 interface BrandRow {
   id: string;
   parent_brand_id: string | null;
   name: string;
+  icon: string | null;
+  color: string | null;
+  created_by: string | null;
   created_at: Date;
 }
 
@@ -14,6 +18,9 @@ function toBrand(row: BrandRow): Brand {
     id: row.id,
     parentBrandId: row.parent_brand_id,
     name: row.name,
+    icon: row.icon,
+    color: row.color,
+    createdBy: row.created_by,
     createdAt: row.created_at,
   };
 }
@@ -53,11 +60,40 @@ export class NeonBrandRepository implements IBrandRepository {
     return buildTree(null);
   }
 
+  async findManyWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly Brand[]> {
+    const sql = getSql();
+    if (roleCode === 'admin') {
+      const rows = await sql`SELECT * FROM brands ORDER BY name` as BrandRow[];
+      return rows.map(toBrand);
+    }
+    if (!userId) {
+      const rows = await sql`SELECT * FROM brands WHERE created_by IS NULL ORDER BY name` as BrandRow[];
+      return rows.map(toBrand);
+    }
+    const adminIds = await getAdminIds();
+    const rows = await sql`SELECT * FROM brands WHERE created_by IS NULL OR created_by = ${userId} OR created_by = ANY(${adminIds}::uuid[]) ORDER BY name` as BrandRow[];
+    return rows.map(toBrand);
+  }
+
+  async findHierarchyWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly BrandWithChildren[]> {
+    const all = await this.findManyWithVisibility(userId, roleCode);
+
+    function buildTree(parentId: string | null): BrandWithChildren[] {
+      const brands = all.filter((b) => b.parentBrandId === parentId);
+      return brands.map((b) => ({
+        ...b,
+        children: buildTree(b.id),
+      }));
+    }
+
+    return buildTree(null);
+  }
+
   async create(brand: CreateBrand): Promise<Brand> {
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO brands (name, parent_brand_id)
-      VALUES (${brand.name}, ${brand.parentBrandId ?? null})
+      INSERT INTO brands (name, parent_brand_id, icon, color, created_by)
+      VALUES (${brand.name}, ${brand.parentBrandId ?? null}, ${brand.icon ?? null}, ${brand.color ?? null}, ${brand.createdBy ?? null})
       RETURNING *
     ` as BrandRow[];
     return toBrand(rows[0]);
@@ -69,7 +105,9 @@ export class NeonBrandRepository implements IBrandRepository {
       UPDATE brands
       SET
         name = COALESCE(${brand.name}, name),
-        parent_brand_id = COALESCE(${brand.parentBrandId ?? null}, parent_brand_id)
+        parent_brand_id = COALESCE(${brand.parentBrandId ?? null}, parent_brand_id),
+        icon = COALESCE(${brand.icon ?? null}, icon),
+        color = COALESCE(${brand.color ?? null}, color)
       WHERE id = ${id}
       RETURNING *
     ` as BrandRow[];

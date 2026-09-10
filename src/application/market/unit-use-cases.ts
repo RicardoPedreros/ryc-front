@@ -8,6 +8,10 @@ export class UnitUseCases {
     return this.unitRepository.findAll();
   }
 
+  async findManyWithVisibility(userId: string | null, roleCode: string | null) {
+    return this.unitRepository.findManyWithVisibility(userId, roleCode);
+  }
+
   async findById(id: string) {
     return this.unitRepository.findById(id);
   }

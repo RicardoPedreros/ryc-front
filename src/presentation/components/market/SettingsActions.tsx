@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
 import { EntityTabs } from "@/presentation/components/market/EntityTabs";
 import { BarcodeScanner } from "@/presentation/components/market/BarcodeScanner";
+import { BrandLogo, buildBrandLogoUrl } from "@/presentation/components/market/BrandLogo";
 import Switch from "@mui/material/Switch";
 import Stack from "@mui/material/Stack";
 import type { Store } from "@/domain/market/entities/store";
@@ -14,8 +15,17 @@ import type { ProductSearchResult } from "@/domain/market/repositories/product-r
 
 type ModalType = "producto" | "tienda" | "categoria" | "unidad" | "marca" | null;
 
+type EntityTab = "productos" | "tiendas" | "categorias" | "unidades" | "marcas";
+
 export function SettingsActions() {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [activeTab, setActiveTab] = useState<EntityTab>("productos");
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleEntityCreated = useCallback((tab: EntityTab) => {
+    setActiveTab(tab);
+    setRefreshKey((k) => k + 1);
+  }, []);
 
   return (
     <>
@@ -91,8 +101,8 @@ export function SettingsActions() {
         </div>
       </div>
 
-      <EntityTabs />
-      <SettingsModalsInline activeModal={activeModal} onClose={() => setActiveModal(null)} />
+      <EntityTabs activeTab={activeTab} onTabChange={setActiveTab} refreshKey={refreshKey} />
+      <SettingsModalsInline activeModal={activeModal} onClose={() => setActiveModal(null)} onEntityCreated={handleEntityCreated} />
     </>
   );
 }
@@ -100,25 +110,29 @@ export function SettingsActions() {
 function SettingsModalsInline({
   activeModal,
   onClose,
+  onEntityCreated,
 }: {
   readonly activeModal: ModalType;
   readonly onClose: () => void;
+  readonly onEntityCreated: (tab: EntityTab) => void;
 }) {
   const { refetch: refetchStores } = useFetch<readonly Store[]>("/api/market/stores");
   const { data: categories, refetch: refetchCategories } = useFetch<readonly Category[]>("/api/market/categories");
   const { data: units, refetch: refetchUnits } = useFetch<readonly Unit[]>("/api/market/units");
   const { data: brands, refetch: refetchBrands } = useFetch<readonly Brand[]>("/api/market/brands");
 
-  const refetchAll = () => {
+  const closeModal = () => {
+    onClose();
+    document.body.style.overflow = "";
+  };
+
+  const handleCreated = (tab: EntityTab) => {
     refetchStores();
     refetchCategories();
     refetchUnits();
     refetchBrands();
-  };
-
-  const closeModal = () => {
-    onClose();
-    document.body.style.overflow = "";
+    onEntityCreated(tab);
+    closeModal();
   };
 
   const isOpen = activeModal !== null;
@@ -132,21 +146,53 @@ function SettingsModalsInline({
         <div className="mkt-modal-handle" />
 
         {activeModal === "producto" && (
-          <ProductForm categories={categories ?? []} units={units ?? []} brands={brands ?? []} onClose={closeModal} onCreated={refetchAll} />
+          <ProductForm categories={categories ?? []} units={units ?? []} brands={brands ?? []} onClose={closeModal} onCreated={() => handleCreated("productos")} />
         )}
         {activeModal === "tienda" && (
-          <StoreForm onClose={closeModal} onCreated={refetchAll} />
+          <StoreForm onClose={closeModal} onCreated={() => handleCreated("tiendas")} />
         )}
         {activeModal === "categoria" && (
-          <CategoryForm onClose={closeModal} onCreated={refetchAll} />
+          <CategoryForm onClose={closeModal} onCreated={() => handleCreated("categorias")} />
         )}
         {activeModal === "unidad" && (
-          <UnitForm onClose={closeModal} onCreated={refetchAll} />
+          <UnitForm units={units ?? []} onClose={closeModal} onCreated={() => handleCreated("unidades")} />
         )}
         {activeModal === "marca" && (
-          <BrandForm onClose={closeModal} onCreated={refetchAll} />
+          <BrandForm onClose={closeModal} onCreated={() => handleCreated("marcas")} />
         )}
       </div>
+    </div>
+  );
+}
+
+function ColorInput({
+  value,
+  onChange,
+}: {
+  readonly value: string;
+  readonly onChange: (v: string) => void;
+}) {
+  return (
+    <div className="mkt-color-field">
+      <input
+        type="color"
+        value={value || "#000000"}
+        onChange={(e) => onChange(e.target.value)}
+        aria-label="Seleccionar color"
+      />
+      <span className="mkt-color-code">{value ? value.toUpperCase() : "Sin color"}</span>
+      {value && (
+        <button
+          type="button"
+          className="mkt-color-clear"
+          onClick={() => onChange("")}
+          title="Quitar color"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
@@ -198,7 +244,7 @@ function ProductForm({
   const handleSearchChange = useCallback((v: string) => {
     setSearchQuery(v);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(v), 300);
+    debounceRef.current = setTimeout(() => doSearch(v), 2500);
   }, [doSearch]);
 
   const selectBaseProduct = useCallback((p: ProductSearchResult) => {
@@ -611,6 +657,7 @@ function StoreForm({ onClose, onCreated }: { readonly onClose: () => void; reado
 }
 
 function CategoryForm({ onClose, onCreated }: { readonly onClose: () => void; readonly onCreated: () => void }) {
+  const [categoryColor, setCategoryColor] = useState("");
   return (
     <>
       <h2>Agregar categoría</h2>
@@ -626,7 +673,7 @@ function CategoryForm({ onClose, onCreated }: { readonly onClose: () => void; re
             body: JSON.stringify({
               name,
               icon: form.get("icon") || null,
-              color: form.get("color") || null,
+              color: categoryColor || null,
             }),
           });
           onClose();
@@ -644,7 +691,7 @@ function CategoryForm({ onClose, onCreated }: { readonly onClose: () => void; re
           </div>
           <div className="mkt-form-group">
             <label className="mkt-form-label">Color (opcional)</label>
-            <input name="color" className="mkt-form-input" type="text" placeholder="ej. #22C55E" />
+            <ColorInput value={categoryColor} onChange={setCategoryColor} />
           </div>
         </div>
         <div className="mkt-modal-actions">
@@ -656,7 +703,16 @@ function CategoryForm({ onClose, onCreated }: { readonly onClose: () => void; re
   );
 }
 
-function UnitForm({ onClose, onCreated }: { readonly onClose: () => void; readonly onCreated: () => void }) {
+function UnitForm({
+  units,
+  onClose,
+  onCreated,
+}: {
+  readonly units: readonly Unit[];
+  readonly onClose: () => void;
+  readonly onCreated: () => void;
+}) {
+  const [parentUnitId, setParentUnitId] = useState("");
   return (
     <>
       <h2>Agregar unidad</h2>
@@ -670,7 +726,12 @@ function UnitForm({ onClose, onCreated }: { readonly onClose: () => void; readon
           await fetch("/api/market/units", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, symbol }),
+            body: JSON.stringify({
+              name,
+              symbol,
+              parentUnitId: parentUnitId || null,
+              parentMultiplier: parentUnitId ? Number(form.get("parentMultiplier")) || 1 : null,
+            }),
           });
           onClose();
           onCreated();
@@ -684,6 +745,37 @@ function UnitForm({ onClose, onCreated }: { readonly onClose: () => void; readon
           <label className="mkt-form-label">Símbolo</label>
           <input name="symbol" className="mkt-form-input" type="text" placeholder="ej. kg" required />
         </div>
+        <div className="mkt-form-group">
+          <label className="mkt-form-label">Unidad de referencia (opcional)</label>
+          <select
+            className="mkt-form-select"
+            value={parentUnitId}
+            onChange={(e) => setParentUnitId(e.target.value)}
+          >
+            <option value="">Sin unidad de referencia</option>
+            {[...units]
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((unit) => (
+                <option key={unit.id} value={unit.id}>{unit.name} ({unit.symbol})</option>
+              ))}
+          </select>
+          <span className="mkt-form-hint">ej. &quot;Kilogramo&quot; referencia a &quot;Gramo&quot;. La unidad base se convierte a esta.</span>
+        </div>
+        {parentUnitId && (
+          <div className="mkt-form-group">
+            <label className="mkt-form-label">Equivalencia</label>
+            <input
+              name="parentMultiplier"
+              className="mkt-form-input"
+              type="number"
+              min="0.0001"
+              step="0.0001"
+              placeholder="ej. 1000"
+              required
+            />
+            <span className="mkt-form-hint">Cuántas unidades de referencia equivalen a 1 de esta (ej. 1 kg = 1000 g).</span>
+          </div>
+        )}
         <div className="mkt-modal-actions">
           <button type="button" className="mkt-btn-cancel" onClick={onClose}>Cancelar</button>
           <button type="submit" className="mkt-btn-submit">Agregar unidad</button>
@@ -696,6 +788,34 @@ function UnitForm({ onClose, onCreated }: { readonly onClose: () => void; readon
 function BrandForm({ onClose, onCreated }: { readonly onClose: () => void; readonly onCreated: () => void }) {
   const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
   const parentBrands = (brands ?? []).filter((b) => !b.parentBrandId);
+  const [brandColor, setBrandColor] = useState("");
+  const [iconValue, setIconValue] = useState("");
+  const [logoOptions, setLogoOptions] = useState<readonly { readonly key: string; readonly label: string }[]>([]);
+  const [selectedLogoKey, setSelectedLogoKey] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const logoDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchLogoPreviews = useCallback((raw: string) => {
+    const domain = raw.trim();
+    if (!domain) {
+      setLogoOptions([]);
+      return;
+    }
+    setLogoOptions([
+      { key: "logodev", label: "" },
+      { key: "brandfetch", label: "" },
+    ]);
+  }, []);
+
+  const handleIconChange = useCallback((v: string) => {
+    setIconValue(v);
+    setSelectedLogoKey(null);
+    setSubmitError(null);
+    if (logoDebounceRef.current) clearTimeout(logoDebounceRef.current);
+    logoDebounceRef.current = setTimeout(() => fetchLogoPreviews(v), 2000);
+  }, [fetchLogoPreviews, setSelectedLogoKey]);
+
+  useEffect(() => () => { if (logoDebounceRef.current) clearTimeout(logoDebounceRef.current); }, []);
 
   return (
     <>
@@ -703,24 +823,32 @@ function BrandForm({ onClose, onCreated }: { readonly onClose: () => void; reado
       <form
         onSubmit={async (e) => {
           e.preventDefault();
+          setSubmitError(null);
           const form = new FormData(e.currentTarget);
           const name = form.get("name") as string;
           if (!name) return;
-          await fetch("/api/market/brands", {
+          const res = await fetch("/api/market/brands", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               name,
               parentBrandId: form.get("parentBrandId") || null,
+              icon: selectedLogoKey ? buildBrandLogoUrl(iconValue.trim(), selectedLogoKey === "brandfetch" ? "brandfetch" : "logo-dev") : null,
+              color: brandColor || null,
             }),
           });
+          if (!res.ok) {
+            const data = (await res.json().catch(() => null)) as { error?: string } | null;
+            setSubmitError(data?.error ?? "No se pudo crear la marca. Intentalo de nuevo.");
+            return;
+          }
           onClose();
           onCreated();
         }}
       >
         <div className="mkt-form-group">
           <label className="mkt-form-label">Nombre</label>
-          <input name="name" className="mkt-form-input" type="text" placeholder="ej. La Serenísima" required />
+          <input name="name" className="mkt-form-input" type="text" placeholder="ej. La Serenísima" required onChange={() => setSubmitError(null)} />
         </div>
         <div className="mkt-form-group">
           <label className="mkt-form-label">Marca padre (opcional)</label>
@@ -732,6 +860,47 @@ function BrandForm({ onClose, onCreated }: { readonly onClose: () => void; reado
           </select>
           <span className="mkt-form-hint">Dejá vacío para una marca principal. Seleccioná una para crear una submarca.</span>
         </div>
+        <div className="mkt-form-group">
+          <label className="mkt-form-label">Logo / ícono (opcional)</label>
+          <input
+            className="mkt-form-input"
+            type="text"
+            placeholder="ej. serenisima"
+            value={iconValue}
+            onChange={(e) => handleIconChange(e.target.value)}
+          />
+          <span className="mkt-form-hint">Escribí el dominio de la marca (ej. nike.com, serenisima.com.ar) para ver las opciones de logo.</span>
+        </div>
+        {logoOptions.length > 0 && (
+          <div className="mkt-brand-logo-previews">
+            {logoOptions.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                aria-pressed={selectedLogoKey === option.key}
+                onClick={() => setSelectedLogoKey((prev) => (prev === option.key ? null : option.key))}
+                className={`mkt-brand-logo-option ${selectedLogoKey === option.key ? "selected" : ""}`}
+              >
+                <BrandLogo
+                  src={buildBrandLogoUrl(iconValue.trim(), option.key === "brandfetch" ? "brandfetch" : "logo-dev")}
+                  label={`Logo de ${iconValue} (${option.label})`}
+                  size={48}
+                  showFallback
+                  className="mkt-brand-logo-preview"
+                />
+                <span className="mkt-brand-logo-label">{option.label}</span>
+              </button>
+            ))}
+            <span className="mkt-brand-logo-hint">
+              {selectedLogoKey ? "Logo seleccionado. Hacé clic de nuevo para quitarlo." : "Hacé clic sobre el logo para seleccionarlo."}
+            </span>
+          </div>
+        )}
+        <div className="mkt-form-group">
+          <label className="mkt-form-label">Color (opcional)</label>
+          <ColorInput value={brandColor} onChange={setBrandColor} />
+        </div>
+        {submitError && <p className="mkt-form-error" role="alert">{submitError}</p>}
         <div className="mkt-modal-actions">
           <button type="button" className="mkt-btn-cancel" onClick={onClose}>Cancelar</button>
           <button type="submit" className="mkt-btn-submit">Agregar marca</button>

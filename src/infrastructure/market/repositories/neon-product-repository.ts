@@ -1,6 +1,7 @@
 import type { Product, CreateProduct, UpdateProduct } from '@/domain/market/entities/product';
 import type { IProductRepository, ProductSearchResult } from '@/domain/market/repositories/product-repository';
 import { getSql } from '../neon-client';
+import { getAdminIds } from '@/shared/auth';
 
 interface ProductRow {
   id: string;
@@ -16,6 +17,7 @@ interface ProductRow {
   notificate: boolean;
   barcode: string | null;
   is_active: boolean;
+  created_by: string | null;
   created_at: Date;
 }
 
@@ -34,6 +36,7 @@ function toProduct(row: ProductRow): Product {
     notificate: row.notificate,
     barcode: row.barcode,
     isActive: row.is_active,
+    createdBy: row.created_by,
     createdAt: row.created_at,
   };
 }
@@ -54,8 +57,8 @@ export class NeonProductRepository implements IProductRepository {
   async create(product: CreateProduct): Promise<Product> {
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO products (category_id, unit_id, name, brand_id, parent_product_id, presentation_quantity, stock_quantity, min_stock, min_days, notificate, barcode)
-      VALUES (${product.categoryId}, ${product.unitId}, ${product.name}, ${product.brandId ?? null}, ${product.parentProductId ?? null}, ${product.presentationQuantity ?? null}, ${product.stockQuantity ?? 1}, ${product.minStock ?? 1}, ${product.minDays ?? 7}, ${product.notificate ?? true}, ${product.barcode ?? null})
+      INSERT INTO products (category_id, unit_id, name, brand_id, parent_product_id, presentation_quantity, stock_quantity, min_stock, min_days, notificate, barcode, created_by)
+      VALUES (${product.categoryId}, ${product.unitId}, ${product.name}, ${product.brandId ?? null}, ${product.parentProductId ?? null}, ${product.presentationQuantity ?? null}, ${product.stockQuantity ?? 1}, ${product.minStock ?? 1}, ${product.minDays ?? 7}, ${product.notificate ?? true}, ${product.barcode ?? null}, ${product.createdBy ?? null})
       RETURNING *
     ` as ProductRow[];
     return toProduct(rows[0]);
@@ -113,62 +116,119 @@ export class NeonProductRepository implements IProductRepository {
     return rows;
   }
 
-  async searchByName(query: string): Promise<readonly ProductSearchResult[]> {
+  async searchByName(query: string, userId: string | null, roleCode: string | null): Promise<readonly ProductSearchResult[]> {
     const sql = getSql();
     const pattern = `%${query}%`;
+    if (roleCode === 'admin') {
+      const rows = await sql`
+        SELECT
+          p.id, p.name, p.brand_id AS "brandId", b.name AS "brandName",
+          p.parent_product_id AS "parentProductId", p.category_id AS "categoryId",
+          c.name AS "categoryName", p.unit_id AS "unitId", u.symbol AS "unitSymbol",
+          p.presentation_quantity AS "presentationQuantity", p.stock_quantity AS "stockQuantity",
+          p.min_stock AS "minStock", p.min_days AS "minDays", p.notificate, p.barcode
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN units u ON p.unit_id = u.id
+        WHERE p.is_active = true
+          AND (p.name ILIKE ${pattern} OR b.name ILIKE ${pattern})
+        ORDER BY p.name
+        LIMIT 20
+      ` as ProductSearchResult[];
+      return rows;
+    }
+    if (!userId) {
+      const rows = await sql`
+        SELECT
+          p.id, p.name, p.brand_id AS "brandId", b.name AS "brandName",
+          p.parent_product_id AS "parentProductId", p.category_id AS "categoryId",
+          c.name AS "categoryName", p.unit_id AS "unitId", u.symbol AS "unitSymbol",
+          p.presentation_quantity AS "presentationQuantity", p.stock_quantity AS "stockQuantity",
+          p.min_stock AS "minStock", p.min_days AS "minDays", p.notificate, p.barcode
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN units u ON p.unit_id = u.id
+        WHERE p.is_active = true
+          AND (p.name ILIKE ${pattern} OR b.name ILIKE ${pattern})
+          AND p.created_by IS NULL
+        ORDER BY p.name
+        LIMIT 20
+      ` as ProductSearchResult[];
+      return rows;
+    }
+    const adminIds = await getAdminIds();
     const rows = await sql`
       SELECT
-        p.id,
-        p.name,
-        p.brand_id AS "brandId",
-        b.name AS "brandName",
-        p.parent_product_id AS "parentProductId",
-        p.category_id AS "categoryId",
-        c.name AS "categoryName",
-        p.unit_id AS "unitId",
-        u.symbol AS "unitSymbol",
-        p.presentation_quantity AS "presentationQuantity",
-        p.stock_quantity AS "stockQuantity",
-        p.min_stock AS "minStock",
-        p.min_days AS "minDays",
-        p.notificate,
-        p.barcode
+        p.id, p.name, p.brand_id AS "brandId", b.name AS "brandName",
+        p.parent_product_id AS "parentProductId", p.category_id AS "categoryId",
+        c.name AS "categoryName", p.unit_id AS "unitId", u.symbol AS "unitSymbol",
+        p.presentation_quantity AS "presentationQuantity", p.stock_quantity AS "stockQuantity",
+        p.min_stock AS "minStock", p.min_days AS "minDays", p.notificate, p.barcode
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN units u ON p.unit_id = u.id
       WHERE p.is_active = true
         AND (p.name ILIKE ${pattern} OR b.name ILIKE ${pattern})
+        AND (p.created_by IS NULL OR p.created_by = ${userId} OR p.created_by = ANY(${adminIds}::uuid[]))
       ORDER BY p.name
       LIMIT 20
     ` as ProductSearchResult[];
     return rows;
   }
 
-  async findByBarcode(barcode: string): Promise<ProductSearchResult | null> {
+  async findByBarcode(barcode: string, userId: string | null, roleCode: string | null): Promise<ProductSearchResult | null> {
     const sql = getSql();
+    if (roleCode === 'admin') {
+      const rows = await sql`
+        SELECT
+          p.id, p.name, p.brand_id AS "brandId", b.name AS "brandName",
+          p.parent_product_id AS "parentProductId", p.category_id AS "categoryId",
+          c.name AS "categoryName", p.unit_id AS "unitId", u.symbol AS "unitSymbol",
+          p.presentation_quantity AS "presentationQuantity", p.stock_quantity AS "stockQuantity",
+          p.min_stock AS "minStock", p.min_days AS "minDays", p.notificate, p.barcode
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN units u ON p.unit_id = u.id
+        WHERE p.is_active = true AND p.barcode = ${barcode}
+        LIMIT 1
+      ` as ProductSearchResult[];
+      return rows.length > 0 ? rows[0] : null;
+    }
+    if (!userId) {
+      const rows = await sql`
+        SELECT
+          p.id, p.name, p.brand_id AS "brandId", b.name AS "brandName",
+          p.parent_product_id AS "parentProductId", p.category_id AS "categoryId",
+          c.name AS "categoryName", p.unit_id AS "unitId", u.symbol AS "unitSymbol",
+          p.presentation_quantity AS "presentationQuantity", p.stock_quantity AS "stockQuantity",
+          p.min_stock AS "minStock", p.min_days AS "minDays", p.notificate, p.barcode
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN units u ON p.unit_id = u.id
+        WHERE p.is_active = true AND p.barcode = ${barcode} AND p.created_by IS NULL
+        LIMIT 1
+      ` as ProductSearchResult[];
+      return rows.length > 0 ? rows[0] : null;
+    }
+    const adminIds = await getAdminIds();
     const rows = await sql`
       SELECT
-        p.id,
-        p.name,
-        p.brand_id AS "brandId",
-        b.name AS "brandName",
-        p.parent_product_id AS "parentProductId",
-        p.category_id AS "categoryId",
-        c.name AS "categoryName",
-        p.unit_id AS "unitId",
-        u.symbol AS "unitSymbol",
-        p.presentation_quantity AS "presentationQuantity",
-        p.stock_quantity AS "stockQuantity",
-        p.min_stock AS "minStock",
-        p.min_days AS "minDays",
-        p.notificate,
-        p.barcode
+        p.id, p.name, p.brand_id AS "brandId", b.name AS "brandName",
+        p.parent_product_id AS "parentProductId", p.category_id AS "categoryId",
+        c.name AS "categoryName", p.unit_id AS "unitId", u.symbol AS "unitSymbol",
+        p.presentation_quantity AS "presentationQuantity", p.stock_quantity AS "stockQuantity",
+        p.min_stock AS "minStock", p.min_days AS "minDays", p.notificate, p.barcode
       FROM products p
       LEFT JOIN brands b ON p.brand_id = b.id
       LEFT JOIN categories c ON p.category_id = c.id
       LEFT JOIN units u ON p.unit_id = u.id
       WHERE p.is_active = true AND p.barcode = ${barcode}
+        AND (p.created_by IS NULL OR p.created_by = ${userId} OR p.created_by = ANY(${adminIds}::uuid[]))
       LIMIT 1
     ` as ProductSearchResult[];
     return rows.length > 0 ? rows[0] : null;
@@ -178,5 +238,74 @@ export class NeonProductRepository implements IProductRepository {
     const sql = getSql();
     const rows = await sql`DELETE FROM products WHERE id = ${id} RETURNING id`;
     return rows.length > 0;
+  }
+
+  async findManyWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly Product[]> {
+    const sql = getSql();
+    if (roleCode === 'admin') {
+      const rows = await sql`SELECT * FROM products WHERE is_active = true ORDER BY name` as ProductRow[];
+      return rows.map(toProduct);
+    }
+    if (!userId) {
+      const rows = await sql`SELECT * FROM products WHERE is_active = true AND created_by IS NULL ORDER BY name` as ProductRow[];
+      return rows.map(toProduct);
+    }
+    const adminIds = await getAdminIds();
+    const rows = await sql`SELECT * FROM products WHERE is_active = true AND (created_by IS NULL OR created_by = ${userId} OR created_by = ANY(${adminIds}::uuid[])) ORDER BY name` as ProductRow[];
+    return rows.map(toProduct);
+  }
+
+  async findManyWithDetailsWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly ProductSearchResult[]> {
+    const sql = getSql();
+    if (roleCode === 'admin') {
+      const rows = await sql`
+        SELECT
+          p.id, p.name, p.brand_id AS "brandId", b.name AS "brandName",
+          p.parent_product_id AS "parentProductId", p.category_id AS "categoryId",
+          c.name AS "categoryName", p.unit_id AS "unitId", u.symbol AS "unitSymbol",
+          p.presentation_quantity AS "presentationQuantity", p.stock_quantity AS "stockQuantity",
+          p.min_stock AS "minStock", p.min_days AS "minDays", p.notificate, p.barcode
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN units u ON p.unit_id = u.id
+        WHERE p.is_active = true
+        ORDER BY p.name
+      ` as ProductSearchResult[];
+      return rows;
+    }
+    if (!userId) {
+      const rows = await sql`
+        SELECT
+          p.id, p.name, p.brand_id AS "brandId", b.name AS "brandName",
+          p.parent_product_id AS "parentProductId", p.category_id AS "categoryId",
+          c.name AS "categoryName", p.unit_id AS "unitId", u.symbol AS "unitSymbol",
+          p.presentation_quantity AS "presentationQuantity", p.stock_quantity AS "stockQuantity",
+          p.min_stock AS "minStock", p.min_days AS "minDays", p.notificate, p.barcode
+        FROM products p
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN units u ON p.unit_id = u.id
+        WHERE p.is_active = true AND p.created_by IS NULL
+        ORDER BY p.name
+      ` as ProductSearchResult[];
+      return rows;
+    }
+    const adminIds = await getAdminIds();
+    const rows = await sql`
+      SELECT
+        p.id, p.name, p.brand_id AS "brandId", b.name AS "brandName",
+        p.parent_product_id AS "parentProductId", p.category_id AS "categoryId",
+        c.name AS "categoryName", p.unit_id AS "unitId", u.symbol AS "unitSymbol",
+        p.presentation_quantity AS "presentationQuantity", p.stock_quantity AS "stockQuantity",
+        p.min_stock AS "minStock", p.min_days AS "minDays", p.notificate, p.barcode
+      FROM products p
+      LEFT JOIN brands b ON p.brand_id = b.id
+      LEFT JOIN categories c ON p.category_id = c.id
+      LEFT JOIN units u ON p.unit_id = u.id
+      WHERE p.is_active = true AND (p.created_by IS NULL OR p.created_by = ${userId} OR p.created_by = ANY(${adminIds}::uuid[]))
+      ORDER BY p.name
+    ` as ProductSearchResult[];
+    return rows;
   }
 }

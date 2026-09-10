@@ -22,8 +22,10 @@ export interface IProductRepository {
   findAll(): Promise<readonly Product[]>;
   findAllWithDetails(): Promise<readonly ProductSearchResult[]>;
   findById(id: string): Promise<Product | null>;
-  searchByName(query: string): Promise<readonly ProductSearchResult[]>;
-  findByBarcode(barcode: string): Promise<ProductSearchResult | null>;
+  searchByName(query: string, userId: string | null, roleCode: string | null): Promise<readonly ProductSearchResult[]>;
+  findByBarcode(barcode: string, userId: string | null, roleCode: string | null): Promise<ProductSearchResult | null>;
+  findManyWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly Product[]>;
+  findManyWithDetailsWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly ProductSearchResult[]>;
   create(product: CreateProduct): Promise<Product>;
   update(id: string, product: UpdateProduct): Promise<Product | null>;
   remove(id: string): Promise<boolean>;

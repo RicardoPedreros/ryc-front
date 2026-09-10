@@ -12,6 +12,7 @@ export interface Product {
   readonly notificate: boolean;
   readonly barcode: string | null;
   readonly isActive: boolean;
+  readonly createdBy: string | null;
   readonly createdAt: Date;
 }
 
@@ -27,6 +28,7 @@ export interface CreateProduct {
   readonly minDays?: number;
   readonly notificate?: boolean;
   readonly barcode?: string | null;
+  readonly createdBy?: string | null;
 }
 
 export interface UpdateProduct {

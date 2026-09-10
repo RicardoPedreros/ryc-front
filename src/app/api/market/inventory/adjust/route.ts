@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { InventoryUseCases } from '@/application/market/inventory-use-cases';
 import { NeonInventoryRepository } from '@/infrastructure/market/repositories/neon-inventory-repository';
 import type { CreateBatchAdjustment } from '@/domain/market/repositories/inventory-repository';
+import { getUserIdFromSession } from '@/shared/auth';
 
 const inventoryUseCases = new InventoryUseCases(new NeonInventoryRepository());
 
@@ -17,6 +18,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const userId = getUserIdFromSession(request);
     const body = (await request.json()) as { movements: readonly CreateBatchAdjustment[] };
     if (!body.movements || !Array.isArray(body.movements) || body.movements.length === 0) {
       return NextResponse.json({ error: 'movements array is required' }, { status: 400 });
@@ -27,7 +29,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No adjustments with quantity > 0' }, { status: 400 });
     }
 
-    const movements = await inventoryUseCases.createBatchAdjustments(valid);
+    const withUser = valid.map((m) => ({ ...m, createdBy: userId }));
+    const movements = await inventoryUseCases.createBatchAdjustments(withUser);
     return NextResponse.json({ created: movements.length, movements }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal server error';

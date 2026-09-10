@@ -161,7 +161,7 @@ export function InventoryAlerts() {
                     {item.name}
                     {item.brand && " — "}
                     {item.brand && (
-                      <BrandChip brandName={item.brand} brandPath={brandPath} />
+                      <BrandChip brandName={item.brand} brandPath={brandPath} brandIcon={item.brandIcon} />
                     )}
                     {packInfo && <span className="mkt-pack-chip">x{item.stockQuantity}</span>}
                     {presentation && ` (${presentation})`}

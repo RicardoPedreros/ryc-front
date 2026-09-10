@@ -14,6 +14,7 @@ export function BrandChip({ brandName, brandPath = null, brandIcon = null }: Bra
   const ref = useRef<HTMLSpanElement>(null);
   const isSubBrand = brandPath !== null && brandPath.includes(" → ");
   const hasLogo = typeof brandIcon === "string" && brandIcon.trim() !== "";
+  const showArrow = isSubBrand || hasLogo;
 
   useEffect(() => {
     if (!open) return;
@@ -23,6 +24,20 @@ export function BrandChip({ brandName, brandPath = null, brandIcon = null }: Bra
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open]);
+
+  function renderPath() {
+    if (!brandPath) return null;
+    return brandPath.split(" → ").map((segment, i, arr) => (
+      <span key={`${segment}-${i}`}>
+        {i < arr.length - 1 ? (
+          <span className="mkt-brand-tooltip-parent">{segment}</span>
+        ) : (
+          <span className="mkt-brand-tooltip-current">{segment}</span>
+        )}
+        {i < arr.length - 1 && <span className="mkt-brand-tooltip-sep"> › </span>}
+      </span>
+    ));
+  }
 
   return (
     <span
@@ -37,27 +52,21 @@ export function BrandChip({ brandName, brandPath = null, brandIcon = null }: Bra
       ) : (
         brandName
       )}
-      {isSubBrand && (
+      {showArrow && (
         <span className={`mkt-brand-chip-arrow ${open ? "open" : ""}`}>
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6.5 2 3.5 5 6.5 8" />
           </svg>
         </span>
       )}
-      {open && isSubBrand && (
-        <span className="mkt-brand-tooltip">
-          {(brandPath ?? "").split(" → ").map((segment, i, arr) => (
-            <span key={`${segment}-${i}`}>
-              {i < arr.length - 1 ? (
-                <span className="mkt-brand-tooltip-parent">{segment}</span>
-              ) : (
-                <span className="mkt-brand-tooltip-current">{segment}</span>
-              )}
-              {i < arr.length - 1 && <span className="mkt-brand-tooltip-sep"> › </span>}
-            </span>
-          ))}
+      {open && hasLogo && brandIcon && (
+        <span className="mkt-brand-tooltip mkt-brand-tooltip-logo">
+          <BrandLogo src={brandIcon} label={brandName} size={84} showFallback className="mkt-brand-logo-zoom" />
+          <span className="mkt-brand-tooltip-name">{brandName}</span>
+          {isSubBrand && <span className="mkt-brand-tooltip-path">{renderPath()}</span>}
         </span>
       )}
+      {open && isSubBrand && !hasLogo && <span className="mkt-brand-tooltip">{renderPath()}</span>}
     </span>
   );
 }

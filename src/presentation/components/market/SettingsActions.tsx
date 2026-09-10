@@ -811,6 +811,7 @@ function BrandForm({ onClose, onCreated }: { readonly onClose: () => void; reado
     setIconValue(v);
     setSelectedLogoKey(null);
     setSubmitError(null);
+    setLogoOptions([]);
     if (logoDebounceRef.current) clearTimeout(logoDebounceRef.current);
     logoDebounceRef.current = setTimeout(() => fetchLogoPreviews(v), 2000);
   }, [fetchLogoPreviews, setSelectedLogoKey]);

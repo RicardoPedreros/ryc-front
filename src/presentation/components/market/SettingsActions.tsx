@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
 import { EntityTabs } from "@/presentation/components/market/EntityTabs";
+import { PendingTemporalProductsSection } from "@/presentation/components/market/PendingTemporalProducts";
 import { BarcodeScanner } from "@/presentation/components/market/BarcodeScanner";
 import { BrandLogo, buildBrandLogoUrl } from "@/presentation/components/market/BrandLogo";
 import Switch from "@mui/material/Switch";
@@ -100,6 +101,8 @@ export function SettingsActions() {
           </button>
         </div>
       </div>
+
+      <PendingTemporalProductsSection onCompleted={() => handleEntityCreated("productos")} />
 
       <EntityTabs activeTab={activeTab} onTabChange={setActiveTab} refreshKey={refreshKey} />
       <SettingsModalsInline activeModal={activeModal} onClose={() => setActiveModal(null)} onEntityCreated={handleEntityCreated} />

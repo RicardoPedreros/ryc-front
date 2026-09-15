@@ -5,12 +5,14 @@ import type { IInventoryRepository } from '@/domain/market/repositories/inventor
 import type { IMovementTypeRepository } from '@/domain/market/repositories/movement-type-repository';
 
 export interface PurchaseItemInput {
-  readonly productId: string;
+  readonly productId: string | null;
   readonly quantity: number;
   readonly unitPrice: number;
   readonly discount?: number;
   readonly expirationDate?: string | null;
   readonly lot?: string | null;
+  readonly temporalProductName?: string | null;
+  readonly temporalBarcode?: string | null;
 }
 
 export class PurchaseUseCases {
@@ -90,6 +92,12 @@ export class PurchaseUseCases {
         throw new Error('Movement type PURCHASE not found');
       }
 
+      for (const item of items) {
+        if (!item.productId && !item.temporalProductName && !item.temporalBarcode) {
+          throw new Error('Product is required');
+        }
+      }
+
       await this.inventoryRepository.createPurchaseMovements(
         created.id,
         items.map((item) => ({
@@ -100,6 +108,8 @@ export class PurchaseUseCases {
           discount: item.discount ?? 0,
           expirationDate: item.expirationDate ?? null,
           lot: item.lot ?? null,
+          temporalProductName: item.temporalProductName ?? null,
+          temporalBarcode: item.temporalBarcode ?? null,
           createdBy: purchase.createdBy ?? null,
         }))
       );

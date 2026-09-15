@@ -22,12 +22,28 @@ interface SearchResult {
 }
 
 interface PurchaseItemDraft {
-  readonly productId: string;
+  readonly productId: string | null;
+  readonly temporalProductName: string | null;
+  readonly temporalBarcode: string | null;
   readonly quantity: number;
   readonly unitPrice: number;
   readonly discount: number;
   readonly expirationDate: string;
   readonly lot: string;
+}
+
+function itemKey(item: PurchaseItemDraft): string {
+  return item.productId ?? `temporal:${item.temporalProductName ?? ""}|${item.temporalBarcode ?? ""}`;
+}
+
+function isTemporal(item: PurchaseItemDraft): boolean {
+  return item.productId == null;
+}
+
+function temporalDisplayName(item: PurchaseItemDraft): string {
+  if (item.temporalProductName) return item.temporalProductName;
+  if (item.temporalBarcode) return `Código ${item.temporalBarcode}`;
+  return "Producto pendiente";
 }
 
 export function PurchaseModals() {
@@ -78,6 +94,8 @@ export function PurchaseModals() {
           discount: item.discount,
           expirationDate: item.expirationDate || null,
           lot: item.lot || null,
+          temporalProductName: item.temporalProductName || null,
+          temporalBarcode: item.temporalBarcode || null,
         })),
       }),
     });
@@ -141,16 +159,31 @@ function PurchaseFormInner({
   const [isSearching, setIsSearching] = useState(false);
   const [searchMode, setSearchMode] = useState<"name" | "barcode">("barcode");
   const [barcodeInput, setBarcodeInput] = useState("");
+  const [barcodeNotFound, setBarcodeNotFound] = useState<string | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const addItem = (productId: string) => {
-    if (items.some((i) => i.productId === productId)) return;
-    setItems((prev) => [...prev, { productId, quantity: 1, unitPrice: 0, discount: 0, expirationDate: "", lot: "" }]);
+  const resetSearch = () => {
     setSearchQuery("");
     setBarcodeInput("");
+    setBarcodeNotFound(null);
     setSearchResults([]);
     setShowResults(false);
+  };
+
+  const alreadyAddedTemporal = (name: string | null, barcode: string | null) =>
+    items.some((i) => isTemporal(i) && i.temporalProductName === name && i.temporalBarcode === barcode);
+
+  const addItem = (productId: string) => {
+    if (items.some((i) => i.productId === productId)) return;
+    setItems((prev) => [...prev, { productId, temporalProductName: null, temporalBarcode: null, quantity: 1, unitPrice: 0, discount: 0, expirationDate: "", lot: "" }]);
+    resetSearch();
+  };
+
+  const addTemporalItem = (name: string | null, barcode: string | null) => {
+    if (alreadyAddedTemporal(name, barcode)) return;
+    setItems((prev) => [...prev, { productId: null, temporalProductName: name, temporalBarcode: barcode, quantity: 1, unitPrice: 0, discount: 0, expirationDate: "", lot: "" }]);
+    resetSearch();
   };
 
   const updateItem = (index: number, field: keyof PurchaseItemDraft, value: string | number) => {
@@ -183,7 +216,7 @@ function PurchaseFormInner({
       if (res.ok) {
         const data = (await res.json()) as readonly SearchResult[];
         setSearchResults(data);
-        setShowResults(data.length > 0);
+        setShowResults(true);
       }
     } catch {
       // ignore
@@ -195,11 +228,16 @@ function PurchaseFormInner({
   const searchByBarcode = useCallback(async (barcode: string) => {
     if (!barcode.trim()) return;
     setIsSearching(true);
+    setBarcodeNotFound(null);
     try {
       const res = await fetch(`/api/market/products?barcode=${encodeURIComponent(barcode)}`);
       if (res.ok) {
         const data = (await res.json()) as SearchResult;
         addItem(data.id);
+        return;
+      }
+      if (res.status === 404) {
+        setBarcodeNotFound(barcode);
       }
     } catch {
       // ignore
@@ -291,12 +329,19 @@ function PurchaseFormInner({
         {items.length > 0 && (
           <div className="mkt-purchase-form-items">
             {items.map((item, index) => (
-              <div key={item.productId} className="mkt-purchase-form-item">
+              <div key={itemKey(item)} className="mkt-purchase-form-item">
                 <div className="mkt-purchase-form-item-header">
                   <span className="mkt-purchase-form-item-name">
-                    {productMap.get(item.productId)?.name ?? "—"}
-                    {(() => {
-                      const p = productMap.get(item.productId);
+                    {isTemporal(item) ? (
+                      <>
+                        {temporalDisplayName(item)}
+                        <span className="mkt-pending-badge">Pendiente</span>
+                      </>
+                    ) : (
+                      productMap.get(item.productId!)?.name ?? "—"
+                    )}
+                    {!isTemporal(item) && (() => {
+                      const p = productMap.get(item.productId!);
                       if (!p?.brandName) return null;
                       return (
                         <span className="mkt-purchase-form-item-meta">
@@ -310,7 +355,7 @@ function PurchaseFormInner({
                       );
                     })()}
                     {(() => {
-                      const p = productMap.get(item.productId);
+                      const p = item.productId ? productMap.get(item.productId) : undefined;
                       if (!p) return null;
                       const pres = formatPresentation(p);
                       return pres ? <span className="mkt-purchase-form-item-meta"> ({pres})</span> : null;
@@ -440,6 +485,16 @@ function PurchaseFormInner({
               {showResults && searchResults.length === 0 && !isSearching && searchQuery.length >= 2 && (
                 <div className="mkt-search-dropdown">
                   <span className="mkt-search-no-results">No se encontraron productos</span>
+                  <button
+                    type="button"
+                    className="mkt-search-add-temporal"
+                    disabled={alreadyAddedTemporal(searchQuery, null)}
+                    onClick={() => addTemporalItem(searchQuery, null)}
+                  >
+                    {alreadyAddedTemporal(searchQuery, null)
+                      ? "Ya en la compra"
+                      : `Agregar "${searchQuery}" como producto sin registrar`}
+                  </button>
                 </div>
               )}
             </>
@@ -452,11 +507,26 @@ function PurchaseFormInner({
                 pattern="[0-9]*"
                 placeholder="Escanear o escribir código..."
                 value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
+                onChange={(e) => { setBarcodeInput(e.target.value); setBarcodeNotFound(null); }}
                 onKeyDown={handleBarcodeKeyDown}
               />
               {isSearching && <span className="mkt-search-spinner" />}
               <BarcodeScanner onScan={handleCameraScan} />
+              {barcodeNotFound && (
+                <div className="mkt-search-add-temporal-wrap">
+                  <span className="mkt-search-no-results">El código {barcodeNotFound} no está registrado</span>
+                  <button
+                    type="button"
+                    className="mkt-search-add-temporal"
+                    disabled={alreadyAddedTemporal(null, barcodeNotFound)}
+                    onClick={() => addTemporalItem(null, barcodeNotFound)}
+                  >
+                    {alreadyAddedTemporal(null, barcodeNotFound)
+                      ? "Ya en la compra"
+                      : "Agregar el código como producto sin registrar"}
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>

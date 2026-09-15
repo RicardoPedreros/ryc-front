@@ -2,7 +2,7 @@ import type { InventoryMovement } from '@/domain/market/entities/inventory-movem
 
 export interface InventoryMovementRow {
   id: string;
-  product_id: string;
+  product_id: string | null;
   purchase_id: string | null;
   movement_type_id: string;
   quantity: number;
@@ -10,6 +10,8 @@ export interface InventoryMovementRow {
   discount: number | null;
   expiration_date: Date | null;
   lot: string | null;
+  temporal_product_name: string | null;
+  temporal_barcode: string | null;
   movement_date: Date;
   notes: string | null;
 }
@@ -17,7 +19,7 @@ export interface InventoryMovementRow {
 export function toInventoryMovement(row: InventoryMovementRow): InventoryMovement {
   return {
     id: row.id,
-    productId: row.product_id,
+    productId: row.product_id ?? null,
     purchaseId: row.purchase_id,
     movementTypeId: row.movement_type_id,
     quantity: row.quantity,
@@ -27,6 +29,8 @@ export function toInventoryMovement(row: InventoryMovementRow): InventoryMovemen
       ? row.expiration_date.toISOString().split('T')[0]
       : row.expiration_date ? String(row.expiration_date) : null,
     lot: row.lot,
+    temporalProductName: row.temporal_product_name ?? null,
+    temporalBarcode: row.temporal_barcode ?? null,
     movementDate: row.movement_date,
     notes: row.notes,
   };

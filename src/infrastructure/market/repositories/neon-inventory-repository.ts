@@ -1,7 +1,32 @@
-import type { InventoryMovement, CreateInventoryMovement, InventoryStock, ProductLot, AdjustableProduct } from '@/domain/market/entities/inventory-movement';
+import type { InventoryMovement, CreateInventoryMovement, InventoryStock, ProductLot, AdjustableProduct, PendingTemporalProduct } from '@/domain/market/entities/inventory-movement';
 import type { IInventoryRepository, CreateBatchAdjustment, CreatePurchaseMovementItem } from '@/domain/market/repositories/inventory-repository';
 import { getSql } from '../neon-client';
 import { toInventoryMovement, type InventoryMovementRow } from './inventory-movement-mapper';
+
+interface PendingTemporalProductRow {
+  temporalProductName: string | null;
+  temporalBarcode: string | null;
+  movement_count: number;
+  total_quantity: number;
+  first_date: Date;
+  latest_date: Date;
+}
+
+function toDateString(value: Date | string | null): string {
+  if (value instanceof Date) return value.toISOString();
+  return value ? String(value) : '';
+}
+
+function toPendingTemporalProduct(row: PendingTemporalProductRow): PendingTemporalProduct {
+  return {
+    temporalProductName: row.temporalProductName,
+    temporalBarcode: row.temporalBarcode,
+    movementCount: Number(row.movement_count),
+    totalQuantity: Number(row.total_quantity),
+    firstMovementDate: toDateString(row.first_date),
+    latestMovementDate: toDateString(row.latest_date),
+  };
+}
 
 interface InventoryStockRow {
   id: string;
@@ -251,8 +276,8 @@ export class NeonInventoryRepository implements IInventoryRepository {
   async createMovement(movement: CreateInventoryMovement): Promise<InventoryMovement> {
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO inventory_movements (product_id, purchase_id, movement_type_id, quantity, unit_price, discount, expiration_date, lot, notes, created_by)
-      VALUES (${movement.productId}, ${movement.purchaseId ?? null}, ${movement.movementTypeId}, ${movement.quantity}, ${movement.unitPrice ?? null}, ${movement.discount ?? 0}, ${movement.expirationDate ?? null}, ${movement.lot ?? null}, ${movement.notes ?? null}, ${movement.createdBy ?? null})
+      INSERT INTO inventory_movements (product_id, purchase_id, movement_type_id, quantity, unit_price, discount, expiration_date, lot, temporal_product_name, temporal_barcode, notes, created_by)
+      VALUES (${movement.productId ?? null}, ${movement.purchaseId ?? null}, ${movement.movementTypeId}, ${movement.quantity}, ${movement.unitPrice ?? null}, ${movement.discount ?? 0}, ${movement.expirationDate ?? null}, ${movement.lot ?? null}, ${movement.temporalProductName ?? null}, ${movement.temporalBarcode ?? null}, ${movement.notes ?? null}, ${movement.createdBy ?? null})
       RETURNING *
     ` as InventoryMovementRow[];
     return toInventoryMovement(rows[0]);
@@ -284,7 +309,7 @@ export class NeonInventoryRepository implements IInventoryRepository {
     if (items.length === 0) return [];
     const sql = getSql();
     const rows = await sql`
-      INSERT INTO inventory_movements (product_id, purchase_id, movement_type_id, quantity, unit_price, discount, expiration_date, lot, created_by)
+      INSERT INTO inventory_movements (product_id, purchase_id, movement_type_id, quantity, unit_price, discount, expiration_date, lot, temporal_product_name, temporal_barcode, created_by)
       SELECT * FROM unnest(
         ${items.map((i) => i.productId)}::uuid[],
         ${Array(items.length).fill(purchaseId)}::uuid[],
@@ -294,10 +319,47 @@ export class NeonInventoryRepository implements IInventoryRepository {
         ${items.map((i) => i.discount)}::numeric[],
         ${items.map((i) => i.expirationDate ?? null)}::date[],
         ${items.map((i) => i.lot ?? null)}::text[],
+        ${items.map((i) => i.temporalProductName ?? null)}::text[],
+        ${items.map((i) => i.temporalBarcode ?? null)}::text[],
         ${items.map((i) => i.createdBy ?? null)}::uuid[]
       )
       RETURNING *
     ` as InventoryMovementRow[];
     return rows.map(toInventoryMovement);
+  }
+
+  async findPendingTemporalProducts(): Promise<readonly PendingTemporalProduct[]> {
+    const sql = getSql();
+    const rows = await sql`
+      SELECT
+        im.temporal_product_name AS "temporalProductName",
+        im.temporal_barcode AS "temporalBarcode",
+        COUNT(*)::int AS movement_count,
+        SUM(im.quantity)::numeric AS total_quantity,
+        MIN(im.movement_date) AS first_date,
+        MAX(im.movement_date) AS latest_date
+      FROM inventory_movements im
+      WHERE im.product_id IS NULL
+        AND (im.temporal_product_name IS NOT NULL OR im.temporal_barcode IS NOT NULL)
+      GROUP BY im.temporal_product_name, im.temporal_barcode
+      ORDER BY latest_date DESC
+    ` as PendingTemporalProductRow[];
+    return rows.map(toPendingTemporalProduct);
+  }
+
+  async completeTemporalMovements(name: string | null, barcode: string | null, productId: string): Promise<number> {
+    const sql = getSql();
+    const rows = await sql`
+      UPDATE inventory_movements
+      SET
+        product_id = ${productId},
+        temporal_product_name = NULL,
+        temporal_barcode = NULL
+      WHERE product_id IS NULL
+        AND temporal_product_name IS NOT DISTINCT FROM ${name}
+        AND temporal_barcode IS NOT DISTINCT FROM ${barcode}
+      RETURNING id
+    ` as { id: string }[];
+    return rows.length;
   }
 }

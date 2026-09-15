@@ -112,7 +112,10 @@ export function PurchaseHistory() {
                         return (
                           <div key={item.id} className="mkt-purchase-item">
                             <div className="mkt-purchase-item-body">
-                              <span className="mkt-purchase-item-name">{productName}</span>
+                              <span className="mkt-purchase-item-name">
+                                {productName}
+                                {item.productId == null && <span className="mkt-pending-badge">Pendiente</span>}
+                              </span>
                               <span className="mkt-purchase-item-meta">
                                 {item.quantity} × {formatCurrency(item.unitPrice ?? 0)}
                                 {(item.discount ?? 0) > 0 && ` (−${formatCurrency(item.discount ?? 0)})`}

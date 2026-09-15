@@ -242,7 +242,21 @@ CREATE TABLE inventory_movements (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     movement_type_id UUID NOT NULL REFERENCES movement_types(id),
     purchase_id UUID REFERENCES purchases(id) ON DELETE CASCADE,
-    product_id UUID NOT NULL REFERENCES products(id),
+    product_id UUID REFERENCES products(id),
+    temporal_product_name VARCHAR(200),
+    temporal_barcode VARCHAR(100),
+    CONSTRAINT chk_product_or_temporal
+        CHECK (
+            (product_id IS NOT NULL
+                AND temporal_product_name IS NULL
+                AND temporal_barcode IS NULL)
+            OR
+            (product_id IS NULL
+                AND (
+                    temporal_product_name IS NOT NULL
+                    OR temporal_barcode IS NOT NULL
+                ))
+        ),
     expiration_date DATE,
     lot VARCHAR(100),
     quantity NUMERIC(12,3) NOT NULL
@@ -346,6 +360,11 @@ DECLARE
     v_multiplier SMALLINT;
 BEGIN
 
+    -- Los movimientos provisionales no afectan el inventario
+    IF NEW.product_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
     SELECT stock_multiplier
     INTO v_multiplier
     FROM movement_types
@@ -377,6 +396,11 @@ AS $$
 DECLARE
     v_multiplier SMALLINT;
 BEGIN
+
+    -- Si era provisional, nunca afectó inventory_balance
+    IF OLD.product_id IS NULL THEN
+        RETURN OLD;
+    END IF;
 
     SELECT stock_multiplier
     INTO v_multiplier
@@ -411,29 +435,46 @@ DECLARE
     v_new_multiplier SMALLINT;
 BEGIN
 
-    SELECT stock_multiplier
-    INTO v_old_multiplier
-    FROM movement_types
-    WHERE id = OLD.movement_type_id;
+    /*
+     * Revertir el movimiento anterior solamente
+     * si tenía un producto real asociado.
+     */
+    IF OLD.product_id IS NOT NULL THEN
 
-    SELECT stock_multiplier
-    INTO v_new_multiplier
-    FROM movement_types
-    WHERE id = NEW.movement_type_id;
+        SELECT stock_multiplier
+        INTO v_old_multiplier
+        FROM movement_types
+        WHERE id = OLD.movement_type_id;
 
-    PERFORM apply_inventory_balance(
-        OLD.product_id,
-        OLD.quantity,
-        -v_old_multiplier,
-        OLD.expiration_date
-    );
+        PERFORM apply_inventory_balance(
+            OLD.product_id,
+            OLD.quantity,
+            -v_old_multiplier,
+            OLD.expiration_date
+        );
 
-    PERFORM apply_inventory_balance(
-        NEW.product_id,
-        NEW.quantity,
-        v_new_multiplier,
-        NEW.expiration_date
-    );
+    END IF;
+
+
+    /*
+     * Aplicar el nuevo movimiento solamente
+     * si tiene un producto real asociado.
+     */
+    IF NEW.product_id IS NOT NULL THEN
+
+        SELECT stock_multiplier
+        INTO v_new_multiplier
+        FROM movement_types
+        WHERE id = NEW.movement_type_id;
+
+        PERFORM apply_inventory_balance(
+            NEW.product_id,
+            NEW.quantity,
+            v_new_multiplier,
+            NEW.expiration_date
+        );
+
+    END IF;
 
     RETURN NEW;
 

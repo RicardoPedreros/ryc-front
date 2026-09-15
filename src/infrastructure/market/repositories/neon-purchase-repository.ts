@@ -114,9 +114,9 @@ export class NeonPurchaseRepository implements IPurchaseRepository {
     if (purchaseIds.length === 0) return [];
     const sql = getSql();
     const rows = await sql`
-      SELECT im.*, prod.name AS product_name
+      SELECT im.*, COALESCE(prod.name, im.temporal_product_name, 'Código ' || im.temporal_barcode, 'Producto pendiente') AS product_name
       FROM inventory_movements im
-      JOIN products prod ON prod.id = im.product_id
+      LEFT JOIN products prod ON prod.id = im.product_id
       WHERE im.purchase_id = ANY(${purchaseIds}::uuid[])
       ORDER BY im.movement_date DESC
     ` as PurchaseItemDetailRow[];

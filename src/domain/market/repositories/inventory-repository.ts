@@ -1,4 +1,4 @@
-import type { InventoryMovement, CreateInventoryMovement, InventoryStock, ProductLot, AdjustableProduct } from '../entities/inventory-movement';
+import type { InventoryMovement, CreateInventoryMovement, InventoryStock, ProductLot, AdjustableProduct, PendingTemporalProduct } from '../entities/inventory-movement';
 
 export interface CreateBatchAdjustment {
   readonly productId: string;
@@ -11,13 +11,15 @@ export interface CreateBatchAdjustment {
 }
 
 export interface CreatePurchaseMovementItem {
-  readonly productId: string;
+  readonly productId: string | null;
   readonly movementTypeId: string;
   readonly quantity: number;
   readonly unitPrice: number;
   readonly discount: number;
   readonly expirationDate: string | null;
   readonly lot: string | null;
+  readonly temporalProductName?: string | null;
+  readonly temporalBarcode?: string | null;
   readonly createdBy?: string | null;
 }
 
@@ -31,4 +33,6 @@ export interface IInventoryRepository {
   createMovement(movement: CreateInventoryMovement): Promise<InventoryMovement>;
   createBatchMovements(movements: readonly CreateBatchAdjustment[]): Promise<readonly InventoryMovement[]>;
   createPurchaseMovements(purchaseId: string, items: readonly CreatePurchaseMovementItem[]): Promise<readonly InventoryMovement[]>;
+  findPendingTemporalProducts(): Promise<readonly PendingTemporalProduct[]>;
+  completeTemporalMovements(name: string | null, barcode: string | null, productId: string): Promise<number>;
 }

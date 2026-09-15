@@ -41,4 +41,15 @@ export class InventoryUseCases {
     }
     return this.inventoryRepository.createBatchMovements(valid);
   }
+
+  async getPendingTemporalProducts() {
+    return this.inventoryRepository.findPendingTemporalProducts();
+  }
+
+  async completeTemporalMovements(name: string | null, barcode: string | null, productId: string) {
+    if (!productId) {
+      throw new Error('Product id is required');
+    }
+    return this.inventoryRepository.completeTemporalMovements(name, barcode, productId);
+  }
 }

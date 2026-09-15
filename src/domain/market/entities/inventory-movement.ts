@@ -1,6 +1,6 @@
 export interface InventoryMovement {
   readonly id: string;
-  readonly productId: string;
+  readonly productId: string | null;
   readonly purchaseId: string | null;
   readonly movementTypeId: string;
   readonly quantity: number;
@@ -8,12 +8,14 @@ export interface InventoryMovement {
   readonly discount: number | null;
   readonly expirationDate: string | null;
   readonly lot: string | null;
+  readonly temporalProductName: string | null;
+  readonly temporalBarcode: string | null;
   readonly movementDate: Date;
   readonly notes: string | null;
 }
 
 export interface CreateInventoryMovement {
-  readonly productId: string;
+  readonly productId?: string | null;
   readonly purchaseId?: string | null;
   readonly movementTypeId: string;
   readonly quantity: number;
@@ -21,8 +23,19 @@ export interface CreateInventoryMovement {
   readonly discount?: number | null;
   readonly expirationDate?: string | null;
   readonly lot?: string | null;
+  readonly temporalProductName?: string | null;
+  readonly temporalBarcode?: string | null;
   readonly notes?: string | null;
   readonly createdBy?: string | null;
+}
+
+export interface PendingTemporalProduct {
+  readonly temporalProductName: string | null;
+  readonly temporalBarcode: string | null;
+  readonly movementCount: number;
+  readonly totalQuantity: number;
+  readonly firstMovementDate: string;
+  readonly latestMovementDate: string;
 }
 
 export interface InventoryStock {

@@ -7,7 +7,7 @@ import { ProductUseCases } from "@/application/market/product-use-cases";
 import { createAiProvider } from "@/infrastructure/ai/ai-provider-factory";
 import { NeonInventoryRepository } from "@/infrastructure/market/repositories/neon-inventory-repository";
 import { NeonProductRepository } from "@/infrastructure/market/repositories/neon-product-repository";
-import { getSessionFromRequest } from "@/shared/auth";
+import { getSessionFromRequest } from "@/infrastructure/auth/session";
 
 const MAX_MESSAGES = 20;
 const MAX_CONTENT_LENGTH = 4000;

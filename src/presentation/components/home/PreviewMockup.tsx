@@ -1,3 +1,5 @@
+import { Icon } from "@/presentation/components/ui/Icon";
+
 interface MarketItem {
   readonly name: string;
   readonly category: string;
@@ -38,20 +40,7 @@ export function PreviewMockup() {
                   className={`item-check${item.done ? " checked" : ""}`}
                 >
                   {item.done && (
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 12 12"
-                      fill="none"
-                    >
-                      <path
-                        d="M2.5 6L5 8.5L9.5 3.5"
-                        stroke="white"
-                        strokeWidth="1.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                    <Icon name="check" size={12} stroke="#fff" strokeWidth={2.5} />
                   )}
                 </div>
                 <span

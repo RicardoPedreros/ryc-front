@@ -7,7 +7,7 @@ import { parseArguments } from "./tool-arguments";
 const MAX_STEPS = 6;
 const MAX_BLOCKS = 3;
 const FALLBACK_REPLY =
-  "No pude completar la respuesta. Probá reformular la pregunta o intentá de nuevo en un momento.";
+  "No pude completar la respuesta. Prueba reformular la pregunta o inténtalo de nuevo en un momento.";
 
 export interface AssistantHistoryMessage {
   readonly role: "user" | "assistant";

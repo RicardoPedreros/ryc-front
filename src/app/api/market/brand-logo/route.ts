@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log(`Fetching logo from ${targetUrl}`);
     const res = await fetch(targetUrl, {
       cache: "no-store",
       redirect: "manual",

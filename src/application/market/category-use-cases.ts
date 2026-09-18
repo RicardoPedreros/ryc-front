@@ -1,5 +1,6 @@
 import type { CreateCategory, UpdateCategory } from '@/domain/market/entities/category';
 import type { ICategoryRepository } from '@/domain/market/repositories/category-repository';
+import { ValidationError } from '@/shared/errors';
 
 export class CategoryUseCases {
   constructor(private readonly categoryRepository: ICategoryRepository) {}
@@ -18,7 +19,7 @@ export class CategoryUseCases {
 
   async create(category: CreateCategory) {
     if (!category.name.trim()) {
-      throw new Error('Category name is required');
+      throw new ValidationError('Category name is required');
     }
     return this.categoryRepository.create(category);
   }

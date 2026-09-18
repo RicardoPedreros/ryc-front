@@ -1,4 +1,4 @@
-import { requireSession } from '@/shared/auth';
+import { requireSession } from '@/infrastructure/auth/session';
 import { MarketNavbar } from '@/presentation/components/market/MarketNavbar';
 import { MarketTabs } from '@/presentation/components/market/MarketTabs';
 

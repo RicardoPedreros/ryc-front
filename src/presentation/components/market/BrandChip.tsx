@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { BrandLogo } from "@/presentation/components/market/BrandLogo";
+import { Icon } from "@/presentation/components/ui/Icon";
 
 interface BrandChipProps {
   readonly brandName: string;
@@ -54,9 +55,7 @@ export function BrandChip({ brandName, brandPath = null, brandIcon = null }: Bra
       )}
       {showArrow && (
         <span className={`mkt-brand-chip-arrow ${open ? "open" : ""}`}>
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="6.5 2 3.5 5 6.5 8" />
-          </svg>
+          <Icon name="chevron-down" size={12} />
         </span>
       )}
       {open && hasLogo && brandIcon && (

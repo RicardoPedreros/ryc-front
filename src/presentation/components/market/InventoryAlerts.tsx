@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
 import { BrandChip } from "@/presentation/components/market/BrandChip";
+import { Icon } from "@/presentation/components/ui/Icon";
 import type { InventoryStock } from "@/domain/market/entities/inventory-movement";
 
 type AlertFilter = "all" | "stock" | "expiry";
@@ -69,21 +70,13 @@ export function InventoryAlerts() {
       {/* Banners */}
       {bannerExpired > 0 && (
         <div className="mkt-alert-banner danger">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="15" y1="9" x2="9" y2="15" />
-            <line x1="9" y1="9" x2="15" y2="15" />
-          </svg>
+          <Icon name="x-circle" size={16} />
           <span>{bannerExpired} {bannerExpired === 1 ? "producto está" : "productos están"} vencido{bannerExpired !== 1 && "s"}</span>
         </div>
       )}
       {bannerUrgent > 0 && (
         <div className="mkt-alert-banner warning">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-            <line x1="12" y1="9" x2="12" y2="13" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
+          <Icon name="alert-triangle" size={16} />
           <span>{bannerUrgent} {bannerUrgent === 1 ? "producto vence" : "productos vencen"} esta semana</span>
         </div>
       )}
@@ -187,7 +180,7 @@ export function InventoryAlerts() {
         <div className="mkt-card">
           <div className="mkt-empty-state">
             <p>Sin alertas en esta categoría</p>
-            <p className="mkt-empty-sub">Probá con otra pestaña</p>
+            <p className="mkt-empty-sub">Prueba con otra pestaña</p>
           </div>
         </div>
       ) : (

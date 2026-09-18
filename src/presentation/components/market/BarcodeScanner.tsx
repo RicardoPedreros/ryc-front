@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Icon } from "@/presentation/components/ui/Icon";
 
 interface BarcodeScannerProps {
   readonly onScan: (code: string) => void;
@@ -80,7 +81,7 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
           setError("No se encontró cámara disponible en este dispositivo.");
         } else {
           setError(
-            "No se pudo iniciar la cámara. Probá escribir el código manualmente.",
+            "No se pudo iniciar la cámara. Prueba escribir el código manualmente.",
           );
         }
       }
@@ -114,24 +115,7 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
         onClick={open}
         title="Escanear código de barras"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M3 7V5a2 2 0 012-2h2" />
-          <path d="M17 3h2a2 2 0 012 2v2" />
-          <path d="M21 17v2a2 2 0 01-2 2h-2" />
-          <path d="M7 21H5a2 2 0 01-2-2v-2" />
-          <line x1="7" y1="12" x2="17" y2="12" />
-          <line x1="7" y1="8" x2="17" y2="8" />
-          <line x1="7" y1="16" x2="17" y2="16" />
-        </svg>
+        <Icon name="barcode" size={16} />
       </button>
 
       {isOpen && (
@@ -140,38 +124,13 @@ export function BarcodeScanner({ onScan }: BarcodeScannerProps) {
             <div className="mkt-scanner-header">
               <h3>Escanear código</h3>
               <button type="button" className="mkt-scanner-close" onClick={close}>
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                <Icon name="x" size={18} />
               </button>
             </div>
             <div className="mkt-scanner-body">
               {error ? (
                 <div className="mkt-scanner-error">
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
+                  <Icon name="alert-circle" size={24} />
                   <p>{error}</p>
                   <button
                     type="button"

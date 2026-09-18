@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
+import { Icon } from "@/presentation/components/ui/Icon";
 import type { PurchaseWithItems, PurchaseItemDetail } from "@/domain/market/repositories/purchase-repository";
 
 function formatDate(dateStr: string): string {
@@ -44,7 +45,7 @@ export function PurchaseHistory() {
         <div className="mkt-card">
           <div className="mkt-empty-state">
             <p>Sin compras registradas</p>
-            <p className="mkt-empty-sub">Registrá tu primera compra para ver el historial</p>
+            <p className="mkt-empty-sub">Registra tu primera compra para ver el historial</p>
           </div>
         </div>
       </div>
@@ -86,19 +87,12 @@ export function PurchaseHistory() {
                   {purchase.items.length > 0 && (
                     <span className="mkt-purchase-total">{formatCurrency(purchase.computedTotal)}</span>
                   )}
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
+                  <Icon
+                    name="chevron-down"
+                    size={14}
                     stroke="var(--fg-subtle)"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
                     className={`mkt-purchase-chevron ${isExpanded ? "open" : ""}`}
-                  >
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
+                  />
                 </div>
               </button>
               {isExpanded && (

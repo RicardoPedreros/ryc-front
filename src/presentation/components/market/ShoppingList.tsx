@@ -1,75 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BarcodeScanner } from "./BarcodeScanner";
-import type { ShoppingItem } from "./types";
-
-const STORAGE_KEY = "ryc-shopping-list";
-
-interface ProductResult {
-  readonly id: string;
-  readonly name: string;
-  readonly brandName: string | null;
-  readonly categoryName: string | null;
-  readonly unitSymbol: string | null;
-  readonly presentationQuantity: number | null;
-  readonly stockQuantity: number;
-  readonly barcode: string | null;
-}
-
-function formatPresentation(qty: number | null, unit: string | null): string {
-  if (qty == null) return "";
-  const unitStr = unit ?? "";
-  return `${qty}${unitStr}`;
-}
-
-function isAlreadyInList(item: ProductResult | { productId: string | null; name: string }, items: readonly ShoppingItem[]): boolean {
-  const itemId = "id" in item ? item.id : item.productId;
-  if (itemId != null) {
-    return items.some((i) => i.productId === itemId);
-  }
-  return items.some(
-    (i) => i.productId === null && i.name.toLowerCase() === item.name.toLowerCase()
-  );
-}
-
-function loadList(): ShoppingItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((item: Record<string, unknown>) => ({
-      id: String(item.id ?? crypto.randomUUID()),
-      productId: item.productId != null ? String(item.productId) : null,
-      name: String(item.name ?? ""),
-      brand: String(item.brand ?? ""),
-      presentationQuantity: item.presentationQuantity != null ? Number(item.presentationQuantity) : null,
-      unitSymbol: item.unitSymbol != null ? String(item.unitSymbol) : null,
-      checked: Boolean(item.checked),
-      quantity: Math.max(1, Number(item.quantity) || 1),
-    })) as ShoppingItem[];
-  } catch {
-    return [];
-  }
-}
-
-function saveList(items: readonly ShoppingItem[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    // quota exceeded or private mode — silently ignore
-  }
-}
+import { Icon } from "@/presentation/components/ui/Icon";
+import { useShoppingList } from "@/presentation/hooks/useShoppingList";
+import { ShoppingItemRow } from "./ShoppingItemRow";
+import { ShoppingListSearch } from "./ShoppingListSearch";
+import type { ShoppingProductResult } from "./ShoppingListSearch";
+import type { ShoppingItem } from "@/shared/types/shopping-item";
 
 export function ShoppingList() {
-  const [items, setItems] = useState<readonly ShoppingItem[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const { items, add, toggle, remove, clear } = useShoppingList();
   const [searchMode, setSearchMode] = useState<"name" | "barcode">("name");
   const [searchQuery, setSearchQuery] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
-  const [results, setResults] = useState<readonly ProductResult[]>([]);
+  const [results, setResults] = useState<readonly ShoppingProductResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [quantityToAdd, setQuantityToAdd] = useState(1);
@@ -78,20 +22,9 @@ export function ShoppingList() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Hydrate from localStorage on mount
-  useEffect(() => {
-    setItems(loadList());
-    setHydrated(true);
-  }, []);
-
-  // Persist to localStorage on every change (after hydration)
-  useEffect(() => {
-    if (hydrated) saveList(items);
-  }, [items, hydrated]);
-
-  const addItem = (product?: ProductResult) => {
+  const addItem = (product?: ShoppingProductResult) => {
     if (product) {
-      if (isAlreadyInList(product, items)) {
+      if (items.some((i) => i.productId === product.id)) {
         const label = product.brandName
           ? `${product.name} — ${product.brandName}`
           : product.name;
@@ -110,11 +43,11 @@ export function ShoppingList() {
         checked: false,
         quantity: quantityToAdd,
       };
-      setItems((prev) => [...prev, newItem]);
+      add(newItem);
     } else {
       const name = searchMode === "name" ? searchQuery.trim() : barcodeInput.trim();
       if (!name) return;
-      if (isAlreadyInList({ productId: null, name }, items)) {
+      if (items.some((i) => i.productId === null && i.name.toLowerCase() === name.toLowerCase())) {
         setDuplicateWarning(name);
         if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current);
         warningTimeoutRef.current = setTimeout(() => setDuplicateWarning(null), 2500);
@@ -130,7 +63,7 @@ export function ShoppingList() {
         checked: false,
         quantity: quantityToAdd,
       };
-      setItems((prev) => [...prev, newItem]);
+      add(newItem);
     }
     setSearchQuery("");
     setBarcodeInput("");
@@ -138,16 +71,6 @@ export function ShoppingList() {
     setShowResults(false);
     setQuantityToAdd(1);
     setDuplicateWarning(null);
-  };
-
-  const toggleItem = (id: string) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, checked: !item.checked } : item))
-    );
-  };
-
-  const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
   const searchProducts = useCallback(async (query: string) => {
@@ -160,7 +83,7 @@ export function ShoppingList() {
     try {
       const res = await fetch(`/api/market/products?q=${encodeURIComponent(query)}`);
       if (res.ok) {
-        const data = (await res.json()) as readonly ProductResult[];
+        const data = (await res.json()) as readonly ShoppingProductResult[];
         setResults(data);
         setShowResults(data.length > 0);
       }
@@ -177,7 +100,7 @@ export function ShoppingList() {
     try {
       const res = await fetch(`/api/market/products?barcode=${encodeURIComponent(barcode)}`);
       if (res.ok) {
-        const data = (await res.json()) as ProductResult;
+        const data = (await res.json()) as ShoppingProductResult;
         addItem(data);
       } else {
         addItem();
@@ -189,6 +112,13 @@ export function ShoppingList() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quantityToAdd, items]);
+
+  const handleSearchModeChange = (mode: "name" | "barcode") => {
+    setSearchMode(mode);
+    setResults([]);
+    setShowResults(false);
+    setDuplicateWarning(null);
+  };
 
   const handleNameChange = (value: string) => {
     setSearchQuery(value);
@@ -246,7 +176,7 @@ export function ShoppingList() {
   const done = items.filter((i) => i.checked);
 
   const clearList = () => {
-    setItems([]);
+    clear();
     setSearchQuery("");
     setBarcodeInput("");
     setResults([]);
@@ -264,6 +194,7 @@ export function ShoppingList() {
           )}
           {items.length > 0 && (
             <button type="button" className="mkt-clear-list-btn" onClick={clearList}>
+              <Icon name="trash-2" size={14} />
               Limpiar lista
             </button>
           )}
@@ -273,260 +204,57 @@ export function ShoppingList() {
         {items.length === 0 && !searchQuery && !barcodeInput && (
           <div className="mkt-empty-state">
             <p>Lista vacía</p>
-            <p className="mkt-empty-sub">Buscá un producto por nombre o escaneá su código de barras</p>
+            <p className="mkt-empty-sub">Busca un producto por nombre o escanea su código de barras</p>
           </div>
         )}
 
         {pending.map((item) => (
-          <div key={item.id} className="mkt-list-item">
-            <button
-              type="button"
-              className="mkt-list-check"
-              onClick={() => toggleItem(item.id)}
-              aria-label={`Marcar ${item.name}`}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <div className="mkt-list-item-body">
-              <span className="mkt-list-item-name">{item.name}</span>
-              {(item.brand || item.presentationQuantity != null) && (
-                <span className="mkt-list-item-meta">
-                  {item.brand}{item.brand && item.presentationQuantity != null ? " — " : ""}
-                  {formatPresentation(item.presentationQuantity, item.unitSymbol)}
-                </span>
-              )}
-            </div>
-            <span className="mkt-list-item-qty">{item.quantity}x</span>
-            <button
-              type="button"
-              className="mkt-list-item-remove"
-              onClick={() => removeItem(item.id)}
-              aria-label={`Eliminar ${item.name}`}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
+          <ShoppingItemRow
+            key={item.id}
+            item={item}
+            done={false}
+            onToggle={toggle}
+            onRemove={remove}
+          />
         ))}
 
         {done.map((item) => (
-          <div key={item.id} className="mkt-list-item done">
-            <button
-              type="button"
-              className="mkt-list-check checked"
-              onClick={() => toggleItem(item.id)}
-              aria-label={`Desmarcar ${item.name}`}
-            >
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2.5 6L5 8.5L9.5 3.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-            <div className="mkt-list-item-body">
-              <span className="mkt-list-item-name done">{item.name}</span>
-              {(item.brand || item.presentationQuantity != null) && (
-                <span className="mkt-list-item-meta">
-                  {item.brand}{item.brand && item.presentationQuantity != null ? " — " : ""}
-                  {formatPresentation(item.presentationQuantity, item.unitSymbol)}
-                </span>
-              )}
-            </div>
-            <span className="mkt-list-item-qty">{item.quantity}x</span>
-            <button
-              type="button"
-              className="mkt-list-item-remove"
-              onClick={() => removeItem(item.id)}
-              aria-label={`Eliminar ${item.name}`}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
+          <ShoppingItemRow
+            key={item.id}
+            item={item}
+            done
+            onToggle={toggle}
+            onRemove={remove}
+          />
         ))}
 
-        {/* Duplicate warning */}
         {duplicateWarning && (
           <div className="mkt-duplicate-warning">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
+            <Icon name="alert-circle" size={14} />
             <span>&ldquo;{duplicateWarning}&rdquo; ya está en la lista</span>
           </div>
         )}
 
-        {/* Search / Add row */}
-        <div className="mkt-add-row" style={{ flexDirection: "column", alignItems: "stretch", gap: "0.75rem" }}>
-          {/* Quantity + Mode toggle row */}
-          <div className="mkt-add-controls-row">
-            {/* Quantity stepper */}
-            <div className="mkt-qty-stepper">
-              <button
-                type="button"
-                className="mkt-qty-btn"
-                onClick={() => setQuantityToAdd((q) => Math.max(1, q - 1))}
-                aria-label="Reducir cantidad"
-              >
-                −
-              </button>
-              <input
-                className="mkt-qty-input"
-                type="number"
-                min={1}
-                max={99}
-                value={quantityToAdd}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
-                  if (!isNaN(v) && v >= 1 && v <= 99) setQuantityToAdd(v);
-                }}
-                aria-label="Cantidad a agregar"
-              />
-              <button
-                type="button"
-                className="mkt-qty-btn"
-                onClick={() => setQuantityToAdd((q) => Math.min(99, q + 1))}
-                aria-label="Aumentar cantidad"
-              >
-                +
-              </button>
-            </div>
-
-            {/* Mode toggle */}
-            <div className="mkt-search-modes">
-              <button
-                type="button"
-                className={`mkt-search-mode-btn ${searchMode === "name" ? "active" : ""}`}
-                onClick={() => { setSearchMode("name"); setResults([]); setShowResults(false); setDuplicateWarning(null); }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                Nombre
-              </button>
-              <button
-                type="button"
-                className={`mkt-search-mode-btn ${searchMode === "barcode" ? "active" : ""}`}
-                onClick={() => { setSearchMode("barcode"); setResults([]); setShowResults(false); setDuplicateWarning(null); }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 7V5a2 2 0 012-2h2" />
-                  <path d="M17 3h2a2 2 0 012 2v2" />
-                  <path d="M21 17v2a2 2 0 01-2 2h-2" />
-                  <path d="M7 21H5a2 2 0 01-2-2v-2" />
-                  <line x1="7" y1="12" x2="17" y2="12" />
-                  <line x1="7" y1="8" x2="17" y2="8" />
-                  <line x1="7" y1="16" x2="17" y2="16" />
-                </svg>
-                Código de barras
-              </button>
-            </div>
-          </div>
-
-          {/* Input area */}
-          {searchMode === "name" ? (
-            <div className="mkt-search-input-wrap" ref={searchRef}>
-              <input
-                className="mkt-search-input-field"
-                type="text"
-                placeholder="Buscar producto por nombre..."
-                value={searchQuery}
-                onChange={(e) => handleNameChange(e.target.value)}
-                onKeyDown={handleNameKeyDown}
-                onFocus={() => results.length > 0 && setShowResults(true)}
-              />
-              {isSearching && <span className="mkt-search-spinner" />}
-
-              {/* Results dropdown */}
-              {showResults && (
-                <div className="mkt-search-dropdown">
-                  {results.length > 0 ? (
-                    results.map((product) => {
-                      const alreadyAdded = isAlreadyInList(product, items);
-                      return (
-                        <button
-                          key={product.id}
-                          type="button"
-                          className={`mkt-search-result ${alreadyAdded ? "already-added" : ""}`}
-                          onClick={() => !alreadyAdded && addItem(product)}
-                          disabled={alreadyAdded}
-                        >
-                           <div className="mkt-search-result-body">
-                             <span className="mkt-search-result-name">
-                               {product.name}
-                               {product.stockQuantity > 1 && <span className="mkt-pack-chip">x{product.stockQuantity}</span>}
-                             </span>
-                             <span className="mkt-search-result-meta">
-                               {product.brandName}{product.brandName && product.presentationQuantity != null ? " — " : ""}
-                               {formatPresentation(product.presentationQuantity, product.unitSymbol)}
-                               {product.categoryName ? ` · ${product.categoryName}` : ""}
-                             </span>
-                           </div>
-                          {alreadyAdded ? (
-                            <span className="mkt-search-result-badge">En lista</span>
-                          ) : (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-subtle)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <line x1="12" y1="5" x2="12" y2="19" />
-                              <line x1="5" y1="12" x2="19" y2="12" />
-                            </svg>
-                          )}
-                        </button>
-                      );
-                    })
-                  ) : (
-                    !isSearching && searchQuery.trim().length >= 2 && (
-                      <div className="mkt-search-no-results">
-                        No se encontraron productos para &ldquo;{searchQuery}&rdquo;
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="mkt-barcode-input-row">
-              <div className="mkt-barcode-input-wrap">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--fg-subtle)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M3 7V5a2 2 0 012-2h2" />
-                  <path d="M17 3h2a2 2 0 012 2v2" />
-                  <path d="M21 17v2a2 2 0 01-2 2h-2" />
-                  <path d="M7 21H5a2 2 0 01-2-2v-2" />
-                  <line x1="7" y1="12" x2="17" y2="12" />
-                  <line x1="7" y1="8" x2="17" y2="8" />
-                  <line x1="7" y1="16" x2="17" y2="16" />
-                </svg>
-                <input
-                  className="mkt-barcode-input"
-                  type="text"
-                  placeholder="Escribí el código de barras..."
-                  value={barcodeInput}
-                  onChange={(e) => { setBarcodeInput(e.target.value); setDuplicateWarning(null); }}
-                  onKeyDown={handleBarcodeKeyDown}
-                />
-                {isSearching && <span className="mkt-search-spinner" />}
-              </div>
-              <BarcodeScanner onScan={handleCameraScan} />
-              <button
-                type="button"
-                className="mkt-add-row-btn"
-                onClick={() => searchByBarcode(barcodeInput)}
-                disabled={!barcodeInput.trim() || isSearching}
-                aria-label="Buscar por código"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-              </button>
-            </div>
-          )}
-        </div>
+        <ShoppingListSearch
+          items={items}
+          searchMode={searchMode}
+          searchQuery={searchQuery}
+          barcodeInput={barcodeInput}
+          results={results}
+          isSearching={isSearching}
+          showResults={showResults}
+          quantityToAdd={quantityToAdd}
+          searchRef={searchRef}
+          onSearchModeChange={handleSearchModeChange}
+          onQuantityChange={setQuantityToAdd}
+          onNameChange={handleNameChange}
+          onNameKeyDown={handleNameKeyDown}
+          onFocusInput={() => { if (results.length > 0) setShowResults(true); }}
+          onBarcodeChange={(value) => { setBarcodeInput(value); setDuplicateWarning(null); }}
+          onBarcodeKeyDown={handleBarcodeKeyDown}
+          onBarcodeScan={handleCameraScan}
+          onAddItem={addItem}
+        />
       </div>
     </div>
   );

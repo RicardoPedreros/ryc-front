@@ -1,5 +1,6 @@
 import type { CreateInventoryMovement } from '@/domain/market/entities/inventory-movement';
 import type { IInventoryRepository, CreateBatchAdjustment } from '@/domain/market/repositories/inventory-repository';
+import { ValidationError } from '@/shared/errors';
 
 export class InventoryUseCases {
   constructor(private readonly inventoryRepository: IInventoryRepository) {}
@@ -26,10 +27,10 @@ export class InventoryUseCases {
 
   async createMovement(movement: CreateInventoryMovement) {
     if (!movement.productId) {
-      throw new Error('Product is required');
+      throw new ValidationError('Product is required');
     }
     if (movement.quantity <= 0) {
-      throw new Error('Quantity must be greater than zero');
+      throw new ValidationError('Quantity must be greater than zero');
     }
     return this.inventoryRepository.createMovement(movement);
   }
@@ -37,7 +38,7 @@ export class InventoryUseCases {
   async createBatchAdjustments(movements: readonly CreateBatchAdjustment[]) {
     const valid = movements.filter((m) => m.quantity > 0);
     if (valid.length === 0) {
-      throw new Error('No adjustments with quantity > 0');
+      throw new ValidationError('No adjustments with quantity > 0');
     }
     return this.inventoryRepository.createBatchMovements(valid);
   }
@@ -48,7 +49,7 @@ export class InventoryUseCases {
 
   async completeTemporalMovements(name: string | null, barcode: string | null, productId: string) {
     if (!productId) {
-      throw new Error('Product id is required');
+      throw new ValidationError('Product id is required');
     }
     return this.inventoryRepository.completeTemporalMovements(name, barcode, productId);
   }

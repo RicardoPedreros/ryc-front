@@ -1,96 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BrandUseCases } from '@/application/market/brand-use-cases';
 import { NeonBrandRepository } from '@/infrastructure/market/repositories/neon-brand-repository';
-import { getSessionFromRequest, canModifyRecord } from '@/shared/auth';
+import { getSessionFromRequest } from '@/infrastructure/auth/session';
+import { canModifyRecord } from '@/application/auth/authorization-policies';
+import { apiRoute, badRequest, forbidden, notFound } from '@/shared/route-helpers';
 
 const brandUseCases = new BrandUseCases(new NeonBrandRepository());
 
+function isUniqueViolation(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && (error as { code?: string }).code === '23505';
+}
+
 export async function GET(request: NextRequest) {
-  try {
+  return apiRoute(async () => {
     const session = getSessionFromRequest(request);
     const { searchParams } = new URL(request.url);
     const hierarchy = searchParams.get('hierarchy');
 
     if (hierarchy === 'true') {
-      const tree = await brandUseCases.findHierarchyWithVisibility(session?.id ?? null, session?.roleCode ?? null);
-      return NextResponse.json(tree);
+      return brandUseCases.findHierarchyWithVisibility(session?.id ?? null, session?.roleCode ?? null);
     }
 
-    const brands = await brandUseCases.findManyWithVisibility(session?.id ?? null, session?.roleCode ?? null);
-    return NextResponse.json(brands);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+    return brandUseCases.findManyWithVisibility(session?.id ?? null, session?.roleCode ?? null);
+  });
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const session = getSessionFromRequest(request);
-    const body = await request.json();
-    const brand = await brandUseCases.create({ ...body, createdBy: session?.id ?? null });
-    return NextResponse.json(brand, { status: 201 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    if (error instanceof Error && 'code' in error && (error as { code?: string }).code === '23505') {
-      return NextResponse.json({ error: 'A brand with that name already exists' }, { status: 409 });
-    }
-    const status = message.includes('required') || message.includes('not found') ? 400 : 500;
-    return NextResponse.json({ error: message }, { status });
-  }
+  return apiRoute(
+    async () => {
+      const session = getSessionFromRequest(request);
+      const body = await request.json();
+      const brand = await brandUseCases.create({ ...body, createdBy: session?.id ?? null });
+      return NextResponse.json(brand, { status: 201 });
+    },
+    {
+      conflictMessage: (error) =>
+        isUniqueViolation(error) ? 'A brand with that name already exists' : null,
+    },
+  );
 }
 
 export async function PUT(request: NextRequest) {
-  try {
+  return apiRoute(async () => {
     const session = getSessionFromRequest(request);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
-    if (!id) {
-      return NextResponse.json({ error: 'Brand id is required' }, { status: 400 });
-    }
+    if (!id) badRequest('Brand id is required');
 
     const existing = await brandUseCases.findById(id);
-    if (!existing) {
-      return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
-    }
+    if (!existing) notFound('Brand not found');
 
     if (!canModifyRecord(existing.createdBy, session?.id ?? null, session?.roleCode ?? null)) {
-      return NextResponse.json({ error: 'You can only edit records you created' }, { status: 403 });
+      forbidden('You can only edit records you created');
     }
 
     const body = await request.json();
-    const updated = await brandUseCases.update(id, body);
-    return NextResponse.json(updated);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+    return brandUseCases.update(id, body);
+  });
 }
 
 export async function DELETE(request: NextRequest) {
-  try {
+  return apiRoute(async () => {
     const session = getSessionFromRequest(request);
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
-    if (!id) {
-      return NextResponse.json({ error: 'Brand id is required' }, { status: 400 });
-    }
+    if (!id) badRequest('Brand id is required');
 
     const existing = await brandUseCases.findById(id);
-    if (!existing) {
-      return NextResponse.json({ error: 'Brand not found' }, { status: 404 });
-    }
+    if (!existing) notFound('Brand not found');
 
     if (!canModifyRecord(existing.createdBy, session?.id ?? null, session?.roleCode ?? null)) {
-      return NextResponse.json({ error: 'You can only delete records you created' }, { status: 403 });
+      forbidden('You can only delete records you created');
     }
 
     const deleted = await brandUseCases.remove(id);
-    return NextResponse.json({ success: deleted });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+    return { success: deleted };
+  });
 }

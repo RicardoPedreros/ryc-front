@@ -1,21 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { InventoryUseCases } from '@/application/market/inventory-use-cases';
 import { NeonInventoryRepository } from '@/infrastructure/market/repositories/neon-inventory-repository';
+import { apiRoute, badRequest } from '@/shared/route-helpers';
 
 const inventoryUseCases = new InventoryUseCases(new NeonInventoryRepository());
 
 export async function GET() {
-  try {
-    const pendings = await inventoryUseCases.getPendingTemporalProducts();
-    return NextResponse.json(pendings);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  return apiRoute(async () => inventoryUseCases.getPendingTemporalProducts());
 }
 
 export async function POST(request: NextRequest) {
-  try {
+  return apiRoute(async () => {
     const body = await request.json();
     const { productId, temporalProductName, temporalBarcode } = body as {
       productId: string;
@@ -23,9 +18,7 @@ export async function POST(request: NextRequest) {
       temporalBarcode: string | null;
     };
 
-    if (!productId) {
-      return NextResponse.json({ error: 'Product id is required' }, { status: 400 });
-    }
+    if (!productId) badRequest('Product id is required');
 
     const linked = await inventoryUseCases.completeTemporalMovements(
       temporalProductName ?? null,
@@ -34,8 +27,5 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ success: true, linked }, { status: 200 });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  });
 }

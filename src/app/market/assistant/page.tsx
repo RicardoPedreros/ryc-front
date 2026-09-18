@@ -7,7 +7,7 @@ export default function AssistantPage() {
         <div>
           <h1>Asistente</h1>
           <p>
-            Recetas armadas con lo que ya tenés en el inventario.
+            Recetas armadas con lo que ya tienes en el inventario.
             <span className="asst-status-pill">
               <span className="asst-dot" />
               conectado al inventario

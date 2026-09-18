@@ -1,7 +1,7 @@
 import type { Brand, CreateBrand, UpdateBrand } from '@/domain/market/entities/brand';
 import type { IBrandRepository, BrandWithChildren } from '@/domain/market/repositories/brand-repository';
 import { getSql } from '../neon-client';
-import { getAdminIds } from '@/shared/auth';
+import { getAdminIds } from '@/infrastructure/auth/admin-ids';
 
 interface BrandRow {
   id: string;

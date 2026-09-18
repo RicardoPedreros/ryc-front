@@ -15,6 +15,17 @@ interface OpenAiToolCall {
     readonly name: string;
     readonly arguments: string;
   };
+  readonly extra_content?: {
+    readonly google?: { readonly thought_signature?: string };
+    readonly vertex?: { readonly thought_signature?: string };
+  };
+}
+
+function getThoughtSignature(call: OpenAiToolCall): string | undefined {
+  return (
+    call.extra_content?.google?.thought_signature ??
+    call.extra_content?.vertex?.thought_signature
+  );
 }
 
 interface OpenAiAssistantMessage {
@@ -85,6 +96,13 @@ function toRequestMessage(message: ChatMessage): OpenAiRequestMessage {
                 id: call.id,
                 type: "function",
                 function: { name: call.name, arguments: call.argumentsJson },
+                ...(call.thoughtSignature
+                  ? {
+                      extra_content: {
+                        google: { thought_signature: call.thoughtSignature },
+                      },
+                    }
+                  : {}),
               })),
             }
           : {}),
@@ -153,6 +171,7 @@ export class OpenAiCompatibleAiProvider implements IAiProvider {
         id: call.id,
         name: call.function.name,
         argumentsJson: call.function.arguments,
+        thoughtSignature: getThoughtSignature(call),
       })),
     };
   }

@@ -3,43 +3,7 @@ import type {
   ExpiringProductBlock,
   RecipeBlock,
 } from "@/domain/ai/entities/assistant-blocks";
-
-function CheckIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function MissingIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-      <line x1="6" y1="6" x2="18" y2="18" />
-      <line x1="18" y1="6" x2="6" y2="18" />
-    </svg>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
-function ServingsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-    </svg>
-  );
-}
+import { Icon } from "@/presentation/components/ui/Icon";
 
 function RecipeCard({ recipe }: { readonly recipe: RecipeBlock }) {
   return (
@@ -49,10 +13,10 @@ function RecipeCard({ recipe }: { readonly recipe: RecipeBlock }) {
           <h3>{recipe.title}</h3>
           <div className="asst-recipe-meta">
             {recipe.minutes != null && (
-              <span><ClockIcon /> {recipe.minutes} min</span>
+              <span><Icon name="clock" size={13} /> {recipe.minutes} min</span>
             )}
             {recipe.servings != null && (
-              <span><ServingsIcon /> {recipe.servings} porciones</span>
+              <span><Icon name="users" size={13} /> {recipe.servings} porciones</span>
             )}
           </div>
         </div>
@@ -63,7 +27,7 @@ function RecipeCard({ recipe }: { readonly recipe: RecipeBlock }) {
           <li className="asst-ing-row" key={`${ingredient.name}-${index}`}>
             <span className="asst-ing-name">
               <span className={`asst-ing-mark ${ingredient.available ? "ok" : "miss"}`}>
-                {ingredient.available ? <CheckIcon /> : <MissingIcon />}
+                {ingredient.available ? <Icon name="check" strokeWidth={2.5} size={10} /> : <Icon name="x" strokeWidth={2.5} size={10} />}
               </span>
               {ingredient.name}
               {ingredient.quantity ? ` · ${ingredient.quantity}` : ""}

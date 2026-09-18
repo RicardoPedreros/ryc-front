@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAssistant } from "@/presentation/hooks/useAssistant";
+import { Icon } from "@/presentation/components/ui/Icon";
 import { AssistantBlockView } from "./AssistantBlockView";
 
 const QUICK_PROMPTS = [
@@ -9,15 +10,6 @@ const QUICK_PROMPTS = [
   "¿Qué vence pronto?",
   "Quiero usar los huevos",
 ] as const;
-
-function SendIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="22" y1="2" x2="11" y2="13" />
-      <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-  );
-}
 
 export function AssistantChat() {
   const { messages, sending, error, send } = useAssistant();
@@ -86,7 +78,7 @@ export function AssistantChat() {
             type="text"
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder="Preguntá por recetas con tu inventario…"
+            placeholder="Pregunta por recetas con tu inventario…"
             aria-label="Mensaje al asistente"
             disabled={sending}
           />
@@ -96,7 +88,7 @@ export function AssistantChat() {
             aria-label="Enviar mensaje"
             disabled={sending || !trimmed}
           >
-            <SendIcon />
+            <Icon name="send" size={18} />
           </button>
         </div>
         <span className="asst-hint">El asistente usa el inventario real de tu Mercado.</span>

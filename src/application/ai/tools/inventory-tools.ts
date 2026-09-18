@@ -40,7 +40,7 @@ function getStockTool(deps: InventoryToolDependencies): AssistantTool {
   const definition: ToolDefinition = {
     name: "get_stock",
     description:
-      "Devuelve los productos del inventario que tienen stock disponible, con su cantidad, categoría y días hasta el vencimiento. Usala para saber qué hay antes de recomendar recetas o responder sobre disponibilidad.",
+      "Devuelve los productos del inventario que tienen stock disponible, con su cantidad, categoría y días hasta el vencimiento. Úsala para saber qué hay antes de recomendar recetas o responder sobre disponibilidad.",
     parameters: { type: "object", properties: {}, required: [] },
   };
 
@@ -63,7 +63,7 @@ function getExpiringProductsTool(deps: InventoryToolDependencies): AssistantTool
   const definition: ToolDefinition = {
     name: "get_expiring_products",
     description:
-      "Devuelve los productos que vencen dentro de los próximos días (o ya vencidos). Usala cuando el usuario pregunte qué se vence pronto o qué conviene usar para no tirar comida.",
+      "Devuelve los productos que vencen dentro de los próximos días (o ya vencidos). Úsala cuando el usuario pregunte qué se vence pronto o qué conviene usar para no tirar comida.",
     parameters: {
       type: "object",
       properties: {
@@ -118,7 +118,7 @@ function getLowStockProductsTool(deps: InventoryToolDependencies): AssistantTool
   const definition: ToolDefinition = {
     name: "get_low_stock_products",
     description:
-      "Devuelve los productos cuyo stock está en el mínimo o por debajo. Usala cuando el usuario pregunte qué le falta o qué debería reponer.",
+      "Devuelve los productos cuyo stock está en el mínimo o por debajo. Úsala cuando el usuario pregunte qué le falta o qué debería reponer.",
     parameters: { type: "object", properties: {}, required: [] },
   };
 
@@ -143,7 +143,7 @@ function getProductLotsTool(deps: InventoryToolDependencies): AssistantTool {
   const definition: ToolDefinition = {
     name: "get_product_lots",
     description:
-      "Devuelve los lotes de un producto con su cantidad y fecha de vencimiento. Usala cuando el usuario quiera saber cuánto y de qué lote queda de un producto puntual.",
+      "Devuelve los lotes de un producto con su cantidad y fecha de vencimiento. Úsala cuando el usuario quiera saber cuánto y de qué lote queda de un producto puntual.",
     parameters: {
       type: "object",
       properties: {
@@ -194,7 +194,7 @@ function searchProductsTool(deps: InventoryToolDependencies): AssistantTool {
   const definition: ToolDefinition = {
     name: "search_products",
     description:
-      "Busca productos por nombre. Usala para encontrar el nombre exacto de un producto del catálogo cuando no estés seguro de cómo figura.",
+      "Busca productos por nombre. Úsala para encontrar el nombre exacto de un producto del catálogo cuando no estés seguro de cómo figura.",
     parameters: {
       type: "object",
       properties: {
@@ -240,7 +240,7 @@ function getPendingTemporalProductsTool(deps: InventoryToolDependencies): Assist
   const definition: ToolDefinition = {
     name: "get_pending_temporal_products",
     description:
-      "Devuelve los productos temporales cargados en compras que todavía no fueron asociados a un producto del catálogo. Usala cuando el usuario pregunte por productos sin identificar o pendientes.",
+      "Devuelve los productos temporales cargados en compras que todavía no fueron asociados a un producto del catálogo. Úsala cuando el usuario pregunte por productos sin identificar o pendientes.",
     parameters: { type: "object", properties: {}, required: [] },
   };
 

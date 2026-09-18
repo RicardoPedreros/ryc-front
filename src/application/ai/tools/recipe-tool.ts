@@ -34,7 +34,7 @@ export function createRecipeTools(): readonly AssistantTool[] {
   const definition: ToolDefinition = {
     name: "propose_recipe",
     description:
-      "Muestra una receta al usuario en formato de tarjeta. Usala cuando sugieras una receta concreta. Marcá cada ingrediente con available=true solo si ya está en el inventario (consultanlo antes con get_stock) y false si falta.",
+      "Muestra una receta al usuario en formato de tarjeta. Úsala cuando sugieras una receta concreta. Marca cada ingrediente con available=true solo si ya está en el inventario (consúltalo antes con get_stock) y false si falta.",
     parameters: {
       type: "object",
       properties: {

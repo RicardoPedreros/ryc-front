@@ -1,7 +1,7 @@
 import type { Unit, CreateUnit } from '@/domain/market/entities/unit';
 import type { IUnitRepository } from '@/domain/market/repositories/unit-repository';
 import { getSql } from '../neon-client';
-import { getAdminIds } from '@/shared/auth';
+import { getAdminIds } from '@/infrastructure/auth/admin-ids';
 
 interface UnitRow {
   id: string;

@@ -12,6 +12,7 @@ export interface ToolInvocation {
   readonly id: string;
   readonly name: string;
   readonly argumentsJson: string;
+  readonly thoughtSignature?: string;
 }
 
 export interface AssistantMessage {

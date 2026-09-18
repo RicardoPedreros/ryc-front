@@ -21,7 +21,7 @@ const WELCOME_MESSAGE: AssistantUiMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "¡Hola! Puedo sugerirte recetas con lo que ya tenés, avisarte cuando algo está por vencer y armarte la lista de compras de lo que falta.",
+    "¡Hola! Puedo sugerirte recetas con lo que ya tienes, avisarte cuando algo está por vencer y armar la lista de compras de lo que falta.",
   blocks: [],
   time: null,
 };

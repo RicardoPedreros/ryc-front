@@ -1,7 +1,7 @@
 import type { Product, CreateProduct, UpdateProduct } from '@/domain/market/entities/product';
 import type { IProductRepository, ProductSearchResult } from '@/domain/market/repositories/product-repository';
 import { getSql } from '../neon-client';
-import { getAdminIds } from '@/shared/auth';
+import { getAdminIds } from '@/infrastructure/auth/admin-ids';
 
 interface ProductRow {
   id: string;

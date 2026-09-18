@@ -1,5 +1,6 @@
 import type { CreateStore, UpdateStore } from '@/domain/market/entities/store';
 import type { IStoreRepository } from '@/domain/market/repositories/store-repository';
+import { ValidationError } from '@/shared/errors';
 
 export class StoreUseCases {
   constructor(private readonly storeRepository: IStoreRepository) {}
@@ -18,7 +19,7 @@ export class StoreUseCases {
 
   async create(store: CreateStore) {
     if (!store.name.trim()) {
-      throw new Error('Store name is required');
+      throw new ValidationError('Store name is required');
     }
     return this.storeRepository.create(store);
   }

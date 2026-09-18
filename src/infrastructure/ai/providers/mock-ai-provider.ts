@@ -70,7 +70,7 @@ export class MockAiProvider implements IAiProvider {
       }
       return completion(
         [],
-        "Con lo que tenés en el inventario te propongo esta receta. Solo falta un detalle para completarla.",
+        "Con lo que tienes en el inventario te propongo esta receta. Solo falta un detalle para completarla.",
       );
     }
 
@@ -97,7 +97,7 @@ export class MockAiProvider implements IAiProvider {
 
     return completion(
       [],
-      "Soy el asistente en modo local (sin proveedor de IA configurado). Puedo consultar tu inventario y armar recetas con lo que tenés.",
+      "Soy el asistente en modo local (sin proveedor de IA configurado). Puedo consultar tu inventario y armar recetas con lo que tienes.",
     );
   }
 }

@@ -3,6 +3,7 @@ import type { InventoryMovement } from '@/domain/market/entities/inventory-movem
 import type { IPurchaseRepository, PurchaseItemDetail, PurchaseWithItems } from '@/domain/market/repositories/purchase-repository';
 import type { IInventoryRepository } from '@/domain/market/repositories/inventory-repository';
 import type { IMovementTypeRepository } from '@/domain/market/repositories/movement-type-repository';
+import { NotFoundError, ValidationError } from '@/shared/errors';
 
 export interface PurchaseItemInput {
   readonly productId: string | null;
@@ -81,7 +82,7 @@ export class PurchaseUseCases {
 
   async create(purchase: CreatePurchase, items?: readonly PurchaseItemInput[]) {
     if (!purchase.purchaseDate) {
-      throw new Error('Purchase date is required');
+      throw new ValidationError('Purchase date is required');
     }
 
     const created = await this.purchaseRepository.create(purchase);
@@ -89,12 +90,12 @@ export class PurchaseUseCases {
     if (items && items.length > 0) {
       const purchaseTypeId = await this.getPurchaseMovementTypeId();
       if (!purchaseTypeId) {
-        throw new Error('Movement type PURCHASE not found');
+        throw new NotFoundError('Movement type PURCHASE not found');
       }
 
       for (const item of items) {
         if (!item.productId && !item.temporalProductName && !item.temporalBarcode) {
-          throw new Error('Product is required');
+          throw new ValidationError('Product is required');
         }
       }
 

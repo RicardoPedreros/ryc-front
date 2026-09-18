@@ -1,5 +1,6 @@
 import type { CreateProduct, UpdateProduct } from '@/domain/market/entities/product';
 import type { IProductRepository } from '@/domain/market/repositories/product-repository';
+import { ValidationError } from '@/shared/errors';
 
 export class ProductUseCases {
   constructor(private readonly productRepository: IProductRepository) {}
@@ -34,22 +35,22 @@ export class ProductUseCases {
 
   async create(product: CreateProduct) {
     if (!product.name.trim()) {
-      throw new Error('Product name is required');
+      throw new ValidationError('Product name is required');
     }
     if (!product.categoryId) {
-      throw new Error('Category is required');
+      throw new ValidationError('Category is required');
     }
     if (!product.unitId) {
-      throw new Error('Unit is required');
+      throw new ValidationError('Unit is required');
     }
     if (product.stockQuantity != null && product.stockQuantity < 1) {
-      throw new Error('Stock quantity must be at least 1');
+      throw new ValidationError('Stock quantity must be at least 1');
     }
     if (product.minStock != null && product.minStock < 1) {
-      throw new Error('Minimum stock must be at least 1');
+      throw new ValidationError('Minimum stock must be at least 1');
     }
     if (product.minDays != null && product.minDays < 1) {
-      throw new Error('Minimum days must be at least 1');
+      throw new ValidationError('Minimum days must be at least 1');
     }
     return this.productRepository.create(product);
   }

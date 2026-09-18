@@ -2,7 +2,7 @@ import type { Purchase, CreatePurchase, UpdatePurchase } from '@/domain/market/e
 import type { InventoryMovement } from '@/domain/market/entities/inventory-movement';
 import type { IPurchaseRepository, PurchaseListItem, PurchaseItemDetail } from '@/domain/market/repositories/purchase-repository';
 import { getSql } from '../neon-client';
-import { getAdminIds } from '@/shared/auth';
+import { getAdminIds } from '@/infrastructure/auth/admin-ids';
 import { toInventoryMovement, type InventoryMovementRow } from './inventory-movement-mapper';
 
 interface PurchaseRow {

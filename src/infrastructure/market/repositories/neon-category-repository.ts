@@ -1,7 +1,7 @@
 import type { Category, CreateCategory, UpdateCategory } from '@/domain/market/entities/category';
 import type { ICategoryRepository } from '@/domain/market/repositories/category-repository';
 import { getSql } from '../neon-client';
-import { getAdminIds } from '@/shared/auth';
+import { getAdminIds } from '@/infrastructure/auth/admin-ids';
 
 interface CategoryRow {
   id: string;

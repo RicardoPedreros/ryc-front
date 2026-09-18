@@ -1,7 +1,7 @@
 import type { Store, CreateStore, UpdateStore } from '@/domain/market/entities/store';
 import type { IStoreRepository } from '@/domain/market/repositories/store-repository';
 import { getSql } from '../neon-client';
-import { getAdminIds } from '@/shared/auth';
+import { getAdminIds } from '@/infrastructure/auth/admin-ids';
 
 interface StoreRow {
   id: string;

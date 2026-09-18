@@ -1,5 +1,6 @@
 import type { CreateUnit } from '@/domain/market/entities/unit';
 import type { IUnitRepository } from '@/domain/market/repositories/unit-repository';
+import { ValidationError } from '@/shared/errors';
 
 export class UnitUseCases {
   constructor(private readonly unitRepository: IUnitRepository) {}
@@ -18,10 +19,10 @@ export class UnitUseCases {
 
   async create(unit: CreateUnit) {
     if (!unit.name.trim()) {
-      throw new Error('Unit name is required');
+      throw new ValidationError('Unit name is required');
     }
     if (!unit.symbol.trim()) {
-      throw new Error('Unit symbol is required');
+      throw new ValidationError('Unit symbol is required');
     }
     return this.unitRepository.create(unit);
   }

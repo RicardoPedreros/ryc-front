@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
 import { BrandChip } from "@/presentation/components/market/BrandChip";
+import { Icon } from "@/presentation/components/ui/Icon";
 import type { InventoryStock, ProductLot } from "@/domain/market/entities/inventory-movement";
 
 function getExpiryLabel(days: number | null): string {
@@ -73,7 +74,7 @@ export function StockOverview() {
         <div className="mkt-card">
           <div className="mkt-empty-state">
             <p>Sin productos en inventario</p>
-            <p className="mkt-empty-sub">Registrá una compra para comenzar a trackear stock</p>
+            <p className="mkt-empty-sub">Registra una compra para comenzar a hacer seguimiento del stock</p>
           </div>
         </div>
       </div>
@@ -136,9 +137,7 @@ export function StockOverview() {
                   )}
                   {productLots.length > 0 && (
                     <span className={`mkt-stock-expand-icon ${isExpanded ? "open" : ""}`}>
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="4.5 2 7.5 5 4.5 8" />
-                      </svg>
+                      <Icon name="chevron-down" size={14} />
                     </span>
                   )}
                 </div>

@@ -5,24 +5,24 @@ import { ValidationError } from '@/shared/errors';
 export class InventoryUseCases {
   constructor(private readonly inventoryRepository: IInventoryRepository) {}
 
-  async getStock() {
-    return this.inventoryRepository.getStock();
+  async getStock(userId?: string | null, roleCode?: string | null) {
+    return this.inventoryRepository.getStock(userId, roleCode);
   }
 
-  async getStockLots(productId?: string) {
-    return this.inventoryRepository.getStockLots(productId);
+  async getStockLots(productId?: string, userId?: string | null, roleCode?: string | null) {
+    return this.inventoryRepository.getStockLots(productId, userId, roleCode);
   }
 
-  async getAdjustableProducts() {
-    return this.inventoryRepository.findAdjustableProducts();
+  async getAdjustableProducts(userId?: string | null, roleCode?: string | null) {
+    return this.inventoryRepository.findAdjustableProducts(userId, roleCode);
   }
 
-  async findAllMovements() {
-    return this.inventoryRepository.findAllMovements();
+  async findAllMovements(userId?: string | null, roleCode?: string | null) {
+    return this.inventoryRepository.findAllMovements(userId, roleCode);
   }
 
-  async findMovementsByProduct(productId: string) {
-    return this.inventoryRepository.findMovementsByProductId(productId);
+  async findMovementsByProduct(productId: string, userId?: string | null, roleCode?: string | null) {
+    return this.inventoryRepository.findMovementsByProductId(productId, userId, roleCode);
   }
 
   async createMovement(movement: CreateInventoryMovement) {
@@ -43,14 +43,14 @@ export class InventoryUseCases {
     return this.inventoryRepository.createBatchMovements(valid);
   }
 
-  async getPendingTemporalProducts() {
-    return this.inventoryRepository.findPendingTemporalProducts();
+  async getPendingTemporalProducts(userId?: string | null, roleCode?: string | null) {
+    return this.inventoryRepository.findPendingTemporalProducts(userId, roleCode);
   }
 
-  async completeTemporalMovements(name: string | null, barcode: string | null, productId: string) {
+  async completeTemporalMovements(name: string | null, barcode: string | null, productId: string, userId?: string | null, roleCode?: string | null) {
     if (!productId) {
       throw new ValidationError('Product id is required');
     }
-    return this.inventoryRepository.completeTemporalMovements(name, barcode, productId);
+    return this.inventoryRepository.completeTemporalMovements(name, barcode, productId, userId, roleCode);
   }
 }

@@ -16,5 +16,6 @@ export interface AiCompletionResult {
 
 export interface IAiProvider {
   readonly name: string;
+  readonly isFreeModel: boolean;
   complete(request: AiCompletionRequest): Promise<AiCompletionResult>;
 }

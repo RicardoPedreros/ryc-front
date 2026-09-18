@@ -1,6 +1,7 @@
 import type { InventoryMovement, CreateInventoryMovement, InventoryStock, ProductLot, AdjustableProduct, PendingTemporalProduct } from '@/domain/market/entities/inventory-movement';
 import type { IInventoryRepository, CreateBatchAdjustment, CreatePurchaseMovementItem } from '@/domain/market/repositories/inventory-repository';
 import { getSql } from '../neon-client';
+import { getAdminIds } from '@/infrastructure/auth/admin-ids';
 import { toInventoryMovement, type InventoryMovementRow } from './inventory-movement-mapper';
 
 interface PendingTemporalProductRow {
@@ -119,15 +120,47 @@ function toAdjustableProduct(row: AdjustableProductRow): AdjustableProduct {
 }
 
 export class NeonInventoryRepository implements IInventoryRepository {
-  async findAllMovements(): Promise<readonly InventoryMovement[]> {
+  async findAllMovements(userId?: string | null, roleCode?: string | null): Promise<readonly InventoryMovement[]> {
     const sql = getSql();
-    const rows = await sql`SELECT * FROM inventory_movements ORDER BY movement_date DESC` as InventoryMovementRow[];
+    const adminIds = userId && roleCode !== 'admin' ? await getAdminIds() : [];
+    const rows = await sql`
+      SELECT im.*
+      FROM inventory_movements im
+      LEFT JOIN products p ON p.id = im.product_id
+      WHERE
+        ${userId && roleCode !== 'admin'
+          ? sql`(
+              (im.product_id IS NOT NULL AND (p.created_by IS NULL OR p.created_by = ${userId} OR p.created_by = ANY(${adminIds}::uuid[])))
+              OR
+              (im.product_id IS NULL AND (im.created_by IS NULL OR im.created_by = ${userId} OR im.created_by = ANY(${adminIds}::uuid[])))
+            )`
+          : roleCode !== 'admin'
+            ? sql`(
+                (im.product_id IS NOT NULL AND p.created_by IS NULL)
+                OR
+                (im.product_id IS NULL AND im.created_by IS NULL)
+              )`
+            : sql`TRUE`}
+      ORDER BY im.movement_date DESC
+    ` as InventoryMovementRow[];
     return rows.map(toInventoryMovement);
   }
 
-  async findMovementsByProductId(productId: string): Promise<readonly InventoryMovement[]> {
+  async findMovementsByProductId(productId: string, userId?: string | null, roleCode?: string | null): Promise<readonly InventoryMovement[]> {
     const sql = getSql();
-    const rows = await sql`SELECT * FROM inventory_movements WHERE product_id = ${productId} ORDER BY movement_date DESC` as InventoryMovementRow[];
+    const adminIds = userId && roleCode !== 'admin' ? await getAdminIds() : [];
+    const rows = await sql`
+      SELECT im.*
+      FROM inventory_movements im
+      LEFT JOIN products p ON p.id = im.product_id
+      WHERE im.product_id = ${productId}
+        AND ${userId && roleCode !== 'admin'
+          ? sql`(p.created_by IS NULL OR p.created_by = ${userId} OR p.created_by = ANY(${adminIds}::uuid[]))`
+          : roleCode !== 'admin'
+            ? sql`p.created_by IS NULL`
+            : sql`TRUE`}
+      ORDER BY im.movement_date DESC
+    ` as InventoryMovementRow[];
     return rows.map(toInventoryMovement);
   }
 
@@ -143,8 +176,9 @@ export class NeonInventoryRepository implements IInventoryRepository {
     return rows.map(toInventoryMovement);
   }
 
-  async getStock(): Promise<readonly InventoryStock[]> {
+  async getStock(userId?: string | null, roleCode?: string | null): Promise<readonly InventoryStock[]> {
     const sql = getSql();
+    const adminIds = userId && roleCode !== 'admin' ? await getAdminIds() : [];
     const rows = await sql`
       WITH RECURSIVE brand_paths AS (
         SELECT
@@ -202,13 +236,19 @@ export class NeonInventoryRepository implements IInventoryRepository {
       LEFT JOIN balance_agg ba ON ba.product_id = p.id
       WHERE p.parent_product_id IS NULL
         AND p.is_active = true
+        AND ${userId && roleCode !== 'admin'
+          ? sql`(p.created_by IS NULL OR p.created_by = ${userId} OR p.created_by = ANY(${adminIds}::uuid[]))`
+          : roleCode !== 'admin'
+            ? sql`p.created_by IS NULL`
+            : sql`TRUE`}
       ORDER BY p.name
     ` as InventoryStockRow[];
     return rows.map(toInventoryStock);
   }
 
-  async findAdjustableProducts(): Promise<readonly AdjustableProduct[]> {
+  async findAdjustableProducts(userId?: string | null, roleCode?: string | null): Promise<readonly AdjustableProduct[]> {
     const sql = getSql();
+    const adminIds = userId && roleCode !== 'admin' ? await getAdminIds() : [];
     const rows = await sql`
       WITH balance_agg AS (
         SELECT product_id, SUM(current_stock)::int AS current_stock
@@ -232,13 +272,19 @@ export class NeonInventoryRepository implements IInventoryRepository {
       LEFT JOIN balance_agg ba ON ba.product_id = p.id
       WHERE p.parent_product_id IS NULL
         AND p.is_active = true
+        AND ${userId && roleCode !== 'admin'
+          ? sql`(p.created_by IS NULL OR p.created_by = ${userId} OR p.created_by = ANY(${adminIds}::uuid[]))`
+          : roleCode !== 'admin'
+            ? sql`p.created_by IS NULL`
+            : sql`TRUE`}
       ORDER BY p.name
     ` as AdjustableProductRow[];
     return rows.map(toAdjustableProduct);
   }
 
-  async getStockLots(productId?: string): Promise<readonly ProductLot[]> {
+  async getStockLots(productId?: string, userId?: string | null, roleCode?: string | null): Promise<readonly ProductLot[]> {
     const sql = getSql();
+    const adminIds = userId && roleCode !== 'admin' ? await getAdminIds() : [];
     const rows = await sql`
       SELECT
         ib.product_id,
@@ -252,6 +298,7 @@ export class NeonInventoryRepository implements IInventoryRepository {
         END::int AS days_until_expiry,
         COALESCE(latest.movement_date, ib.updated_at) AS latest_movement_date
       FROM inventory_balance ib
+      JOIN products p ON p.id = ib.product_id
       LEFT JOIN LATERAL (
         SELECT im.lot, im.movement_date
         FROM inventory_movements im
@@ -263,6 +310,11 @@ export class NeonInventoryRepository implements IInventoryRepository {
         LIMIT 1
       ) latest ON true
       WHERE ib.current_stock > 0
+        AND ${userId && roleCode !== 'admin'
+          ? sql`(p.created_by IS NULL OR p.created_by = ${userId} OR p.created_by = ANY(${adminIds}::uuid[]))`
+          : roleCode !== 'admin'
+            ? sql`p.created_by IS NULL`
+            : sql`TRUE`}
       ${productId != null
         ? sql`
             AND ib.product_id = ${productId}
@@ -328,8 +380,9 @@ export class NeonInventoryRepository implements IInventoryRepository {
     return rows.map(toInventoryMovement);
   }
 
-  async findPendingTemporalProducts(): Promise<readonly PendingTemporalProduct[]> {
+  async findPendingTemporalProducts(userId?: string | null, roleCode?: string | null): Promise<readonly PendingTemporalProduct[]> {
     const sql = getSql();
+    const adminIds = userId && roleCode !== 'admin' ? await getAdminIds() : [];
     const rows = await sql`
       SELECT
         im.temporal_product_name AS "temporalProductName",
@@ -341,14 +394,20 @@ export class NeonInventoryRepository implements IInventoryRepository {
       FROM inventory_movements im
       WHERE im.product_id IS NULL
         AND (im.temporal_product_name IS NOT NULL OR im.temporal_barcode IS NOT NULL)
+        AND ${userId && roleCode !== 'admin'
+          ? sql`(im.created_by IS NULL OR im.created_by = ${userId} OR im.created_by = ANY(${adminIds}::uuid[]))`
+          : roleCode !== 'admin'
+            ? sql`im.created_by IS NULL`
+            : sql`TRUE`}
       GROUP BY im.temporal_product_name, im.temporal_barcode
       ORDER BY latest_date DESC
     ` as PendingTemporalProductRow[];
     return rows.map(toPendingTemporalProduct);
   }
 
-  async completeTemporalMovements(name: string | null, barcode: string | null, productId: string): Promise<number> {
+  async completeTemporalMovements(name: string | null, barcode: string | null, productId: string, userId?: string | null, roleCode?: string | null): Promise<number> {
     const sql = getSql();
+    const adminIds = userId && roleCode !== 'admin' ? await getAdminIds() : [];
     const rows = await sql`
       UPDATE inventory_movements
       SET
@@ -358,6 +417,11 @@ export class NeonInventoryRepository implements IInventoryRepository {
       WHERE product_id IS NULL
         AND temporal_product_name IS NOT DISTINCT FROM ${name}
         AND temporal_barcode IS NOT DISTINCT FROM ${barcode}
+        AND ${userId && roleCode !== 'admin'
+          ? sql`(created_by IS NULL OR created_by = ${userId} OR created_by = ANY(${adminIds}::uuid[]))`
+          : roleCode !== 'admin'
+            ? sql`created_by IS NULL`
+            : sql`TRUE`}
       RETURNING id
     ` as { id: string }[];
     return rows.length;

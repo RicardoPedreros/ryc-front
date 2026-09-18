@@ -6,6 +6,7 @@ export interface OpenAiCompatibleConfig {
   readonly apiKey: string;
   readonly model: string;
   readonly baseUrl: string;
+  readonly isFreeModel?: boolean;
 }
 
 interface OpenAiToolCall {
@@ -129,8 +130,11 @@ function toToolPayload(tool: ToolDefinition): OpenAiToolPayload {
 
 export class OpenAiCompatibleAiProvider implements IAiProvider {
   readonly name = "openai";
+  readonly isFreeModel: boolean;
 
-  constructor(private readonly config: OpenAiCompatibleConfig) {}
+  constructor(private readonly config: OpenAiCompatibleConfig) {
+    this.isFreeModel = config.isFreeModel === true;
+  }
 
   async complete(request: AiCompletionRequest): Promise<AiCompletionResult> {
     const response = await fetch(`${this.config.baseUrl.replace(/\/$/, "")}/chat/completions`, {

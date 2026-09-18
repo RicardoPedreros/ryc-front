@@ -16,26 +16,34 @@ function requiredApiKey(providerName: string): string {
   return apiKey;
 }
 
+function isFreeModel(): boolean {
+  const value = (process.env.AI_MODEL_IS_FREE ?? "").toLowerCase();
+  return value === "true" || value === "1" || value === "yes";
+}
+
 export function createAiProvider(): IAiProvider {
   const providerName = (process.env.AI_PROVIDER ?? "mock").toLowerCase();
+  const freeModel = isFreeModel();
 
   switch (providerName) {
     case "mock":
-      return new MockAiProvider();
+      return new MockAiProvider({ isFreeModel: freeModel });
 
     case "openai": {
       return new OpenAiCompatibleAiProvider({
         apiKey: requiredApiKey(providerName),
         model: process.env.AI_MODEL ?? "gpt-4o-mini",
         baseUrl: process.env.AI_BASE_URL ?? "https://api.openai.com/v1",
+        isFreeModel: freeModel,
       });
     }
 
     case "gemini": {
       return new OpenAiCompatibleAiProvider({
         apiKey: requiredApiKey(providerName),
-        model: process.env.AI_MODEL ?? "gemini-3.1-flash-lite",
+        model: process.env.AI_MODEL ?? GeminiModelDefault,
         baseUrl: process.env.AI_BASE_URL ?? GeminiBaseUrl,
+        isFreeModel: freeModel,
       });
     }
 

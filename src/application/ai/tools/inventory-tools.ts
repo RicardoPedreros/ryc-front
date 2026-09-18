@@ -3,7 +3,7 @@ import type { ExpiringProductBlock } from "@/domain/ai/entities/assistant-blocks
 import type { ToolDefinition } from "@/domain/ai/entities/tool";
 import type { InventoryUseCases } from "@/application/market/inventory-use-cases";
 import type { ProductUseCases } from "@/application/market/product-use-cases";
-import type { AssistantTool } from "../assistant-tool";
+import type { AssistantTool, AssistantToolContext } from "../assistant-tool";
 import { asNumber, asString, type ArgumentRecord } from "../tool-arguments";
 
 const DEFAULT_EXPIRY_DAYS = 7;
@@ -46,8 +46,8 @@ function getStockTool(deps: InventoryToolDependencies): AssistantTool {
 
   return {
     definition,
-    async execute() {
-      const stock = await deps.inventoryUseCases.getStock();
+    async execute(_args: ArgumentRecord, context: AssistantToolContext) {
+      const stock = await deps.inventoryUseCases.getStock(context.userId, context.roleCode);
       const available = stock.filter((item) => item.currentStock > 0);
       return {
         result: {
@@ -78,11 +78,11 @@ function getExpiringProductsTool(deps: InventoryToolDependencies): AssistantTool
 
   return {
     definition,
-    async execute(args: ArgumentRecord) {
+    async execute(args: ArgumentRecord, context: AssistantToolContext) {
       const requested = asNumber(args.days) ?? DEFAULT_EXPIRY_DAYS;
       const days = Math.min(Math.max(Math.trunc(requested), 0), MAX_EXPIRY_DAYS);
 
-      const stock = await deps.inventoryUseCases.getStock();
+      const stock = await deps.inventoryUseCases.getStock(context.userId, context.roleCode);
       const expiring = stock
         .filter(
           (item) =>
@@ -124,8 +124,8 @@ function getLowStockProductsTool(deps: InventoryToolDependencies): AssistantTool
 
   return {
     definition,
-    async execute() {
-      const stock = await deps.inventoryUseCases.getStock();
+    async execute(_args: ArgumentRecord, context: AssistantToolContext) {
+      const stock = await deps.inventoryUseCases.getStock(context.userId, context.roleCode);
       const lowStock = stock.filter(
         (item) => item.notificate && item.currentStock <= item.minStock,
       );
@@ -158,13 +158,13 @@ function getProductLotsTool(deps: InventoryToolDependencies): AssistantTool {
 
   return {
     definition,
-    async execute(args: ArgumentRecord) {
+    async execute(args: ArgumentRecord, context: AssistantToolContext) {
       const productName = asString(args.productName)?.trim();
       if (!productName) {
         return { result: { error: "Se requiere el nombre del producto." } };
       }
 
-      const stock = await deps.inventoryUseCases.getStock();
+      const stock = await deps.inventoryUseCases.getStock(context.userId, context.roleCode);
       const match = stock.find((item) =>
         item.name.toLowerCase().includes(productName.toLowerCase()),
       );
@@ -174,7 +174,7 @@ function getProductLotsTool(deps: InventoryToolDependencies): AssistantTool {
         };
       }
 
-      const lots = await deps.inventoryUseCases.getStockLots(match.id);
+      const lots = await deps.inventoryUseCases.getStockLots(match.id, context.userId, context.roleCode);
       return {
         result: {
           product: match.name,
@@ -246,8 +246,8 @@ function getPendingTemporalProductsTool(deps: InventoryToolDependencies): Assist
 
   return {
     definition,
-    async execute() {
-      const pending = await deps.inventoryUseCases.getPendingTemporalProducts();
+    async execute(_args: ArgumentRecord, context: AssistantToolContext) {
+      const pending = await deps.inventoryUseCases.getPendingTemporalProducts(context.userId, context.roleCode);
       return {
         result: {
           count: pending.length,

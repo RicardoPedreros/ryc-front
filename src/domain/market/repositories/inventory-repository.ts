@@ -24,15 +24,15 @@ export interface CreatePurchaseMovementItem {
 }
 
 export interface IInventoryRepository {
-  findAllMovements(): Promise<readonly InventoryMovement[]>;
-  findMovementsByProductId(productId: string): Promise<readonly InventoryMovement[]>;
+  findAllMovements(userId?: string | null, roleCode?: string | null): Promise<readonly InventoryMovement[]>;
+  findMovementsByProductId(productId: string, userId?: string | null, roleCode?: string | null): Promise<readonly InventoryMovement[]>;
   findMovementsByPurchaseId(purchaseId: string): Promise<readonly InventoryMovement[]>;
-  getStock(): Promise<readonly InventoryStock[]>;
-  getStockLots(productId?: string): Promise<readonly ProductLot[]>;
-  findAdjustableProducts(): Promise<readonly AdjustableProduct[]>;
+  getStock(userId?: string | null, roleCode?: string | null): Promise<readonly InventoryStock[]>;
+  getStockLots(productId?: string, userId?: string | null, roleCode?: string | null): Promise<readonly ProductLot[]>;
+  findAdjustableProducts(userId?: string | null, roleCode?: string | null): Promise<readonly AdjustableProduct[]>;
   createMovement(movement: CreateInventoryMovement): Promise<InventoryMovement>;
   createBatchMovements(movements: readonly CreateBatchAdjustment[]): Promise<readonly InventoryMovement[]>;
   createPurchaseMovements(purchaseId: string, items: readonly CreatePurchaseMovementItem[]): Promise<readonly InventoryMovement[]>;
-  findPendingTemporalProducts(): Promise<readonly PendingTemporalProduct[]>;
-  completeTemporalMovements(name: string | null, barcode: string | null, productId: string): Promise<number>;
+  findPendingTemporalProducts(userId?: string | null, roleCode?: string | null): Promise<readonly PendingTemporalProduct[]>;
+  completeTemporalMovements(name: string | null, barcode: string | null, productId: string, userId?: string | null, roleCode?: string | null): Promise<number>;
 }

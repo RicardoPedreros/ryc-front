@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { InventoryUseCases } from '@/application/market/inventory-use-cases';
 import { NeonInventoryRepository } from '@/infrastructure/market/repositories/neon-inventory-repository';
 import type { CreateBatchAdjustment } from '@/domain/market/repositories/inventory-repository';
-import { getUserIdFromSession } from '@/infrastructure/auth/session';
+import { getUserIdFromSession, getSessionFromRequest } from '@/infrastructure/auth/session';
 import { apiRoute, badRequest } from '@/shared/route-helpers';
 
 const inventoryUseCases = new InventoryUseCases(new NeonInventoryRepository());
 
-export async function GET() {
-  return apiRoute(async () => inventoryUseCases.getAdjustableProducts());
+export async function GET(request: NextRequest) {
+  return apiRoute(async () => {
+    const session = getSessionFromRequest(request);
+    return inventoryUseCases.getAdjustableProducts(session?.id ?? null, session?.roleCode ?? null);
+  });
 }
 
 export async function POST(request: NextRequest) {

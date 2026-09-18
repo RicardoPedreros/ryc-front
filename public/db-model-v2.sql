@@ -111,6 +111,38 @@ SELECT
 FROM roles
 WHERE code = 'ADMIN';
 
+INSERT INTO users (
+    role_id,
+    username,
+    password_hash,
+    first_name,
+    last_name
+)
+SELECT
+    id,
+    'user1',
+    'user123',
+    'Usuario 1',
+    'Sistema'
+FROM roles
+WHERE code = 'USER';
+
+INSERT INTO users (
+    role_id,
+    username,
+    password_hash,
+    first_name,
+    last_name
+)
+SELECT
+    id,
+    'user2',
+    'user123',
+    'Usuario 2',
+    'Sistema'
+FROM roles
+WHERE code = 'USER';
+
 -- ============================================================
 -- TABLES
 -- ============================================================
@@ -124,7 +156,7 @@ CREATE TABLE brands (
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
-    UNIQUE NULLS NOT DISTINCT(parent_brand_id, name)
+    UNIQUE NULLS NOT DISTINCT(parent_brand_id, name, created_by)
 );
 
 CREATE TABLE categories (
@@ -136,7 +168,7 @@ CREATE TABLE categories (
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
-    UNIQUE(name)
+    UNIQUE NULLS NOT DISTINCT(parent_category_id, name, created_by)
 );
 
 CREATE TABLE units (
@@ -149,7 +181,7 @@ CREATE TABLE units (
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
-    UNIQUE(symbol)
+    UNIQUE NULLS NOT DISTINCT(parent_unit_id, symbol, created_by)
 );
 
 CREATE TABLE products (
@@ -167,7 +199,7 @@ CREATE TABLE products (
         CHECK (min_stock >= 0),
     min_days NUMERIC(10,2) NOT NULL DEFAULT 7,
         CHECK (min_days >= 0),
-    barcode VARCHAR(100) UNIQUE,
+    barcode VARCHAR(100),
     stock_quantity NUMERIC(10,2) NOT NULL DEFAULT 1,
         CHECK (stock_quantity > 0),
     parent_product_id UUID REFERENCES products(id) DEFAULT NULL,
@@ -175,6 +207,8 @@ CREATE TABLE products (
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    UNIQUE NULLS NOT DISTINCT(barcode, created_by),
 
     CONSTRAINT chk_product_not_its_own_parent
     CHECK (
@@ -207,10 +241,12 @@ CREATE TABLE stores (
     name VARCHAR(120) NOT NULL,
     address TEXT,
     city VARCHAR(100),
+    icon VARCHAR(100),
+    color VARCHAR(20),
     created_by UUID REFERENCES users(id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
-    UNIQUE NULLS NOT DISTINCT (name, city, address)
+    UNIQUE NULLS NOT DISTINCT (name, city, address, created_by)
 );
 
 CREATE TABLE purchases (
@@ -292,8 +328,8 @@ CREATE TABLE inventory_balance (
     current_stock NUMERIC(12,3) NOT NULL DEFAULT 0
         CHECK (current_stock >= 0),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-
-    UNIQUE NULLS NOT DISTINCT (product_id, expiration_date, lot)
+    created_by UUID REFERENCES users(id),
+    UNIQUE NULLS NOT DISTINCT (product_id, expiration_date, lot, created_by)
 );
 
 -- ============================================================
@@ -542,6 +578,31 @@ ON products
 FOR EACH STATEMENT
 EXECUTE FUNCTION trg_product_inventory_config();
 
+CREATE OR REPLACE FUNCTION trg_inventory_balance_cleanup()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    IF NEW.current_stock = 0 THEN
+        DELETE FROM inventory_balance
+        WHERE product_id = NEW.product_id
+        AND expiration_date IS NOT DISTINCT FROM NEW.expiration_date;
+    END IF;
+
+    RETURN NULL;
+
+END;
+$$;
+
+CREATE TRIGGER trg_inventory_balance_cleanup
+AFTER INSERT OR UPDATE OF current_stock
+ON inventory_balance
+FOR EACH ROW
+WHEN (NEW.current_stock = 0)
+EXECUTE FUNCTION trg_inventory_balance_cleanup();
+
+
 -- ============================================================
 -- PREDEFINED DATA
 -- ============================================================
@@ -597,3 +658,5 @@ INSERT INTO categories (name, icon, color) VALUES
 ('Electrónica', 'plug', '#6366F1'),
 ('Oficina', 'briefcase', '#8B5CF6'),
 ('Otros', 'package', '#6B7280');
+
+--7703032117014 mantequilla

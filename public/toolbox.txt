@@ -11,3 +11,7 @@ ibsvxiui0@high.edu.pl
 Frontend: Vercel
 Backend: Render
 Base de datos: Neon
+
+
+En caso de fallar OD:
+Remove-Item -Recurse -Force "$env:APPDATA\Open Design"

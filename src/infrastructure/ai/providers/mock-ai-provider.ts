@@ -53,6 +53,11 @@ const SAMPLE_RECIPE_ARGS: Readonly<Record<string, unknown>> = {
 
 export class MockAiProvider implements IAiProvider {
   readonly name = "mock";
+  readonly isFreeModel: boolean;
+
+  constructor(config?: { readonly isFreeModel?: boolean }) {
+    this.isFreeModel = config?.isFreeModel === true;
+  }
 
   async complete(request: AiCompletionRequest): Promise<AiCompletionResult> {
     const text = lastUserText(request.messages);

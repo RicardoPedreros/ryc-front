@@ -26,4 +26,4 @@ yarn-error.log*
 # macOS
 .DS_Store
 
-public/db-model.sql
+public/*.sql

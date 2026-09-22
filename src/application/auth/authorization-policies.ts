@@ -16,10 +16,8 @@ export function canModifyRecord(
 export function canViewRecord(
   recordCreatorId: string | null,
   viewer: Viewer,
-  adminIds: readonly string[],
 ): boolean {
   if (viewer.roleCode === 'admin') return true;
-  if (!recordCreatorId) return true;
-  if (recordCreatorId === viewer.id) return true;
-  return adminIds.includes(recordCreatorId);
+  if (!viewer.id) return false;
+  return recordCreatorId === viewer.id;
 }

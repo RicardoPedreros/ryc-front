@@ -24,29 +24,27 @@ describe("canModifyRecord", () => {
 });
 
 describe("canViewRecord", () => {
-  const adminIds = ["admin-x", "admin-y"];
-
   it("allow admin to view any record", () => {
-    expect(canViewRecord("anyone", { id: "a", roleCode: "admin" }, adminIds)).toBe(true);
+    expect(canViewRecord("anyone", { id: "a", roleCode: "admin" })).toBe(true);
   });
 
-  it("allow viewing records without a creator", () => {
-    expect(canViewRecord(null, { id: null, roleCode: "user" }, adminIds)).toBe(true);
+  it("deny viewing records without a creator to a user", () => {
+    expect(canViewRecord(null, { id: null, roleCode: "user" })).toBe(false);
   });
 
   it("allow a user to view their own records", () => {
-    expect(canViewRecord("me", { id: "me", roleCode: "user" }, adminIds)).toBe(true);
+    expect(canViewRecord("me", { id: "me", roleCode: "user" })).toBe(true);
   });
 
-  it("allow viewing records created by a known admin", () => {
-    expect(canViewRecord("admin-x", { id: "me", roleCode: "user" }, adminIds)).toBe(true);
+  it("deny viewing admin-created records to a user", () => {
+    expect(canViewRecord("admin-x", { id: "me", roleCode: "user" })).toBe(false);
   });
 
   it("deny viewing other users' records", () => {
-    expect(canViewRecord("other", { id: "me", roleCode: "user" }, adminIds)).toBe(false);
+    expect(canViewRecord("other", { id: "me", roleCode: "user" })).toBe(false);
   });
 
-  it("deny viewing records created by unknown admins", () => {
-    expect(canViewRecord("admin-z", { id: "me", roleCode: "user" }, adminIds)).toBe(false);
+  it("deny anonymous users", () => {
+    expect(canViewRecord("anyone", { id: null, roleCode: "user" })).toBe(false);
   });
 });

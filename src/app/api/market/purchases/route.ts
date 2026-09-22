@@ -4,7 +4,6 @@ import { NeonPurchaseRepository } from '@/infrastructure/market/repositories/neo
 import { NeonInventoryRepository } from '@/infrastructure/market/repositories/neon-inventory-repository';
 import { NeonMovementTypeRepository } from '@/infrastructure/market/repositories/neon-movement-type-repository';
 import { getSessionFromRequest } from '@/infrastructure/auth/session';
-import { getAdminIds } from '@/infrastructure/auth/admin-ids';
 import { canModifyRecord, canViewRecord } from '@/application/auth/authorization-policies';
 import { apiRoute, badRequest, forbidden, notFound } from '@/shared/route-helpers';
 
@@ -26,8 +25,7 @@ export async function GET(request: NextRequest) {
       if (!purchase) notFound('Purchase not found');
 
       const viewer = { id: session?.id ?? null, roleCode: session?.roleCode ?? null };
-      const adminIds = await getAdminIds();
-      if (!canViewRecord(purchase.createdBy, viewer, adminIds)) notFound('Purchase not found');
+      if (!canViewRecord(purchase.createdBy, viewer)) notFound('Purchase not found');
 
       const items = await purchaseUseCases.findItems(id);
       return { ...purchase, items };

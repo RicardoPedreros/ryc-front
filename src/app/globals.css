@@ -801,7 +801,6 @@ a {
   position: sticky;
   top: 0;
   z-index: 50;
-  border-bottom: 1px solid var(--border);
   background: color-mix(in oklch, var(--bg) 80%, transparent);
   backdrop-filter: blur(12px);
 }
@@ -809,9 +808,9 @@ a {
 .mkt-navbar-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 1.25rem;
   padding: 0.875rem 1.5rem;
-  max-width: 720px;
+  max-width: 1080px;
   margin: 0 auto;
 }
 
@@ -819,6 +818,150 @@ a {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+}
+
+.mkt-navbar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-family: var(--font-display);
+  white-space: nowrap;
+}
+
+.mkt-nav-sections {
+  border-top: 1px solid var(--border);
+  padding: 0.375rem 1.5rem 0.5rem;
+}
+
+.mkt-nav-sections::-webkit-scrollbar {
+  display: none;
+}
+
+.mkt-nav-sections-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 1080px;
+  margin: 0 auto;
+  width: max-content;
+  min-width: 100%;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.mkt-nav-group {
+  position: relative;
+  flex: none;
+}
+
+.mkt-nav-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s, background 0.12s;
+}
+
+.mkt-nav-trigger:hover {
+  color: var(--fg);
+  background: var(--surface);
+}
+
+.mkt-nav-group.active > .mkt-nav-trigger {
+  color: var(--fg);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.mkt-nav-trigger .mkt-nav-chevron {
+  transition: transform 0.2s ease;
+}
+
+.mkt-nav-group:hover .mkt-nav-chevron,
+.mkt-nav-group.open .mkt-nav-chevron {
+  transform: rotate(180deg);
+}
+
+/* Dropdown (hover, click, o foco) */
+
+.mkt-nav-dd {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  display: none;
+  min-width: 230px;
+  padding-top: 0.5rem;
+  z-index: 60;
+}
+
+.mkt-nav-group:hover .mkt-nav-dd,
+.mkt-nav-group.open .mkt-nav-dd {
+  display: block;
+}
+
+.mkt-nav-dd::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 0.5rem;
+}
+
+.mkt-nav-dd::after {
+  content: "";
+  position: absolute;
+  top: 0.5rem;
+  right: 0;
+  left: 0;
+  bottom: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+.mkt-nav-dd-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.6rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+
+.mkt-nav-dd-item:first-of-type {
+  margin-top: 0.75rem;
+}
+
+.mkt-nav-dd-item:last-of-type {
+  margin-bottom: 0.75rem;
+}
+
+.mkt-nav-dd-item:hover {
+  color: var(--fg);
+  background: var(--surface-dim);
+}
+
+.mkt-nav-dd-item.active {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .mkt-navbar-back {
@@ -833,6 +976,7 @@ a {
   cursor: pointer;
   color: var(--fg-muted);
   transition: border-color 0.15s, color 0.15s;
+  flex: none;
 }
 
 .mkt-navbar-back:hover {
@@ -840,17 +984,42 @@ a {
   color: var(--fg);
 }
 
-.mkt-navbar-title {
-  font-size: 1rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  font-family: var(--font-display);
-}
-
 .mkt-navbar-right {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-left: auto;
+  flex: none;
+}
+
+@media (max-width: 640px) {
+  .mkt-navbar-inner {
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .mkt-navbar-back {
+    width: 32px;
+    height: 32px;
+  }
+
+  .mkt-navbar-title {
+    font-size: 0.9375rem;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mkt-nav-sections {
+    padding: 0.25rem 1rem 0.5rem;
+  }
+
+  .mkt-nav-sections-inner {
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 /* ── Greeting ── */

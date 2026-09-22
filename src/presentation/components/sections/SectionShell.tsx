@@ -1,20 +1,19 @@
 import { requireSession } from '@/infrastructure/auth/session';
 import { SectionNavbar } from '@/presentation/components/sections/SectionNavbar';
-import { SectionTabs, type SectionTab } from '@/presentation/components/sections/SectionTabs';
+import type { SectionNavGroup } from '@/presentation/components/sections/section-nav';
 
 export interface SectionShellProps {
   readonly title: string;
-  readonly tabs?: readonly SectionTab[];
+  readonly sections: readonly SectionNavGroup[];
   readonly children: React.ReactNode;
 }
 
-export default async function SectionShell({ title, tabs = [], children }: SectionShellProps) {
+export default async function SectionShell({ title, sections, children }: SectionShellProps) {
   await requireSession();
 
   return (
     <>
-      <SectionNavbar title={title} />
-      {tabs.length > 0 && <SectionTabs tabs={tabs} />}
+      <SectionNavbar title={title} sections={sections} />
       <main className="mkt-page">{children}</main>
     </>
   );

@@ -1,4 +1,4 @@
-import type { CreateUnit } from '@/domain/market/entities/unit';
+import type { CreateUnit, UpdateUnit } from '@/domain/market/entities/unit';
 import type { IUnitRepository } from '@/domain/market/repositories/unit-repository';
 import { ValidationError } from '@/shared/errors';
 
@@ -25,5 +25,13 @@ export class UnitUseCases {
       throw new ValidationError('Unit symbol is required');
     }
     return this.unitRepository.create(unit);
+  }
+
+  async update(id: string, unit: UpdateUnit) {
+    const existing = await this.unitRepository.findById(id);
+    if (!existing) {
+      return null;
+    }
+    return this.unitRepository.update(id, unit);
   }
 }

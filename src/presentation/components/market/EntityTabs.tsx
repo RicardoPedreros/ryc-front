@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
-import Switch from "@mui/material/Switch";
-import Stack from "@mui/material/Stack";
+import { useState, useCallback } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
 import { BrandChip, buildBrandPathLookup } from "@/presentation/components/market/BrandChip";
 import { Icon } from "@/presentation/components/ui/Icon";
-import { BarcodeScanner } from "@/presentation/components/market/BarcodeScanner";
 import { EntityEmpty } from "@/presentation/components/market/EntityEmpty";
-import { EntityModal } from "@/presentation/components/market/EntityModal";
 import { EntityRow } from "@/presentation/components/market/EntityRow";
+import { ModalShell } from "@/presentation/components/market/ModalShell";
+import { ProductForm } from "@/presentation/components/market/forms/ProductForm";
+import { StoreForm } from "@/presentation/components/market/forms/StoreForm";
+import { CategoryForm } from "@/presentation/components/market/forms/CategoryForm";
+import { UnitForm } from "@/presentation/components/market/forms/UnitForm";
+import { BrandForm } from "@/presentation/components/market/forms/BrandForm";
 import type { Product } from "@/domain/market/entities/product";
 import type { Store } from "@/domain/market/entities/store";
 import type { Category } from "@/domain/market/entities/category";
@@ -27,26 +29,25 @@ const TAB_LIST: readonly { id: EntityTab; label: string }[] = [
   { id: "marcas", label: "Marcas" },
 ] as const;
 
-interface EntityListProps {
-  readonly onAdd: (tab: EntityTab) => void;
-}
-
 interface EntityTabsProps {
   readonly activeTab: EntityTab;
   readonly onTabChange: (tab: EntityTab) => void;
   readonly refreshKey: number;
 }
 
-function ProductList({ onAdd }: EntityListProps) {
+type ProductModal = { readonly mode: "create" } | { readonly mode: "edit"; readonly item: Product } | null;
+type StoreModal = { readonly mode: "create" } | { readonly mode: "edit"; readonly item: Store } | null;
+type CategoryModal = { readonly mode: "create" } | { readonly mode: "edit"; readonly item: Category } | null;
+type UnitModal = { readonly mode: "create" } | { readonly mode: "edit"; readonly item: Unit } | null;
+type BrandModal = { readonly mode: "create" } | { readonly mode: "edit"; readonly item: Brand } | null;
+
+function ProductList() {
   const { data: products, loading, refetch: refetchProducts } = useFetch<readonly Product[]>("/api/market/products");
   const { data: stock, refetch: refetchStock } = useFetch<readonly InventoryStock[]>("/api/market/inventory");
   const { data: categories } = useFetch<readonly Category[]>("/api/market/categories");
   const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
   const { data: units } = useFetch<readonly Unit[]>("/api/market/units");
-  const [editProduct, setEditProduct] = useState<Product | null>(null);
-  const [editNotificate, setEditNotificate] = useState(true);
-  const [editStockQuantity, setEditStockQuantity] = useState(1);
-  const editBarcodeRef = useRef<HTMLInputElement>(null);
+  const [modal, setModal] = useState<ProductModal>(null);
 
   const catMap = new Map((categories ?? []).map((c) => [c.id, c.name]));
   const brandNameMap = new Map((brands ?? []).map((b) => [b.id, b.name]));
@@ -54,15 +55,14 @@ function ProductList({ onAdd }: EntityListProps) {
   const brandPaths = buildBrandPathLookup(brands ?? []);
   const stockMap = new Map((stock ?? []).map((s) => [s.id, s.currentStock]));
 
-  const openEdit = useCallback((product: Product) => {
-    setEditProduct(product);
-    setEditNotificate(product.notificate);
-    setEditStockQuantity(product.stockQuantity);
-  }, []);
-
-  const closeEdit = useCallback(() => {
-    setEditProduct(null);
-  }, []);
+  const openCreate = useCallback(() => setModal({ mode: "create" }), []);
+  const openEdit = useCallback((item: Product) => setModal({ mode: "edit", item }), []);
+  const closeModal = useCallback(() => setModal(null), []);
+  const handleSaved = useCallback(() => {
+    refetchProducts();
+    refetchStock();
+    closeModal();
+  }, [refetchProducts, refetchStock, closeModal]);
 
   if (loading) return <EntityEmpty title="Cargando..." />;
 
@@ -107,102 +107,38 @@ function ProductList({ onAdd }: EntityListProps) {
           );
         })}
       </div>
-      <button type="button" className="mkt-add-entity-btn" onClick={() => onAdd("productos")}>
+      <button type="button" className="mkt-add-entity-btn" onClick={openCreate}>
         <Icon name="plus" size={14} />
         Agregar producto
       </button>
 
-      {editProduct && (
-        <EntityModal
-          title="Editar producto"
-          onClose={closeEdit}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const form = new FormData(e.currentTarget);
-            await fetch(`/api/market/products?id=${editProduct.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: form.get("name"),
-                brandId: form.get("brandId") || null,
-                categoryId: form.get("categoryId"),
-                unitId: form.get("unitId"),
-                presentationQuantity: form.get("presentationQuantity") ? Number(form.get("presentationQuantity")) : null,
-                stockQuantity: editStockQuantity,
-                notificate: editNotificate,
-                barcode: form.get("barcode") || null,
-              }),
-            });
-            setEditProduct(null);
-            refetchProducts();
-            refetchStock();
-          }}
-        >
-          <div className="mkt-form-group">
-            <label className="mkt-form-label">Nombre</label>
-            <input name="name" className="mkt-form-input" type="text" defaultValue={editProduct.name} required />
-          </div>
-          <div className="mkt-form-row">
-            <div className="mkt-form-group">
-              <label className="mkt-form-label">Marca</label>
-              <select name="brandId" className="mkt-form-select" defaultValue={editProduct.brandId ?? ""}>
-                <option value="">Sin marca</option>
-                {(brands ?? []).filter((b) => !b.parentBrandId).map((b) => (
-                  <option key={b.id} value={b.id}>{b.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="mkt-form-group">
-              <label className="mkt-form-label">Categoría</label>
-              <select name="categoryId" className="mkt-form-select" defaultValue={editProduct.categoryId} required>
-                {(categories ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="mkt-form-row">
-            <div className="mkt-form-group">
-              <label className="mkt-form-label">Unidad</label>
-              <select name="unitId" className="mkt-form-select" defaultValue={editProduct.unitId} required>
-                {(units ?? []).map((u) => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="mkt-form-group">
-              <label className="mkt-form-label">Presentación</label>
-              <input name="presentationQuantity" className="mkt-form-input" type="number" step="0.01" defaultValue={editProduct.presentationQuantity ?? ""} />
-            </div>
-          </div>
-          <div className="mkt-form-group">
-            <label className="mkt-form-label">Código de barras</label>
-            <div className="mkt-form-input-wrap">
-              <input ref={editBarcodeRef} name="barcode" className="mkt-form-input" type="text" defaultValue={editProduct.barcode ?? ""} />
-              <BarcodeScanner onScan={(code) => { if (editBarcodeRef.current) editBarcodeRef.current.value = code; }} />
-            </div>
-          </div>
-          {editProduct.parentProductId != null && (
-            <div className="mkt-form-row">
-              <div className="mkt-form-group">
-                <label className="mkt-form-label-sm">Stock por pack</label>
-                <input className="mkt-form-input" type="number" min="1" step="1" value={editStockQuantity} onChange={(e) => setEditStockQuantity(Number(e.target.value))} />
-              </div>
-            </div>
-          )}
-          <Stack direction="row" spacing={1} sx={{ alignItems: "center", mt: 1 }}>
-            <Switch checked={editNotificate} onChange={(e) => setEditNotificate(e.target.checked)} size="small" />
-            <span style={{ fontSize: "0.8125rem", color: "var(--fg)" }}>Notificar si el stock está bajo o por vencer</span>
-          </Stack>
-        </EntityModal>
-      )}
+      <ModalShell open={modal !== null} onClose={closeModal}>
+        {modal !== null && (
+          <ProductForm
+            categories={categories ?? []}
+            units={units ?? []}
+            brands={brands ?? []}
+            initial={modal.mode === "edit" ? modal.item : null}
+            onClose={closeModal}
+            onSaved={handleSaved}
+          />
+        )}
+      </ModalShell>
     </>
   );
 }
 
-function StoreList({ onAdd }: EntityListProps) {
+function StoreList() {
   const { data: stores, loading, refetch } = useFetch<readonly Store[]>("/api/market/stores");
-  const [editStore, setEditStore] = useState<Store | null>(null);
+  const [modal, setModal] = useState<StoreModal>(null);
+
+  const openCreate = useCallback(() => setModal({ mode: "create" }), []);
+  const openEdit = useCallback((item: Store) => setModal({ mode: "edit", item }), []);
+  const closeModal = useCallback(() => setModal(null), []);
+  const handleSaved = useCallback(() => {
+    refetch();
+    closeModal();
+  }, [refetch, closeModal]);
 
   if (loading) return <EntityEmpty title="Cargando..." />;
 
@@ -226,56 +162,39 @@ function StoreList({ onAdd }: EntityListProps) {
                 {!store.address && !store.city && "Sin dirección"}
               </>
             )}
-            onOpen={() => setEditStore(store)}
+            onOpen={() => openEdit(store)}
           />
         ))}
       </div>
-      <button type="button" className="mkt-add-entity-btn" onClick={() => onAdd("tiendas")}>
+      <button type="button" className="mkt-add-entity-btn" onClick={openCreate}>
         <Icon name="plus" size={14} />
         Agregar tienda
       </button>
 
-      {editStore && (
-        <EntityModal
-          title="Editar tienda"
-          onClose={() => setEditStore(null)}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const form = new FormData(e.currentTarget);
-            await fetch(`/api/market/stores?id=${editStore.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: form.get("name"),
-                address: form.get("address") || null,
-                city: form.get("city") || null,
-              }),
-            });
-            setEditStore(null);
-            refetch();
-          }}
-        >
-          <div className="mkt-form-group">
-            <label className="mkt-form-label">Nombre</label>
-            <input name="name" className="mkt-form-input" type="text" defaultValue={editStore.name} required />
-          </div>
-          <div className="mkt-form-group">
-            <label className="mkt-form-label">Dirección (opcional)</label>
-            <input name="address" className="mkt-form-input" type="text" defaultValue={editStore.address ?? ""} />
-          </div>
-          <div className="mkt-form-group">
-            <label className="mkt-form-label">Ciudad (opcional)</label>
-            <input name="city" className="mkt-form-input" type="text" defaultValue={editStore.city ?? ""} />
-          </div>
-        </EntityModal>
-      )}
+      <ModalShell open={modal !== null} onClose={closeModal}>
+        {modal !== null && (
+          <StoreForm
+            initial={modal.mode === "edit" ? modal.item : null}
+            onClose={closeModal}
+            onSaved={handleSaved}
+          />
+        )}
+      </ModalShell>
     </>
   );
 }
 
-function CategoryList({ onAdd }: EntityListProps) {
+function CategoryList() {
   const { data: categories, loading, refetch } = useFetch<readonly Category[]>("/api/market/categories");
-  const [editCat, setEditCat] = useState<Category | null>(null);
+  const [modal, setModal] = useState<CategoryModal>(null);
+
+  const openCreate = useCallback(() => setModal({ mode: "create" }), []);
+  const openEdit = useCallback((item: Category) => setModal({ mode: "edit", item }), []);
+  const closeModal = useCallback(() => setModal(null), []);
+  const handleSaved = useCallback(() => {
+    refetch();
+    closeModal();
+  }, [refetch, closeModal]);
 
   if (loading) return <EntityEmpty title="Cargando..." />;
 
@@ -293,46 +212,39 @@ function CategoryList({ onAdd }: EntityListProps) {
             iconStyle={{ background: "var(--success-soft)", color: "var(--success)" }}
             name={cat.name}
             meta={cat.icon}
-            onOpen={() => setEditCat(cat)}
+            onOpen={() => openEdit(cat)}
           />
         ))}
       </div>
-      <button type="button" className="mkt-add-entity-btn" onClick={() => onAdd("categorias")}>
+      <button type="button" className="mkt-add-entity-btn" onClick={openCreate}>
         <Icon name="plus" size={14} />
         Agregar categoría
       </button>
 
-      {editCat && (
-        <EntityModal
-          title="Editar categoría"
-          onClose={() => setEditCat(null)}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const form = new FormData(e.currentTarget);
-            await fetch(`/api/market/categories?id=${editCat.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: form.get("name"),
-              }),
-            });
-            setEditCat(null);
-            refetch();
-          }}
-        >
-          <div className="mkt-form-group">
-            <label className="mkt-form-label">Nombre</label>
-            <input name="name" className="mkt-form-input" type="text" defaultValue={editCat.name} required />
-          </div>
-        </EntityModal>
-      )}
+      <ModalShell open={modal !== null} onClose={closeModal}>
+        {modal !== null && (
+          <CategoryForm
+            initial={modal.mode === "edit" ? modal.item : null}
+            onClose={closeModal}
+            onSaved={handleSaved}
+          />
+        )}
+      </ModalShell>
     </>
   );
 }
 
-function UnitList({ onAdd }: EntityListProps) {
+function UnitList() {
   const { data: units, loading, refetch } = useFetch<readonly Unit[]>("/api/market/units");
-  const [editUnit, setEditUnit] = useState<Unit | null>(null);
+  const [modal, setModal] = useState<UnitModal>(null);
+
+  const openCreate = useCallback(() => setModal({ mode: "create" }), []);
+  const openEdit = useCallback((item: Unit) => setModal({ mode: "edit", item }), []);
+  const closeModal = useCallback(() => setModal(null), []);
+  const handleSaved = useCallback(() => {
+    refetch();
+    closeModal();
+  }, [refetch, closeModal]);
 
   if (loading) return <EntityEmpty title="Cargando..." />;
 
@@ -350,51 +262,40 @@ function UnitList({ onAdd }: EntityListProps) {
             iconStyle={{ background: "var(--warning-soft)", color: "var(--warning)" }}
             name={unit.name}
             meta={unit.symbol}
-            onOpen={() => setEditUnit(unit)}
+            onOpen={() => openEdit(unit)}
           />
         ))}
       </div>
-      <button type="button" className="mkt-add-entity-btn" onClick={() => onAdd("unidades")}>
+      <button type="button" className="mkt-add-entity-btn" onClick={openCreate}>
         <Icon name="plus" size={14} />
         Agregar unidad
       </button>
 
-      {editUnit && (
-        <EntityModal
-          title="Editar unidad"
-          onClose={() => setEditUnit(null)}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const form = new FormData(e.currentTarget);
-            await fetch(`/api/market/units?id=${editUnit.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: form.get("name"),
-                symbol: form.get("symbol"),
-              }),
-            });
-            setEditUnit(null);
-            refetch();
-          }}
-        >
-          <div className="mkt-form-group">
-            <label className="mkt-form-label">Nombre</label>
-            <input name="name" className="mkt-form-input" type="text" defaultValue={editUnit.name} required />
-          </div>
-          <div className="mkt-form-group">
-            <label className="mkt-form-label">Símbolo</label>
-            <input name="symbol" className="mkt-form-input" type="text" defaultValue={editUnit.symbol} required />
-          </div>
-        </EntityModal>
-      )}
+      <ModalShell open={modal !== null} onClose={closeModal}>
+        {modal !== null && (
+          <UnitForm
+            units={units ?? []}
+            initial={modal.mode === "edit" ? modal.item : null}
+            onClose={closeModal}
+            onSaved={handleSaved}
+          />
+        )}
+      </ModalShell>
     </>
   );
 }
 
-function BrandList({ onAdd }: EntityListProps) {
+function BrandList() {
   const { data: brands, loading, refetch } = useFetch<readonly Brand[]>("/api/market/brands");
-  const [editBrand, setEditBrand] = useState<Brand | null>(null);
+  const [modal, setModal] = useState<BrandModal>(null);
+
+  const openCreate = useCallback(() => setModal({ mode: "create" }), []);
+  const openEdit = useCallback((item: Brand) => setModal({ mode: "edit", item }), []);
+  const closeModal = useCallback(() => setModal(null), []);
+  const handleSaved = useCallback(() => {
+    refetch();
+    closeModal();
+  }, [refetch, closeModal]);
 
   if (loading) return <EntityEmpty title="Cargando..." />;
 
@@ -420,7 +321,7 @@ function BrandList({ onAdd }: EntityListProps) {
           iconStyle={{ background: "var(--accent-soft)", color: "var(--accent)" }}
           name={brand.name}
           meta={depth > 0 ? "submarca" : undefined}
-          onOpen={() => setEditBrand(brand)}
+          onOpen={() => openEdit(brand)}
           style={{ paddingLeft: `${1 + depth * 1.5}rem` }}
         />
         {children.map((child) => renderBrand(child, depth + 1))}
@@ -433,54 +334,25 @@ function BrandList({ onAdd }: EntityListProps) {
       <div className="mkt-entity-list">
         {parentBrands.map((brand) => renderBrand(brand, 0))}
       </div>
-      <button type="button" className="mkt-add-entity-btn" onClick={() => onAdd("marcas")}>
+      <button type="button" className="mkt-add-entity-btn" onClick={openCreate}>
         <Icon name="plus" size={14} />
         Agregar marca
       </button>
 
-      {editBrand && (
-        <EntityModal
-          title="Editar marca"
-          onClose={() => setEditBrand(null)}
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const form = new FormData(e.currentTarget);
-            await fetch(`/api/market/brands?id=${editBrand.id}`, {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                name: form.get("name"),
-                parentBrandId: form.get("parentBrandId") || null,
-              }),
-            });
-            setEditBrand(null);
-            refetch();
-          }}
-        >
-          <div className="mkt-form-group">
-            <label className="mkt-form-label">Nombre</label>
-            <input name="name" className="mkt-form-input" type="text" defaultValue={editBrand.name} required />
-          </div>
-          <div className="mkt-form-group">
-            <label className="mkt-form-label">Marca padre (opcional)</label>
-            <select name="parentBrandId" className="mkt-form-select" defaultValue={editBrand.parentBrandId ?? ""}>
-              <option value="">Sin marca padre</option>
-              {(brands ?? []).filter((b) => !b.parentBrandId).map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-          </div>
-        </EntityModal>
-      )}
+      <ModalShell open={modal !== null} onClose={closeModal}>
+        {modal !== null && (
+          <BrandForm
+            initial={modal.mode === "edit" ? modal.item : null}
+            onClose={closeModal}
+            onSaved={handleSaved}
+          />
+        )}
+      </ModalShell>
     </>
   );
 }
 
 export function EntityTabs({ activeTab, onTabChange, refreshKey }: EntityTabsProps) {
-  const handleAdd = (tab: EntityTab) => {
-    onTabChange(tab);
-  };
-
   return (
     <div className="mkt-section">
       <div className="mkt-pill-tabs">
@@ -496,11 +368,11 @@ export function EntityTabs({ activeTab, onTabChange, refreshKey }: EntityTabsPro
         ))}
       </div>
       <div className="mkt-card" key={refreshKey}>
-        {activeTab === "productos" && <ProductList onAdd={handleAdd} />}
-        {activeTab === "tiendas" && <StoreList onAdd={handleAdd} />}
-        {activeTab === "categorias" && <CategoryList onAdd={handleAdd} />}
-        {activeTab === "unidades" && <UnitList onAdd={handleAdd} />}
-        {activeTab === "marcas" && <BrandList onAdd={handleAdd} />}
+        {activeTab === "productos" && <ProductList />}
+        {activeTab === "tiendas" && <StoreList />}
+        {activeTab === "categorias" && <CategoryList />}
+        {activeTab === "unidades" && <UnitList />}
+        {activeTab === "marcas" && <BrandList />}
       </div>
     </div>
   );

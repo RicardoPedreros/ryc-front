@@ -1,4 +1,4 @@
-import type { Unit, CreateUnit } from '@/domain/market/entities/unit';
+import type { Unit, CreateUnit, UpdateUnit } from '@/domain/market/entities/unit';
 import type { IUnitRepository } from '@/domain/market/repositories/unit-repository';
 import { getSql } from '../neon-client';
 import { getAdminIds } from '@/infrastructure/auth/admin-ids';
@@ -46,6 +46,21 @@ export class NeonUnitRepository implements IUnitRepository {
       RETURNING *
     ` as UnitRow[];
     return toUnit(rows[0]);
+  }
+
+  async update(id: string, unit: UpdateUnit): Promise<Unit | null> {
+    const sql = getSql();
+    const rows = await sql`
+      UPDATE units
+      SET
+        name = COALESCE(${unit.name}, name),
+        symbol = COALESCE(${unit.symbol}, symbol),
+        parent_unit_id = COALESCE(${unit.parentUnitId ?? null}, parent_unit_id),
+        parent_multiplier = COALESCE(${unit.parentMultiplier ?? null}, parent_multiplier)
+      WHERE id = ${id}
+      RETURNING *
+    ` as UnitRow[];
+    return rows.length > 0 ? toUnit(rows[0]) : null;
   }
 
   async findManyWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly Unit[]> {

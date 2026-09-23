@@ -5,6 +5,7 @@ import { useFetch } from "@/presentation/hooks/useFetch";
 import { EntityTabs } from "@/presentation/components/market/EntityTabs";
 import { PendingTemporalProductsSection } from "@/presentation/components/market/PendingTemporalProducts";
 import { Icon } from "@/presentation/components/ui/Icon";
+import { ModalShell } from "@/presentation/components/market/ModalShell";
 import { ProductForm } from "@/presentation/components/market/forms/ProductForm";
 import { StoreForm } from "@/presentation/components/market/forms/StoreForm";
 import { CategoryForm } from "@/presentation/components/market/forms/CategoryForm";
@@ -24,7 +25,7 @@ export function SettingsActions() {
   const [activeTab, setActiveTab] = useState<EntityTab>("productos");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleEntityCreated = useCallback((tab: EntityTab) => {
+  const handleEntitySaved = useCallback((tab: EntityTab) => {
     setActiveTab(tab);
     setRefreshKey((k) => k + 1);
   }, []);
@@ -84,10 +85,10 @@ export function SettingsActions() {
         </div>
       </div>
 
-      <PendingTemporalProductsSection onCompleted={() => handleEntityCreated("productos")} />
+      <PendingTemporalProductsSection onCompleted={() => handleEntitySaved("productos")} />
 
       <EntityTabs activeTab={activeTab} onTabChange={setActiveTab} refreshKey={refreshKey} />
-      <SettingsModalsInline activeModal={activeModal} onClose={() => setActiveModal(null)} onEntityCreated={handleEntityCreated} />
+      <SettingsModalsInline activeModal={activeModal} onClose={() => setActiveModal(null)} onSaved={handleEntitySaved} />
     </>
   );
 }
@@ -95,11 +96,11 @@ export function SettingsActions() {
 function SettingsModalsInline({
   activeModal,
   onClose,
-  onEntityCreated,
+  onSaved,
 }: {
   readonly activeModal: ModalType;
   readonly onClose: () => void;
-  readonly onEntityCreated: (tab: EntityTab) => void;
+  readonly onSaved: (tab: EntityTab) => void;
 }) {
   const { refetch: refetchStores } = useFetch<readonly Store[]>("/api/market/stores");
   const { data: categories, refetch: refetchCategories } = useFetch<readonly Category[]>("/api/market/categories");
@@ -111,41 +112,34 @@ function SettingsModalsInline({
     document.body.style.overflow = "";
   };
 
-  const handleCreated = (tab: EntityTab) => {
+  const handleSaved = (tab: EntityTab) => {
     refetchStores();
     refetchCategories();
     refetchUnits();
     refetchBrands();
-    onEntityCreated(tab);
+    onSaved(tab);
     closeModal();
   };
 
   const isOpen = activeModal !== null;
 
   return (
-    <div
-      className={`mkt-modal-overlay ${isOpen ? "visible" : ""}`}
-      onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
-    >
-      <div className="mkt-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="mkt-modal-handle" />
-
-        {activeModal === "producto" && (
-          <ProductForm categories={categories ?? []} units={units ?? []} brands={brands ?? []} onClose={closeModal} onCreated={() => handleCreated("productos")} />
-        )}
-        {activeModal === "tienda" && (
-          <StoreForm onClose={closeModal} onCreated={() => handleCreated("tiendas")} />
-        )}
-        {activeModal === "categoria" && (
-          <CategoryForm onClose={closeModal} onCreated={() => handleCreated("categorias")} />
-        )}
-        {activeModal === "unidad" && (
-          <UnitForm units={units ?? []} onClose={closeModal} onCreated={() => handleCreated("unidades")} />
-        )}
-        {activeModal === "marca" && (
-          <BrandForm onClose={closeModal} onCreated={() => handleCreated("marcas")} />
-        )}
-      </div>
-    </div>
+    <ModalShell open={isOpen} onClose={closeModal}>
+      {activeModal === "producto" && (
+        <ProductForm categories={categories ?? []} units={units ?? []} brands={brands ?? []} onClose={closeModal} onSaved={() => handleSaved("productos")} />
+      )}
+      {activeModal === "tienda" && (
+        <StoreForm onClose={closeModal} onSaved={() => handleSaved("tiendas")} />
+      )}
+      {activeModal === "categoria" && (
+        <CategoryForm onClose={closeModal} onSaved={() => handleSaved("categorias")} />
+      )}
+      {activeModal === "unidad" && (
+        <UnitForm units={units ?? []} onClose={closeModal} onSaved={() => handleSaved("unidades")} />
+      )}
+      {activeModal === "marca" && (
+        <BrandForm onClose={closeModal} onSaved={() => handleSaved("marcas")} />
+      )}
+    </ModalShell>
   );
 }

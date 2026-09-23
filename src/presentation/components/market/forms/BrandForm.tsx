@@ -7,14 +7,16 @@ import { useFetch } from "@/presentation/hooks/useFetch";
 import type { Brand } from "@/domain/market/entities/brand";
 
 interface BrandFormProps {
+  readonly initial?: Brand | null;
   readonly onClose: () => void;
-  readonly onCreated: () => void;
+  readonly onSaved: () => void;
 }
 
-export function BrandForm({ onClose, onCreated }: BrandFormProps) {
+export function BrandForm({ initial, onClose, onSaved }: BrandFormProps) {
+  const isEdit = initial != null;
   const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
-  const parentBrands = (brands ?? []).filter((b) => !b.parentBrandId);
-  const [brandColor, setBrandColor] = useState("");
+  const parentBrands = (brands ?? []).filter((b) => !b.parentBrandId && b.id !== initial?.id);
+  const [brandColor, setBrandColor] = useState(initial?.color ?? "");
   const [iconValue, setIconValue] = useState("");
   const [logoOptions, setLogoOptions] = useState<readonly { readonly key: string; readonly label: string }[]>([]);
   const [selectedLogoKey, setSelectedLogoKey] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export function BrandForm({ onClose, onCreated }: BrandFormProps) {
 
   return (
     <>
-      <h2>Agregar marca</h2>
+      <h2>{isEdit ? "Editar marca" : "Agregar marca"}</h2>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -54,8 +56,8 @@ export function BrandForm({ onClose, onCreated }: BrandFormProps) {
           const form = new FormData(e.currentTarget);
           const name = form.get("name") as string;
           if (!name) return;
-          const res = await fetch("/api/market/brands", {
-            method: "POST",
+          const res = await fetch(isEdit ? `/api/market/brands?id=${initial.id}` : "/api/market/brands", {
+            method: isEdit ? "PUT" : "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               name,
@@ -66,20 +68,20 @@ export function BrandForm({ onClose, onCreated }: BrandFormProps) {
           });
           if (!res.ok) {
             const data = (await res.json().catch(() => null)) as { error?: string } | null;
-            setSubmitError(data?.error ?? "No se pudo crear la marca. Intentalo de nuevo.");
+            setSubmitError(data?.error ?? "No se pudo guardar la marca. Intentalo de nuevo.");
             return;
           }
           onClose();
-          onCreated();
+          onSaved();
         }}
       >
         <div className="mkt-form-group">
           <label className="mkt-form-label">Nombre</label>
-          <input name="name" className="mkt-form-input" type="text" placeholder="ej. La Serenísima" required onChange={() => setSubmitError(null)} />
+          <input name="name" className="mkt-form-input" type="text" placeholder="ej. La Serenísima" defaultValue={initial?.name ?? ""} required onChange={() => setSubmitError(null)} />
         </div>
         <div className="mkt-form-group">
           <label className="mkt-form-label">Marca padre (opcional)</label>
-          <select name="parentBrandId" className="mkt-form-select" defaultValue="">
+          <select name="parentBrandId" className="mkt-form-select" defaultValue={initial?.parentBrandId ?? ""}>
             <option value="">Sin marca padre</option>
             {parentBrands.map((brand) => (
               <option key={brand.id} value={brand.id}>{brand.name}</option>
@@ -130,7 +132,7 @@ export function BrandForm({ onClose, onCreated }: BrandFormProps) {
         {submitError && <p className="mkt-form-error" role="alert">{submitError}</p>}
         <div className="mkt-modal-actions">
           <button type="button" className="mkt-btn-cancel" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="mkt-btn-submit">Agregar marca</button>
+          <button type="submit" className="mkt-btn-submit">{isEdit ? "Guardar cambios" : "Agregar marca"}</button>
         </div>
       </form>
     </>

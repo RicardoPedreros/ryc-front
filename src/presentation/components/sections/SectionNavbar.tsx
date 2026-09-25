@@ -86,7 +86,7 @@ export function SectionNavbar({
                     aria-current={isActive ? "page" : undefined}
                     aria-expanded={isOpen}
                     aria-haspopup="menu"
-                    onClick={() => setOpenSection(group.href)}
+                    onClick={() => setOpenSection(isOpen ? null : group.href)}
                   >
                     <Icon name={group.icon} size={16} />
                     <span className="mkt-nav-trigger-label">{group.label}</span>
@@ -103,6 +103,7 @@ export function SectionNavbar({
                     href={group.href}
                     className="mkt-nav-trigger"
                     aria-current={isActive ? "page" : undefined}
+                    onClick={() => setOpenSection(null)}
                   >
                     <Icon name={group.icon} size={16} />
                     <span className="mkt-nav-trigger-label">{group.label}</span>
@@ -120,6 +121,7 @@ export function SectionNavbar({
                           href={child.href}
                           className={`mkt-nav-dd-item ${childActive ? "active" : ""}`}
                           aria-current={childActive ? "page" : undefined}
+                          onClick={() => setOpenSection(null)}
                         >
                           <Icon name={child.icon} size={15} />
                           <span>{child.label}</span>

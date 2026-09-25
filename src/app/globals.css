@@ -904,7 +904,6 @@ a {
   z-index: 60;
 }
 
-.mkt-nav-group:hover .mkt-nav-dd,
 .mkt-nav-group.open .mkt-nav-dd {
   display: block;
 }

@@ -153,13 +153,13 @@ function PurchaseFormInner({
   const addProduct = (productId: string) => {
     if (isProductAdded(productId)) return;
     const last = lastPriceByProduct.get(productId) ?? 0;
-    setItems((prev) => [...prev, createPurchaseItem({ productId, unitPrice: last })]);
+    setItems((prev) => [createPurchaseItem({ productId, unitPrice: last }), ...prev]);
     setFocusKey(productId);
   };
 
   const addTemporalItem = (name: string | null, barcode: string | null) => {
     if (isTemporalAdded(name, barcode)) return;
-    setItems((prev) => [...prev, createPurchaseItem({ temporalProductName: name, temporalBarcode: barcode })]);
+    setItems((prev) => [createPurchaseItem({ temporalProductName: name, temporalBarcode: barcode }), ...prev]);
     setFocusKey(`temporal:${name ?? ""}|${barcode ?? ""}`);
   };
 

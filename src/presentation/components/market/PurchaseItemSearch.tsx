@@ -23,6 +23,7 @@ interface PurchaseItemSearchProps {
   readonly onAddTemporal: (name: string | null, barcode: string | null) => void;
   readonly isProductAdded: (productId: string) => boolean;
   readonly isTemporalAdded: (name: string | null, barcode: string | null) => boolean;
+  readonly inputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 export function PurchaseItemSearch({
@@ -32,6 +33,7 @@ export function PurchaseItemSearch({
   onAddTemporal,
   isProductAdded,
   isTemporalAdded,
+  inputRef,
 }: PurchaseItemSearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<readonly SearchResult[]>([]);
@@ -167,6 +169,7 @@ export function PurchaseItemSearch({
         {searchMode === "name" ? (
           <>
             <input
+              ref={inputRef}
               className="mkt-search-input-field"
               type="text"
               placeholder="Buscar producto..."
@@ -222,6 +225,7 @@ export function PurchaseItemSearch({
         ) : (
           <>
             <input
+              ref={inputRef}
               className="mkt-search-input-field"
               type="text"
               inputMode="numeric"

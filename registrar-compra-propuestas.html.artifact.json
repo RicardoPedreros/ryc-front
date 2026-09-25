@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "registrar-compra-propuestas.html",
+  "entry": "registrar-compra-propuestas.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-09-25T14:10:28.101Z",
+  "updatedAt": "2026-09-25T14:10:28.101Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

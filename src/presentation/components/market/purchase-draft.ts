@@ -27,13 +27,14 @@ export function createPurchaseItem(overrides?: {
   readonly productId?: string;
   readonly temporalProductName?: string | null;
   readonly temporalBarcode?: string | null;
+  readonly unitPrice?: number;
 }): PurchaseItemDraft {
   return {
     productId: overrides?.productId ?? null,
     temporalProductName: overrides?.temporalProductName ?? null,
     temporalBarcode: overrides?.temporalBarcode ?? null,
     quantity: 1,
-    unitPrice: 0,
+    unitPrice: overrides?.unitPrice ?? 0,
     discount: 0,
     expirationDate: "",
     lot: "",

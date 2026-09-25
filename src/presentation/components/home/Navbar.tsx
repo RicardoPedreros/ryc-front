@@ -27,7 +27,7 @@ export function Navbar() {
             </span>
           ) : user ? (
             <div className="navbar-user">
-              <Link href="/market" className="btn-primary">
+              <Link href="/home" className="btn-primary">
                 {user.firstName || user.username}
               </Link>
               <button

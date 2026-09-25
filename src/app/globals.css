@@ -1224,7 +1224,7 @@ a {
   gap: 0.75rem;
   padding: 0.875rem 1rem;
   transition: background 0.12s;
-  cursor: default;
+  cursor: pointer;
 }
 
 .mkt-list-item:not(:last-child) {
@@ -1288,14 +1288,6 @@ a {
   margin-top: 1px;
 }
 
-.mkt-list-item-right {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  font-family: var(--font-mono);
-  color: var(--fg-muted);
-  white-space: nowrap;
-}
-
 .mkt-list-item-remove {
   background: none;
   border: none;
@@ -1335,6 +1327,27 @@ a {
 .mkt-list-item.done .mkt-list-item-qty {
   color: var(--fg-subtle);
   background: var(--surface-dim);
+}
+
+/* ── Lista de compras en modal ── */
+
+.mkt-modal-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.mkt-modal-list-head h2 {
+  margin-bottom: 0;
+}
+
+.mkt-modal-list-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 /* ── Duplicate warning ── */
@@ -3479,32 +3492,6 @@ a {
   color: var(--fg-subtle);
 }
 
-/* ── FAB (Floating Action Button) ── */
-
-.mkt-fab {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-full);
-  background: var(--accent);
-  color: var(--fg-on-accent);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: var(--shadow-lg);
-  transition: background 0.15s, transform 0.15s;
-  z-index: 30;
-}
-
-.mkt-fab:hover {
-  background: var(--accent-hover);
-  transform: scale(1.05);
-}
-
 /* ── Back link ── */
 
 .mkt-back-link {
@@ -4410,13 +4397,6 @@ a {
   .mkt-tab {
     padding: 0.625rem 0.75rem;
     font-size: 0.75rem;
-  }
-
-  .mkt-fab {
-    bottom: 1.5rem;
-    right: 1.5rem;
-    width: 48px;
-    height: 48px;
   }
 
   .mkt-page-header {

@@ -18,11 +18,17 @@ interface ShoppingItemRowProps {
 
 export function ShoppingItemRow({ item, done, onToggle, onRemove }: ShoppingItemRowProps) {
   return (
-    <div className={`mkt-list-item ${done ? "done" : ""}`}>
+    <div
+      className={`mkt-list-item ${done ? "done" : ""}`}
+      onClick={() => onToggle(item.id)}
+    >
       <button
         type="button"
         className={done ? "mkt-list-check checked" : "mkt-list-check"}
-        onClick={() => onToggle(item.id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggle(item.id);
+        }}
         aria-label={done ? `Desmarcar ${item.name}` : `Marcar ${item.name}`}
       >
         <Icon name="check" size={12} stroke="#fff" strokeWidth={2.5} />
@@ -40,7 +46,10 @@ export function ShoppingItemRow({ item, done, onToggle, onRemove }: ShoppingItem
       <button
         type="button"
         className="mkt-list-item-remove"
-        onClick={() => onRemove(item.id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(item.id);
+        }}
         aria-label={`Eliminar ${item.name}`}
       >
         <Icon name="x" size={14} />

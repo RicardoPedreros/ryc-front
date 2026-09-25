@@ -2,13 +2,21 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/presentation/components/ui/Icon";
+import { ModalShell } from "@/presentation/components/market/ModalShell";
+import { useBodyScrollLock } from "@/presentation/hooks/useBodyScrollLock";
 import { useShoppingList } from "@/presentation/hooks/useShoppingList";
 import { ShoppingItemRow } from "./ShoppingItemRow";
 import { ShoppingListSearch } from "./ShoppingListSearch";
 import type { ShoppingProductResult } from "./ShoppingListSearch";
 import type { ShoppingItem } from "@/shared/types/shopping-item";
 
-export function ShoppingList() {
+export function ShoppingList({
+  open,
+  onClose,
+}: {
+  readonly open: boolean;
+  readonly onClose: () => void;
+}) {
   const { items, add, toggle, remove, clear } = useShoppingList();
   const [searchMode, setSearchMode] = useState<"name" | "barcode">("name");
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,6 +29,8 @@ export function ShoppingList() {
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useBodyScrollLock(open);
 
   const addItem = (product?: ShoppingProductResult) => {
     if (product) {
@@ -185,10 +195,10 @@ export function ShoppingList() {
   };
 
   return (
-    <div className="mkt-section">
-      <div className="mkt-section-header">
-        <h2 className="mkt-section-title">Lista de compras</h2>
-        <div className="mkt-section-header-actions">
+    <ModalShell open={open} onClose={onClose}>
+      <div className="mkt-modal-list-head">
+        <h2>Lista de compras</h2>
+        <div className="mkt-modal-list-head-actions">
           {items.length > 0 && (
             <span className="mkt-section-meta">{pending.length} pendientes</span>
           )}
@@ -200,6 +210,7 @@ export function ShoppingList() {
           )}
         </div>
       </div>
+
       <div className="mkt-card">
         {items.length === 0 && !searchQuery && !barcodeInput && (
           <div className="mkt-empty-state">
@@ -256,6 +267,6 @@ export function ShoppingList() {
           onAddItem={addItem}
         />
       </div>
-    </div>
+    </ModalShell>
   );
 }

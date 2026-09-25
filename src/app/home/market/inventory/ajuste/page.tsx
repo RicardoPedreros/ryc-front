@@ -6,7 +6,7 @@ export default function StockAdjustmentPage() {
     <>
       <div className="mkt-page-header">
         <div>
-          <Link href="/market/inventory" className="mkt-back-link">
+          <Link href="/home/market/inventory" className="mkt-back-link">
             ← Inventario
           </Link>
           <h1>Ajustar stock</h1>

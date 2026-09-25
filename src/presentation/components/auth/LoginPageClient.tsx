@@ -10,7 +10,7 @@ export function LoginPageClient() {
   const { login, loading: sessionLoading } = useAuth();
   
   const searchParams = useSearchParams();
-  const from = searchParams.get("from") || "/";
+  const from = searchParams.get("from") || "/home";
 
   if (sessionLoading) {
     return (

@@ -9,14 +9,20 @@ import type { ProductSearchResult } from "@/domain/market/repositories/product-r
 import type { PurchaseWithItems } from "@/domain/market/repositories/purchase-repository";
 import { buildBrandPathLookup } from "./BrandChip";
 import type { Brand } from "@/domain/market/entities/brand";
-import { Icon } from "@/presentation/components/ui/Icon";
+import { ModalShell } from "@/presentation/components/market/ModalShell";
 import { PurchaseRowQuick } from "./PurchaseRowQuick";
 import { PurchaseItemSearch } from "./PurchaseItemSearch";
 import { createPurchaseItem, isTemporal, itemKey } from "./purchase-draft";
 import type { PurchaseItemDraft } from "./purchase-draft";
+import { useBodyScrollLock } from "@/presentation/hooks/useBodyScrollLock";
 
-export function PurchaseModals() {
-  const [activeModal, setActiveModal] = useState<"compra" | null>(null);
+export function PurchaseModals({
+  open,
+  onClose,
+}: {
+  readonly open: boolean;
+  readonly onClose: () => void;
+}) {
   const { data: stores, refetch: refetchStores } = useFetch<readonly Store[]>("/api/market/stores");
   const { data: paymentMethods } = useFetch<readonly PaymentMethod[]>("/api/market/payment-methods");
   const { data: products } = useFetch<readonly ProductSearchResult[]>("/api/market/products?details=true");
@@ -44,15 +50,7 @@ export function PurchaseModals() {
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const openModal = () => {
-    setActiveModal("compra");
-    document.body.style.overflow = "hidden";
-  };
-
-  const closeModal = () => {
-    setActiveModal(null);
-    document.body.style.overflow = "";
-  };
+  useBodyScrollLock(open);
 
   const handleCreatePurchase = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -86,38 +84,26 @@ export function PurchaseModals() {
         })),
       }),
     });
-    closeModal();
+    onClose();
     refetchPurchases();
     refetchStores();
   };
 
   return (
-    <>
-      <button type="button" className="mkt-fab" onClick={openModal} aria-label="Registrar compra">
-        <Icon name="plus" size={20} />
-      </button>
-
-      <div
-        className={`mkt-modal-overlay ${activeModal === "compra" ? "visible" : ""}`}
-        onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
-      >
-        <div className="mkt-modal" onClick={(e) => e.stopPropagation()}>
-          <div className="mkt-modal-handle" />
-          <h2>Registrar compra</h2>
-          <PurchaseFormInner
-            stores={stores ?? []}
-            paymentMethods={paymentMethods ?? []}
-            products={products ?? []}
-            brandPathLookup={brandPathLookup}
-            brandIcons={brandIcons}
-            lastPriceByProduct={lastPriceByProduct}
-            searchInputRef={searchInputRef}
-            onClose={closeModal}
-            onSubmit={handleCreatePurchase}
-          />
-        </div>
-      </div>
-    </>
+    <ModalShell open={open} onClose={onClose}>
+      <h2>Registrar compra</h2>
+      <PurchaseFormInner
+        stores={stores ?? []}
+        paymentMethods={paymentMethods ?? []}
+        products={products ?? []}
+        brandPathLookup={brandPathLookup}
+        brandIcons={brandIcons}
+        lastPriceByProduct={lastPriceByProduct}
+        searchInputRef={searchInputRef}
+        onClose={onClose}
+        onSubmit={handleCreatePurchase}
+      />
+    </ModalShell>
   );
 }
 

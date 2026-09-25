@@ -1,6 +1,5 @@
-import { ShoppingList } from "@/presentation/components/market/ShoppingList";
+import { PurchasesActions } from "@/presentation/components/market/PurchasesActions";
 import { PurchaseHistory } from "@/presentation/components/market/PurchaseHistory";
-import { PurchaseModals } from "@/presentation/components/market/PurchaseModals";
 
 export default function PurchasesPage() {
   return (
@@ -11,9 +10,8 @@ export default function PurchasesPage() {
           <p>Historial, lista de compras y registro de nuevas compras</p>
         </div>
       </div>
-      <ShoppingList />
+      <PurchasesActions />
       <PurchaseHistory />
-      <PurchaseModals />
     </>
   );
 }

@@ -8,11 +8,12 @@ import type { Brand } from "@/domain/market/entities/brand";
 
 interface BrandFormProps {
   readonly initial?: Brand | null;
+  readonly initialName?: string;
   readonly onClose: () => void;
-  readonly onSaved: () => void;
+  readonly onSaved: (brand?: Brand) => void;
 }
 
-export function BrandForm({ initial, onClose, onSaved }: BrandFormProps) {
+export function BrandForm({ initial, initialName, onClose, onSaved }: BrandFormProps) {
   const isEdit = initial != null;
   const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
   const parentBrands = (brands ?? []).filter((b) => !b.parentBrandId && b.id !== initial?.id);
@@ -71,13 +72,14 @@ export function BrandForm({ initial, onClose, onSaved }: BrandFormProps) {
             setSubmitError(data?.error ?? "No se pudo guardar la marca. Intentalo de nuevo.");
             return;
           }
+          const created = (await res.json().catch(() => null)) as Brand | null;
           onClose();
-          onSaved();
+          onSaved(created ?? undefined);
         }}
       >
         <div className="mkt-form-group">
           <label className="mkt-form-label">Nombre</label>
-          <input name="name" className="mkt-form-input" type="text" placeholder="ej. La Serenísima" defaultValue={initial?.name ?? ""} required onChange={() => setSubmitError(null)} />
+          <input name="name" className="mkt-form-input" type="text" placeholder="ej. La Serenísima" defaultValue={initial?.name ?? initialName ?? ""} required onChange={() => setSubmitError(null)} />
         </div>
         <div className="mkt-form-group">
           <label className="mkt-form-label">Marca padre (opcional)</label>

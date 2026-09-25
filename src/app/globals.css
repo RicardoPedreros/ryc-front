@@ -1609,6 +1609,10 @@ a {
   background: color-mix(in oklch, var(--accent-soft) 80%, var(--accent));
 }
 
+.mkt-search-result-selected {
+  background: var(--accent-soft);
+}
+
 .mkt-search-result-body {
   flex: 1;
   display: flex;
@@ -2213,6 +2217,18 @@ a {
   font-weight: 700;
   font-family: var(--font-display);
   margin-bottom: 1.25rem;
+}
+
+.mkt-confirm-msg {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--fg);
+  margin: 0 0 0.875rem;
+}
+
+.mkt-confirm-msg-muted {
+  color: var(--fg-muted);
+  font-size: 0.8125rem;
 }
 
 .mkt-form-group {

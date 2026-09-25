@@ -2,6 +2,7 @@
 
 import { BarcodeScanner } from "@/presentation/components/market/BarcodeScanner";
 import { Icon } from "@/presentation/components/ui/Icon";
+import { BrandPicker } from "@/presentation/components/market/forms/BrandPicker";
 import Switch from "@mui/material/Switch";
 import Stack from "@mui/material/Stack";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -18,6 +19,7 @@ export interface ProductFormProps {
   readonly initial?: Product | null;
   readonly onClose: () => void;
   readonly onSaved: () => void;
+  readonly onOpenBrandForm?: (name: string) => void;
 }
 
 export function ProductForm({
@@ -27,6 +29,7 @@ export function ProductForm({
   initial,
   onClose,
   onSaved,
+  onOpenBrandForm,
 }: ProductFormProps) {
   const isEdit = initial != null;
   const isEditPack = isEdit && initial.parentProductId != null;
@@ -98,26 +101,6 @@ export function ProductForm({
   const handleScan = useCallback((code: string) => {
     setBarcode(code);
   }, []);
-
-  const parentBrands = brands.filter((b) => !b.parentBrandId);
-  const childrenMap = new Map<string, Brand[]>();
-  for (const b of brands) {
-    if (b.parentBrandId) {
-      if (!childrenMap.has(b.parentBrandId)) childrenMap.set(b.parentBrandId, []);
-      childrenMap.get(b.parentBrandId)!.push(b);
-    }
-  }
-
-  const brandOptions: { readonly brand: Brand; readonly depth: number }[] = [];
-  function collectBrandOptions(parentId: string | null, depth: number) {
-    const list = parentId === null ? parentBrands : (childrenMap.get(parentId) ?? []);
-    const sorted = [...list].sort((a, b) => a.name.localeCompare(b.name));
-    for (const b of sorted) {
-      brandOptions.push({ brand: b, depth });
-      collectBrandOptions(b.id, depth + 1);
-    }
-  }
-  collectBrandOptions(null, 0);
 
   const activePack = isEdit ? isEditPack : isPack && baseProduct != null;
 
@@ -231,17 +214,11 @@ export function ProductForm({
                 <div className="mkt-form-row">
                   <div className="mkt-form-group">
                     <label className="mkt-form-label">Marca (opcional)</label>
-                    <select name="brandId" className="mkt-form-select" defaultValue={initial.brandId ?? ""}>
-                      <option value="" disabled>Seleccionar...</option>
-                      {brandOptions.map(({ brand, depth }) => (
-                        <option key={brand.id} value={brand.id}>
-                          {"  ".repeat(depth)}{depth > 0 ? "└ " : ""}{brand.name}
-                        </option>
-                      ))}
-                    </select>
-                    {brandOptions.some((o) => o.depth > 0) && (
-                      <span className="mkt-form-hint">Las submarcas están indentadas con └</span>
-                    )}
+                    <BrandPicker
+                      brands={brands}
+                      initialBrandId={initial.brandId ?? null}
+                      onOpenBrandForm={onOpenBrandForm}
+                    />
                   </div>
                   <div className="mkt-form-group">
                     <label className="mkt-form-label">Categoría</label>
@@ -524,17 +501,7 @@ export function ProductForm({
                 <div className="mkt-form-row">
                   <div className="mkt-form-group">
                     <label className="mkt-form-label">Marca (opcional)</label>
-                    <select name="brandId" className="mkt-form-select" defaultValue="">
-                      <option value="" disabled>Seleccionar...</option>
-                      {brandOptions.map(({ brand, depth }) => (
-                        <option key={brand.id} value={brand.id}>
-                          {"  ".repeat(depth)}{depth > 0 ? "└ " : ""}{brand.name}
-                        </option>
-                      ))}
-                    </select>
-                    {brandOptions.some((o) => o.depth > 0) && (
-                      <span className="mkt-form-hint">Las submarcas están indentadas con └</span>
-                    )}
+                    <BrandPicker brands={brands} onOpenBrandForm={onOpenBrandForm} />
                   </div>
                   <div className="mkt-form-group">
                     <label className="mkt-form-label">Categoría</label>

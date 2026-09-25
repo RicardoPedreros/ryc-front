@@ -45,9 +45,10 @@ function ProductList() {
   const { data: products, loading, refetch: refetchProducts } = useFetch<readonly Product[]>("/api/market/products");
   const { data: stock, refetch: refetchStock } = useFetch<readonly InventoryStock[]>("/api/market/inventory");
   const { data: categories } = useFetch<readonly Category[]>("/api/market/categories");
-  const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
+  const { data: brands, refetch: refetchBrands } = useFetch<readonly Brand[]>("/api/market/brands");
   const { data: units } = useFetch<readonly Unit[]>("/api/market/units");
   const [modal, setModal] = useState<ProductModal>(null);
+  const [brandModalName, setBrandModalName] = useState<string | null>(null);
 
   const catMap = new Map((categories ?? []).map((c) => [c.id, c.name]));
   const brandNameMap = new Map((brands ?? []).map((b) => [b.id, b.name]));
@@ -63,6 +64,15 @@ function ProductList() {
     refetchStock();
     closeModal();
   }, [refetchProducts, refetchStock, closeModal]);
+  const handleOpenBrandForm = useCallback((name: string) => {
+    setModal(null);
+    setBrandModalName(name);
+  }, []);
+  const closeBrandModal = useCallback(() => setBrandModalName(null), []);
+  const handleBrandSaved = useCallback(() => {
+    closeBrandModal();
+    refetchBrands();
+  }, [closeBrandModal, refetchBrands]);
 
   if (loading) return <EntityEmpty title="Cargando..." />;
 
@@ -121,6 +131,17 @@ function ProductList() {
             initial={modal.mode === "edit" ? modal.item : null}
             onClose={closeModal}
             onSaved={handleSaved}
+            onOpenBrandForm={handleOpenBrandForm}
+          />
+        )}
+      </ModalShell>
+
+      <ModalShell open={brandModalName !== null} onClose={closeBrandModal}>
+        {brandModalName !== null && (
+          <BrandForm
+            initialName={brandModalName}
+            onClose={closeBrandModal}
+            onSaved={handleBrandSaved}
           />
         )}
       </ModalShell>

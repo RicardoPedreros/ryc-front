@@ -7,6 +7,7 @@ import { formatDate, lotKey } from "@/presentation/components/market/stock-utils
 import { ProductPicker } from "@/presentation/components/market/ProductPicker";
 import { IncreaseStockForm } from "@/presentation/components/market/IncreaseStockForm";
 import { DecreaseStockForm } from "@/presentation/components/market/DecreaseStockForm";
+import { ModalShell } from "@/presentation/components/market/ModalShell";
 import type { ProductWithStock } from "@/presentation/components/market/ProductPicker";
 import type { ProductLot } from "@/domain/market/entities/inventory-movement";
 
@@ -65,8 +66,7 @@ export function StockAdjustment() {
 
   const selectedProduct = products?.find((p) => p.id === selectedProductId) ?? null;
 
-  function handleSelectProduct(productId: string) {
-    setSelectedProductId(productId);
+  function resetAdjustForm() {
     setMode("increase");
     setQuantity(1);
     setHasExpiry(true);
@@ -74,29 +74,23 @@ export function StockAdjustment() {
     setLotName("");
     setSelectedLot(null);
     setDecreaseQty(1);
+  }
+
+  function handleSelectProduct(productId: string) {
+    resetAdjustForm();
+    setSelectedProductId(productId);
     setSaved(false);
   }
 
-  function handleBack() {
+  function handleCloseModal() {
+    if (saving) return;
+    resetAdjustForm();
     setSelectedProductId(null);
-    setQuantity(1);
-    setHasExpiry(true);
-    setExpiryDate("");
-    setLotName("");
-    setSelectedLot(null);
-    setDecreaseQty(1);
-    setSearch("");
-    setSaved(false);
   }
 
   function handleSwitchMode(newMode: AdjustMode) {
+    resetAdjustForm();
     setMode(newMode);
-    setQuantity(1);
-    setHasExpiry(true);
-    setExpiryDate("");
-    setLotName("");
-    setSelectedLot(null);
-    setDecreaseQty(1);
   }
 
   const canDecrease = (selectedProduct?.currentStock ?? 0) > 0;
@@ -161,14 +155,8 @@ export function StockAdjustment() {
       }
 
       setSaved(true);
-      if (mode === "increase") {
-        setQuantity(1);
-        setExpiryDate("");
-        setLotName("");
-      } else {
-        setDecreaseQty(1);
-        setSelectedLot(null);
-      }
+      resetAdjustForm();
+      setSelectedProductId(null);
     } catch {
       // Error silently
     } finally {
@@ -197,100 +185,99 @@ export function StockAdjustment() {
     );
   }
 
-  if (!selectedProduct) {
-    return (
-      <ProductPicker
-        products={products}
-        search={search}
-        onSearchChange={setSearch}
-        onSelect={handleSelectProduct}
-      />
-    );
-  }
-
   return (
-    <div className="mkt-adjust">
+    <>
       {saved && (
         <div className="mkt-adjust-toast">
           Stock actualizado correctamente
         </div>
       )}
 
-      <button className="mkt-back-link" onClick={handleBack}>
-        <Icon name="chevron-left" size={14} />
-        Volver a productos
-      </button>
+      <ProductPicker
+        products={products}
+        search={search}
+        onSearchChange={setSearch}
+        onSelect={handleSelectProduct}
+      />
 
-      <div className="mkt-adjust-selected">
-        <div className="mkt-adjust-selected-info">
-          <span className="mkt-adjust-selected-name">
-            {selectedProduct.name}
-          </span>
-          <span className="mkt-adjust-selected-meta">
-            {[
-              selectedProduct.brand,
-              selectedProduct.presentationQuantity && selectedProduct.unitSymbol
-                ? `${selectedProduct.presentationQuantity} ${selectedProduct.unitSymbol}`
-                : null,
-            ].filter(Boolean).join(" · ")}
-          </span>
-        </div>
-        <span className="mkt-adjust-selected-stock">
-          Stock actual: <strong>{selectedProduct.currentStock}</strong> uds
-        </span>
-      </div>
+      <ModalShell open={selectedProductId !== null} onClose={handleCloseModal}>
+        {selectedProduct && (
+          <>
+            <h2>Ajustar stock</h2>
 
-      <div className="mkt-adjust-mode-switch">
-        <button
-          className={`mkt-adjust-mode-btn ${mode === "increase" ? "active increase" : ""}`}
-          onClick={() => handleSwitchMode("increase")}
-        >
-          <Icon name="plus" size={16} />
-          Aumentar stock
-        </button>
-        <button
-          className={`mkt-adjust-mode-btn ${mode === "decrease" ? "active decrease" : ""}`}
-          onClick={() => handleSwitchMode("decrease")}
-          disabled={!canDecrease}
-        >
-          <Icon name="minus" size={16} />
-          Disminuir stock
-        </button>
-      </div>
+            <div className="mkt-adjust-selected">
+              <div className="mkt-adjust-selected-info">
+                <span className="mkt-adjust-selected-name">
+                  {selectedProduct.name}
+                </span>
+                <span className="mkt-adjust-selected-meta">
+                  {[
+                    selectedProduct.brand,
+                    selectedProduct.presentationQuantity && selectedProduct.unitSymbol
+                      ? `${selectedProduct.presentationQuantity} ${selectedProduct.unitSymbol}`
+                      : null,
+                  ].filter(Boolean).join(" · ")}
+                </span>
+              </div>
+              <span className="mkt-adjust-selected-stock">
+                Stock actual: <strong>{selectedProduct.currentStock}</strong> uds
+              </span>
+            </div>
 
-      {mode === "increase" && (
-        <IncreaseStockForm
-          quantity={quantity}
-          hasExpiry={hasExpiry}
-          expiryDate={expiryDate}
-          lotName={lotName}
-          saving={saving}
-          onDecrementQty={() => setQuantity((q) => Math.max(1, q - 1))}
-          onIncrementQty={() => setQuantity((q) => q + 1)}
-          onToggleExpiry={() => setHasExpiry((v) => !v)}
-          onExpiryChange={setExpiryDate}
-          onLotChange={setLotName}
-          onCancel={handleBack}
-          onSave={handleSave}
-        />
-      )}
+            <div className="mkt-adjust-mode-switch">
+              <button
+                className={`mkt-adjust-mode-btn ${mode === "increase" ? "active increase" : ""}`}
+                onClick={() => handleSwitchMode("increase")}
+              >
+                <Icon name="plus" size={16} />
+                Aumentar stock
+              </button>
+              <button
+                className={`mkt-adjust-mode-btn ${mode === "decrease" ? "active decrease" : ""}`}
+                onClick={() => handleSwitchMode("decrease")}
+                disabled={!canDecrease}
+              >
+                <Icon name="minus" size={16} />
+                Disminuir stock
+              </button>
+            </div>
 
-      {mode === "decrease" && (
-        <DecreaseStockForm
-          lotLabel={selectedLotData ? `${selectedLotData.lot}${selectedLotData.expirationDate ? ` · vence ${formatDate(selectedLotData.expirationDate)}` : ""}` : ""}
-          loading={loadingLots}
-          lots={availableLots}
-          selectedLot={selectedLot}
-          decreaseQty={decreaseQty}
-          maxDecrease={maxDecrease}
-          saving={saving}
-          onSelectLot={(key) => { setSelectedLot(key); setDecreaseQty(1); }}
-          onDecrementQty={() => setDecreaseQty((q) => Math.max(1, q - 1))}
-          onIncrementQty={() => setDecreaseQty((q) => Math.min(maxDecrease, q + 1))}
-          onCancel={handleBack}
-          onSave={handleSave}
-        />
-      )}
-    </div>
+            {mode === "increase" && (
+              <IncreaseStockForm
+                quantity={quantity}
+                hasExpiry={hasExpiry}
+                expiryDate={expiryDate}
+                lotName={lotName}
+                saving={saving}
+                onDecrementQty={() => setQuantity((q) => Math.max(1, q - 1))}
+                onIncrementQty={() => setQuantity((q) => q + 1)}
+                onToggleExpiry={() => setHasExpiry((v) => !v)}
+                onExpiryChange={setExpiryDate}
+                onLotChange={setLotName}
+                onCancel={handleCloseModal}
+                onSave={handleSave}
+              />
+            )}
+
+            {mode === "decrease" && (
+              <DecreaseStockForm
+                lotLabel={selectedLotData ? `${selectedLotData.lot}${selectedLotData.expirationDate ? ` · vence ${formatDate(selectedLotData.expirationDate)}` : ""}` : ""}
+                loading={loadingLots}
+                lots={availableLots}
+                selectedLot={selectedLot}
+                decreaseQty={decreaseQty}
+                maxDecrease={maxDecrease}
+                saving={saving}
+                onSelectLot={(key) => { setSelectedLot(key); setDecreaseQty(1); }}
+                onDecrementQty={() => setDecreaseQty((q) => Math.max(1, q - 1))}
+                onIncrementQty={() => setDecreaseQty((q) => Math.min(maxDecrease, q + 1))}
+                onCancel={handleCloseModal}
+                onSave={handleSave}
+              />
+            )}
+          </>
+        )}
+      </ModalShell>
+    </>
   );
 }

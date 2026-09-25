@@ -24,6 +24,7 @@ export function SettingsActions() {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [activeTab, setActiveTab] = useState<EntityTab>("productos");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [brandInitialName, setBrandInitialName] = useState("");
 
   const handleEntitySaved = useCallback((tab: EntityTab) => {
     setActiveTab(tab);
@@ -88,7 +89,16 @@ export function SettingsActions() {
       <PendingTemporalProductsSection onCompleted={() => handleEntitySaved("productos")} />
 
       <EntityTabs activeTab={activeTab} onTabChange={setActiveTab} refreshKey={refreshKey} />
-      <SettingsModalsInline activeModal={activeModal} onClose={() => setActiveModal(null)} onSaved={handleEntitySaved} />
+      <SettingsModalsInline
+        activeModal={activeModal}
+        onClose={() => setActiveModal(null)}
+        onSaved={handleEntitySaved}
+        brandInitialName={brandInitialName}
+        onOpenBrandForm={(name) => {
+          setBrandInitialName(name);
+          setActiveModal("marca");
+        }}
+      />
     </>
   );
 }
@@ -97,10 +107,14 @@ function SettingsModalsInline({
   activeModal,
   onClose,
   onSaved,
+  brandInitialName,
+  onOpenBrandForm,
 }: {
   readonly activeModal: ModalType;
   readonly onClose: () => void;
   readonly onSaved: (tab: EntityTab) => void;
+  readonly brandInitialName: string;
+  readonly onOpenBrandForm: (name: string) => void;
 }) {
   const { refetch: refetchStores } = useFetch<readonly Store[]>("/api/market/stores");
   const { data: categories, refetch: refetchCategories } = useFetch<readonly Category[]>("/api/market/categories");
@@ -126,7 +140,14 @@ function SettingsModalsInline({
   return (
     <ModalShell open={isOpen} onClose={closeModal}>
       {activeModal === "producto" && (
-        <ProductForm categories={categories ?? []} units={units ?? []} brands={brands ?? []} onClose={closeModal} onSaved={() => handleSaved("productos")} />
+        <ProductForm
+          categories={categories ?? []}
+          units={units ?? []}
+          brands={brands ?? []}
+          onClose={closeModal}
+          onSaved={() => handleSaved("productos")}
+          onOpenBrandForm={onOpenBrandForm}
+        />
       )}
       {activeModal === "tienda" && (
         <StoreForm onClose={closeModal} onSaved={() => handleSaved("tiendas")} />
@@ -138,7 +159,11 @@ function SettingsModalsInline({
         <UnitForm units={units ?? []} onClose={closeModal} onSaved={() => handleSaved("unidades")} />
       )}
       {activeModal === "marca" && (
-        <BrandForm onClose={closeModal} onSaved={() => handleSaved("marcas")} />
+        <BrandForm
+          initialName={brandInitialName}
+          onClose={closeModal}
+          onSaved={() => handleSaved("marcas")}
+        />
       )}
     </ModalShell>
   );

@@ -14,6 +14,7 @@ export interface InventoryMovementRow {
   temporal_barcode: string | null;
   movement_date: Date;
   notes: string | null;
+  created_by: string | null;
 }
 
 export function toInventoryMovement(row: InventoryMovementRow): InventoryMovement {
@@ -33,5 +34,6 @@ export function toInventoryMovement(row: InventoryMovementRow): InventoryMovemen
     temporalBarcode: row.temporal_barcode ?? null,
     movementDate: row.movement_date,
     notes: row.notes,
+    createdBy: row.created_by,
   };
 }

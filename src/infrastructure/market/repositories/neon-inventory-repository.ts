@@ -1,4 +1,4 @@
-import type { InventoryMovement, CreateInventoryMovement, InventoryStock, ProductLot, AdjustableProduct, PendingTemporalProduct } from '@/domain/market/entities/inventory-movement';
+import type { InventoryMovement, CreateInventoryMovement, UpdateInventoryMovement, InventoryStock, ProductLot, AdjustableProduct, PendingTemporalProduct } from '@/domain/market/entities/inventory-movement';
 import type { IInventoryRepository, CreateBatchAdjustment, CreatePurchaseMovementItem } from '@/domain/market/repositories/inventory-repository';
 import { getSql } from '../neon-client';
 import { getAdminIds } from '@/infrastructure/auth/admin-ids';
@@ -161,6 +161,32 @@ export class NeonInventoryRepository implements IInventoryRepository {
       ORDER BY im.movement_date DESC
     ` as InventoryMovementRow[];
     return rows.map(toInventoryMovement);
+  }
+
+  async findMovementById(id: string): Promise<InventoryMovement | null> {
+    const sql = getSql();
+    const rows = await sql`
+      SELECT im.*
+      FROM inventory_movements im
+      WHERE im.id = ${id}
+    ` as InventoryMovementRow[];
+    return rows.length > 0 ? toInventoryMovement(rows[0]) : null;
+  }
+
+  async updateMovement(id: string, updates: UpdateInventoryMovement): Promise<InventoryMovement | null> {
+    const sql = getSql();
+    const rows = await sql`
+      UPDATE inventory_movements
+      SET
+        quantity = ${updates.quantity},
+        unit_price = ${updates.unitPrice},
+        discount = ${updates.discount},
+        expiration_date = ${updates.expirationDate},
+        lot = ${updates.lot}
+      WHERE id = ${id}
+      RETURNING *
+    ` as InventoryMovementRow[];
+    return rows.length > 0 ? toInventoryMovement(rows[0]) : null;
   }
 
   async getStock(userId?: string | null, roleCode?: string | null): Promise<readonly InventoryStock[]> {

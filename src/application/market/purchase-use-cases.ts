@@ -1,5 +1,5 @@
 import type { CreatePurchase, UpdatePurchase } from '@/domain/market/entities/purchase';
-import type { InventoryMovement } from '@/domain/market/entities/inventory-movement';
+import type { InventoryMovement, UpdateInventoryMovement } from '@/domain/market/entities/inventory-movement';
 import type { IPurchaseRepository, PurchaseItemDetail, PurchaseWithItems } from '@/domain/market/repositories/purchase-repository';
 import type { IInventoryRepository } from '@/domain/market/repositories/inventory-repository';
 import type { IMovementTypeRepository } from '@/domain/market/repositories/movement-type-repository';
@@ -125,6 +125,21 @@ export class PurchaseUseCases {
       return null;
     }
     return this.purchaseRepository.update(id, purchase);
+  }
+
+  async findItem(id: string): Promise<InventoryMovement | null> {
+    return this.inventoryRepository.findMovementById(id);
+  }
+
+  async updateItem(id: string, updates: UpdateInventoryMovement): Promise<InventoryMovement | null> {
+    const existing = await this.inventoryRepository.findMovementById(id);
+    if (!existing) {
+      return null;
+    }
+    if (!Number.isFinite(updates.quantity) || updates.quantity <= 0) {
+      throw new ValidationError('Item quantity must be greater than 0');
+    }
+    return this.inventoryRepository.updateMovement(id, updates);
   }
 
   async remove(id: string) {

@@ -12,6 +12,7 @@ export interface InventoryMovement {
   readonly temporalBarcode: string | null;
   readonly movementDate: Date;
   readonly notes: string | null;
+  readonly createdBy: string | null;
 }
 
 export interface CreateInventoryMovement {
@@ -27,6 +28,14 @@ export interface CreateInventoryMovement {
   readonly temporalBarcode?: string | null;
   readonly notes?: string | null;
   readonly createdBy?: string | null;
+}
+
+export interface UpdateInventoryMovement {
+  readonly quantity: number;
+  readonly unitPrice: number | null;
+  readonly discount: number | null;
+  readonly expirationDate: string | null;
+  readonly lot: string | null;
 }
 
 export interface PendingTemporalProduct {

@@ -31,6 +31,8 @@ function buildRepos(options: { readonly purchaseTypeId?: string | null } = {}): 
     findAllMovements: async () => [],
     findMovementsByProductId: async () => [],
     findMovementsByPurchaseId: async () => [],
+    findMovementById: async () => null,
+    updateMovement: async () => null,
     getStock: async () => [],
     getStockLots: async () => [],
     findAdjustableProducts: async () => [],
@@ -113,5 +115,47 @@ describe("PurchaseUseCases.create", () => {
       lot: "L1",
       createdBy: "u1",
     });
+  });
+});
+
+describe("PurchaseUseCases.updateItem", () => {
+  it("reject when the movement is missing", async () => {
+    const repos = buildRepos();
+    const useCases = new PurchaseUseCases(repos.purchaseRepo, repos.inventoryRepo, repos.movementTypeRepo);
+    await expect(
+      useCases.updateItem("im1", { quantity: 3, unitPrice: null, discount: null, expirationDate: null, lot: null }),
+    ).resolves.toBeNull();
+  });
+
+  it("reject when quantity is zero or negative", async () => {
+    const repos = buildRepos();
+    repos.inventoryRepo.findMovementById = async () => ({ id: "im1" } as InventoryMovement);
+    const useCases = new PurchaseUseCases(repos.purchaseRepo, repos.inventoryRepo, repos.movementTypeRepo);
+    await expect(
+      useCases.updateItem("im1", { quantity: 0, unitPrice: null, discount: null, expirationDate: null, lot: null }),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it("update a valid movement", async () => {
+    const repos = buildRepos();
+    const updated = {
+      id: "im1",
+      quantity: 5,
+      unitPrice: 12.5,
+      discount: 1,
+      expirationDate: "2026-12-31",
+      lot: "L2",
+    };
+    repos.inventoryRepo.findMovementById = async () => ({ id: "im1" } as InventoryMovement);
+    repos.inventoryRepo.updateMovement = async (id, updates) => ({ id, ...updates } as InventoryMovement);
+    const useCases = new PurchaseUseCases(repos.purchaseRepo, repos.inventoryRepo, repos.movementTypeRepo);
+    const result = await useCases.updateItem("im1", {
+      quantity: 5,
+      unitPrice: 12.5,
+      discount: 1,
+      expirationDate: "2026-12-31",
+      lot: "L2",
+    });
+    expect(result).toMatchObject(updated);
   });
 });

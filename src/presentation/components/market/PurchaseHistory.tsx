@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
 import { Icon } from "@/presentation/components/ui/Icon";
+import { PurchaseItemEditModal } from "@/presentation/components/market/PurchaseItemEditModal";
 import type { PurchaseWithItems, PurchaseItemDetail } from "@/domain/market/repositories/purchase-repository";
 
 function formatDate(dateStr: string): string {
@@ -20,8 +21,9 @@ function formatCurrency(amount: number): string {
 }
 
 export function PurchaseHistory() {
-  const { data: purchases, loading } = useFetch<readonly PurchaseWithItems[]>("/api/market/purchases?includeItems=true");
+  const { data: purchases, loading, refetch: refetchPurchases } = useFetch<readonly PurchaseWithItems[]>("/api/market/purchases?includeItems=true");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<PurchaseItemDetail | null>(null);
 
   if (loading) {
     return (
@@ -104,7 +106,14 @@ export function PurchaseHistory() {
                         const productName = item.productName;
                         const lineTotal = (item.unitPrice ?? 0) * item.quantity - (item.discount ?? 0);
                         return (
-                          <div key={item.id} className="mkt-purchase-item">
+                          <div
+                            key={item.id}
+                            className="mkt-purchase-item"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setEditingItem(item)}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setEditingItem(item); } }}
+                          >
                             <div className="mkt-purchase-item-body">
                               <span className="mkt-purchase-item-name">
                                 {productName}
@@ -131,6 +140,17 @@ export function PurchaseHistory() {
           );
         })}
       </div>
+
+      {editingItem && (
+        <PurchaseItemEditModal
+          item={editingItem}
+          onClose={() => setEditingItem(null)}
+          onSaved={() => {
+            setEditingItem(null);
+            refetchPurchases();
+          }}
+        />
+      )}
     </div>
   );
 }

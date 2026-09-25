@@ -3065,6 +3065,15 @@ a {
   white-space: nowrap;
 }
 
+.mkt-purchase-item {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.mkt-purchase-item:hover {
+  background: var(--surface-dim);
+}
+
 .mkt-purchase-no-items {
   font-size: 0.8125rem;
   color: var(--fg-subtle);

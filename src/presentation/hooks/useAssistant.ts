@@ -80,14 +80,14 @@ export function useAssistant() {
   }, [cooldownSeconds]);
 
   const send = useCallback(
-    async (text: string) => {
+    async (text: string): Promise<string | null> => {
       const content = text.trim();
-      if (!content || sending) return;
+      if (!content || sending) return null;
 
       const cooldownLeft = Math.max(0, Math.round((cooldownUntilRef.current - Date.now()) / 1000));
       if (cooldownLeft > 0) {
         setCooldownSeconds(cooldownLeft);
-        return;
+        return null;
       }
 
       const userMessage: AssistantUiMessage = {
@@ -107,6 +107,7 @@ export function useAssistant() {
       setSending(true);
       setError(null);
 
+      let reply: string | null = null;
       try {
         const response = await fetch("/api/market/assistant", {
           method: "POST",
@@ -152,11 +153,14 @@ export function useAssistant() {
             time: formatTime(new Date()),
           },
         ]);
+        reply = body?.reply ?? "";
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
         setSending(false);
       }
+
+      return reply;
     },
     [messages, sending],
   );

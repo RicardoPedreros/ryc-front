@@ -5487,6 +5487,94 @@ a {
   height: 18px;
 }
 
+.asst-voice {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  color: var(--fg-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+
+.asst-voice:hover:not(:disabled) {
+  border-color: var(--fg-subtle);
+  color: var(--fg);
+}
+
+.asst-voice:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.asst-voice.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.asst-voice.active svg {
+  animation: asst-voice-breathe 1.2s ease-in-out infinite;
+}
+
+@keyframes asst-voice-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+.asst-voice-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+  min-height: 1.25rem;
+}
+
+.asst-voice-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: asst-voice-blink 1.1s ease-in-out infinite;
+}
+
+.asst-voice-status em {
+  font-style: normal;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+
+@keyframes asst-voice-blink {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.asst-voice-error {
+  margin: 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--danger);
+}
+
 .asst-hint {
   text-align: center;
   font-size: 0.72rem;

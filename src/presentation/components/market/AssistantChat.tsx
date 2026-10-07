@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAssistant } from "@/presentation/hooks/useAssistant";
+import { useVoiceAssistant } from "@/presentation/hooks/useVoiceAssistant";
 import { Icon } from "@/presentation/components/ui/Icon";
 import { AssistantBlockView } from "./AssistantBlockView";
 import { AssistantMarkdown } from "./AssistantMarkdown";
@@ -14,6 +15,7 @@ const QUICK_PROMPTS = [
 
 export function AssistantChat() {
   const { messages, sending, error, send, isFreeModel, cooldownSeconds, onCooldown } = useAssistant();
+  const voice = useVoiceAssistant(send);
   const [input, setInput] = useState("");
   const trimmed = input.trim();
 
@@ -124,6 +126,30 @@ export function AssistantChat() {
             aria-label="Mensaje al asistente"
             disabled={sending || onCooldown}
           />
+          {voice.supported && (
+            <button
+              type="button"
+              className={`asst-voice ${voice.busy ? "active" : ""}`}
+              onClick={voice.toggle}
+              disabled={!voice.busy && (sending || onCooldown)}
+              aria-label={
+                voice.state === "listening"
+                  ? "Detener escucha"
+                  : voice.state === "speaking"
+                    ? "Detener respuesta"
+                    : "Hablar con el asistente"
+              }
+              title={
+                voice.state === "listening"
+                  ? "Detener escucha"
+                  : voice.state === "speaking"
+                    ? "Detener respuesta"
+                    : "Hablar con el asistente"
+              }
+            >
+              <Icon name={voice.state === "speaking" ? "volume-2" : "mic"} size={18} />
+            </button>
+          )}
           <button
             className="asst-send"
             type="submit"
@@ -133,6 +159,14 @@ export function AssistantChat() {
             <Icon name="send" size={18} />
           </button>
         </div>
+        {voice.state === "listening" && (
+          <p className="asst-voice-status" aria-live="polite">
+            <span className="asst-voice-dot" />
+            Escuchando…
+            {voice.interim && <em>{voice.interim}</em>}
+          </p>
+        )}
+        {voice.error && <p className="asst-voice-error">{voice.error}</p>}
         <span className="asst-hint">El asistente usa el inventario real de tu Mercado.</span>
       </form>
     </>

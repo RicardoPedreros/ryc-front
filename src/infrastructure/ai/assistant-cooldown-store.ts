@@ -1,12 +1,4 @@
-export interface CooldownResult {
-  readonly allowed: boolean;
-  readonly retryAfterSeconds: number;
-}
-
-export interface AssistantCooldownStore {
-  consume(userId: string, cooldownSeconds: number): Promise<CooldownResult>;
-  getStatus(userId: string, cooldownSeconds: number): Promise<CooldownResult>;
-}
+import type { AssistantCooldownStore, CooldownResult } from "@/domain/ai/repositories/assistant-cooldown-store";
 
 /**
  * Cooldown sin persistencia: solo lógica en memoria del proceso Next.js.

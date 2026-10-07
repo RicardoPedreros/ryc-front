@@ -5,6 +5,7 @@ import { BrandLogo, buildBrandLogoUrl } from "@/presentation/components/market/B
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
 import type { Brand } from "@/domain/market/entities/brand";
+import { EntityDeleteButton } from "@/presentation/components/market/forms/EntityDeleteButton";
 
 interface BrandFormProps {
   readonly initial?: Brand | null;
@@ -133,6 +134,14 @@ export function BrandForm({ initial, initialName, onClose, onSaved }: BrandFormP
         </div>
         {submitError && <p className="mkt-form-error" role="alert">{submitError}</p>}
         <div className="mkt-modal-actions">
+          {isEdit && (
+            <EntityDeleteButton
+              endpoint="/api/market/brands"
+              id={initial.id}
+              confirmMessage={`¿Seguro que deseas eliminar la marca "${initial.name}"? Esta acción no se puede deshacer.`}
+              onDeleted={() => { onClose(); onSaved(); }}
+            />
+          )}
           <button type="button" className="mkt-btn-cancel" onClick={onClose}>Cancelar</button>
           <button type="submit" className="mkt-btn-submit">{isEdit ? "Guardar cambios" : "Agregar marca"}</button>
         </div>

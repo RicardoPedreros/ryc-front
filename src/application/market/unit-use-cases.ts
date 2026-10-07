@@ -34,4 +34,8 @@ export class UnitUseCases {
     }
     return this.unitRepository.update(id, unit);
   }
+
+  async remove(id: string) {
+    return this.unitRepository.remove(id);
+  }
 }

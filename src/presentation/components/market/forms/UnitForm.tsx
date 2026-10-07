@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Unit } from "@/domain/market/entities/unit";
+import { EntityDeleteButton } from "@/presentation/components/market/forms/EntityDeleteButton";
 
 interface UnitFormProps {
   readonly units: readonly Unit[];
@@ -79,6 +80,14 @@ export function UnitForm({ units, initial, onClose, onSaved }: UnitFormProps) {
           </div>
         )}
         <div className="mkt-modal-actions">
+          {isEdit && (
+            <EntityDeleteButton
+              endpoint="/api/market/units"
+              id={initial.id}
+              confirmMessage={`¿Seguro que deseas eliminar la unidad "${initial.name}"? Esta acción no se puede deshacer.`}
+              onDeleted={() => { onClose(); onSaved(); }}
+            />
+          )}
           <button type="button" className="mkt-btn-cancel" onClick={onClose}>Cancelar</button>
           <button type="submit" className="mkt-btn-submit">{isEdit ? "Guardar cambios" : "Agregar unidad"}</button>
         </div>

@@ -15,19 +15,22 @@ import { PurchaseItemSearch } from "./PurchaseItemSearch";
 import { createPurchaseItem, isTemporal, itemKey } from "./purchase-draft";
 import type { PurchaseItemDraft } from "./purchase-draft";
 import { useBodyScrollLock } from "@/presentation/hooks/useBodyScrollLock";
+import { usePurchaseDraft, clearPurchaseDraft } from "@/presentation/hooks/usePurchaseDraft";
 
 export function PurchaseModals({
   open,
   onClose,
+  onRecorded,
 }: {
   readonly open: boolean;
   readonly onClose: () => void;
+  readonly onRecorded?: () => void;
 }) {
   const { data: stores, refetch: refetchStores } = useFetch<readonly Store[]>("/api/market/stores");
   const { data: paymentMethods } = useFetch<readonly PaymentMethod[]>("/api/market/payment-methods");
   const { data: products } = useFetch<readonly ProductSearchResult[]>("/api/market/products?details=true");
   const { data: brands } = useFetch<readonly Brand[]>("/api/market/brands");
-  const { data: purchasesWithItems } = useFetch<readonly PurchaseWithItems[]>("/api/market/purchases?includeItems=true");
+  const { data: purchasesWithItems, refetch: refetchPurchasesWithItems } = useFetch<readonly PurchaseWithItems[]>("/api/market/purchases?includeItems=true");
   const { refetch: refetchPurchases } = useFetch<readonly Purchase[]>("/api/market/purchases");
 
   const brandPathLookup = buildBrandPathLookup(brands ?? []);
@@ -64,7 +67,7 @@ export function PurchaseModals({
       items = [];
     }
 
-    await fetch("/api/market/purchases", {
+    const response = await fetch("/api/market/purchases", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -84,9 +87,13 @@ export function PurchaseModals({
         })),
       }),
     });
+    if (!response.ok) return;
+    clearPurchaseDraft();
     onClose();
     refetchPurchases();
+    refetchPurchasesWithItems();
     refetchStores();
+    onRecorded?.();
   };
 
   return (
@@ -128,8 +135,10 @@ function PurchaseFormInner({
   readonly onClose: () => void;
   readonly onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }) {
-  const [items, setItems] = useState<PurchaseItemDraft[]>([]);
+  const { draft, update, clear } = usePurchaseDraft();
   const [focusKey, setFocusKey] = useState<string | null>(null);
+
+  const items = draft.items;
 
   const isProductAdded = (productId: string) => items.some((i) => i.productId === productId);
 
@@ -139,26 +148,27 @@ function PurchaseFormInner({
   const addProduct = (productId: string) => {
     if (isProductAdded(productId)) return;
     const last = lastPriceByProduct.get(productId) ?? 0;
-    setItems((prev) => [createPurchaseItem({ productId, unitPrice: last }), ...prev]);
+    update({ items: [createPurchaseItem({ productId, unitPrice: last }), ...items] });
     setFocusKey(productId);
   };
 
   const addTemporalItem = (name: string | null, barcode: string | null) => {
     if (isTemporalAdded(name, barcode)) return;
-    setItems((prev) => [createPurchaseItem({ temporalProductName: name, temporalBarcode: barcode }), ...prev]);
+    update({ items: [createPurchaseItem({ temporalProductName: name, temporalBarcode: barcode }), ...items] });
     setFocusKey(`temporal:${name ?? ""}|${barcode ?? ""}`);
   };
 
   const updateItem = (index: number, field: keyof PurchaseItemDraft, value: string | number) => {
-    setItems((prev) => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+    update({ items: items.map((item, i) => i === index ? { ...item, [field]: value } : item) });
   };
 
   const removeItem = (index: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+    update({ items: items.filter((_, i) => i !== index) });
   };
 
   const productMap = new Map(products.map((p) => [p.id, p]));
 
+  const today = new Date().toISOString().split("T")[0];
   const total = items.reduce((sum, i) => sum + i.quantity * (i.unitPrice || 0) - (i.discount || 0), 0);
   const formatMoney = (n: number) => `$${n.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
 
@@ -166,7 +176,12 @@ function PurchaseFormInner({
     <form onSubmit={onSubmit}>
       <div className="mkt-form-group">
         <label className="mkt-form-label">Tienda</label>
-        <select name="storeId" className="mkt-form-select" defaultValue="">
+        <select
+          name="storeId"
+          className="mkt-form-select"
+          value={draft.storeId}
+          onChange={(e) => update({ storeId: e.target.value })}
+        >
           <option value="" disabled>Seleccionar tienda...</option>
           {stores.map((store) => (
             <option key={store.id} value={store.id}>{store.name}</option>
@@ -176,11 +191,22 @@ function PurchaseFormInner({
       <div className="mkt-form-row">
         <div className="mkt-form-group">
           <label className="mkt-form-label">Fecha</label>
-          <input name="purchaseDate" className="mkt-form-input" type="date" defaultValue={new Date().toISOString().split("T")[0]} />
+          <input
+            name="purchaseDate"
+            className="mkt-form-input"
+            type="date"
+            value={draft.purchaseDate || today}
+            onChange={(e) => update({ purchaseDate: e.target.value })}
+          />
         </div>
         <div className="mkt-form-group">
           <label className="mkt-form-label">Método de pago</label>
-          <select name="paymentMethodId" className="mkt-form-select" defaultValue="">
+          <select
+            name="paymentMethodId"
+            className="mkt-form-select"
+            value={draft.paymentMethodId}
+            onChange={(e) => update({ paymentMethodId: e.target.value })}
+          >
             <option value="" disabled>Seleccionar...</option>
             {paymentMethods.map((pm) => (
               <option key={pm.id} value={pm.id}>{pm.name}</option>
@@ -236,10 +262,17 @@ function PurchaseFormInner({
 
       <div className="mkt-form-group">
         <label className="mkt-form-label">Nota (opcional)</label>
-        <input name="notes" className="mkt-form-input" type="text" placeholder="ej. Compra semanal" />
+        <input
+          name="notes"
+          className="mkt-form-input"
+          type="text"
+          placeholder="ej. Compra semanal"
+          value={draft.notes}
+          onChange={(e) => update({ notes: e.target.value })}
+        />
       </div>
       <div className="mkt-modal-actions">
-        <button type="button" className="mkt-btn-cancel" onClick={onClose}>Cancelar</button>
+        <button type="button" className="mkt-btn-cancel" onClick={() => { clear(); onClose(); }}>Cancelar</button>
         <button type="submit" className="mkt-btn-submit">Guardar compra</button>
       </div>
     </form>

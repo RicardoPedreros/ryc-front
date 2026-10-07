@@ -1,7 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import { PurchasesActions } from "@/presentation/components/market/PurchasesActions";
 import { PurchaseHistory } from "@/presentation/components/market/PurchaseHistory";
 
 export default function PurchasesPage() {
+  const [refreshSignal, setRefreshSignal] = useState(0);
+
   return (
     <>
       <div className="mkt-page-header">
@@ -10,8 +15,8 @@ export default function PurchasesPage() {
           <p>Historial, lista de compras y registro de nuevas compras</p>
         </div>
       </div>
-      <PurchasesActions />
-      <PurchaseHistory />
+      <PurchasesActions onRecorded={() => setRefreshSignal((s) => s + 1)} />
+      <PurchaseHistory refreshSignal={refreshSignal} />
     </>
   );
 }

@@ -6,4 +6,5 @@ export interface IUnitRepository {
   findManyWithVisibility(userId: string | null, roleCode: string | null): Promise<readonly Unit[]>;
   create(unit: CreateUnit): Promise<Unit>;
   update(id: string, unit: UpdateUnit): Promise<Unit | null>;
+  remove(id: string): Promise<boolean>;
 }

@@ -77,4 +77,10 @@ export class NeonUnitRepository implements IUnitRepository {
     const rows = await sql`SELECT * FROM units WHERE created_by IS NULL OR created_by = ${userId} OR created_by = ANY(${adminIds}::uuid[]) ORDER BY name` as UnitRow[];
     return rows.map(toUnit);
   }
+
+  async remove(id: string): Promise<boolean> {
+    const sql = getSql();
+    const rows = await sql`DELETE FROM units WHERE id = ${id} RETURNING id`;
+    return rows.length > 0;
+  }
 }

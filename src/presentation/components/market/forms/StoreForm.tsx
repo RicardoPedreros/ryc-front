@@ -1,6 +1,7 @@
 "use client";
 
 import type { Store } from "@/domain/market/entities/store";
+import { EntityDeleteButton } from "@/presentation/components/market/forms/EntityDeleteButton";
 
 interface StoreFormProps {
   readonly initial?: Store | null;
@@ -45,6 +46,14 @@ export function StoreForm({ initial, onClose, onSaved }: StoreFormProps) {
           <input name="city" className="mkt-form-input" type="text" placeholder="ej. Villa Urquiza" defaultValue={initial?.city ?? ""} />
         </div>
         <div className="mkt-modal-actions">
+          {isEdit && (
+            <EntityDeleteButton
+              endpoint="/api/market/stores"
+              id={initial.id}
+              confirmMessage={`¿Seguro que deseas eliminar la tienda "${initial.name}"? Esta acción no se puede deshacer.`}
+              onDeleted={() => { onClose(); onSaved(); }}
+            />
+          )}
           <button type="button" className="mkt-btn-cancel" onClick={onClose}>Cancelar</button>
           <button type="submit" className="mkt-btn-submit">{isEdit ? "Guardar cambios" : "Agregar tienda"}</button>
         </div>

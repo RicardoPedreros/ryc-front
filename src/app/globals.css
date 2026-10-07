@@ -2059,6 +2059,82 @@ a {
   flex-direction: column;
 }
 
+.mkt-entity-filter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.5rem 1rem;
+}
+
+.mkt-entity-filter + .mkt-entity-list {
+  border-top: 1px solid var(--border);
+}
+
+.mkt-entity-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  background: var(--surface-dim);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.12s, color 0.12s;
+}
+
+.mkt-entity-toggle:hover {
+  border-color: var(--fg-subtle);
+  color: var(--fg);
+}
+
+.mkt-entity-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.mkt-entity-toggle-control {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.mkt-entity-toggle input:checked + .mkt-entity-toggle-control {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.mkt-entity-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 2px oklch(0% 0 0 / 0.12);
+}
+
+.mkt-entity-toggle input:checked + .mkt-entity-toggle-control .mkt-entity-toggle-thumb {
+  transform: translateX(12px);
+}
+
+.mkt-entity-toggle-text {
+  display: inline;
+}
+
 .mkt-entity-item {
   display: flex;
   align-items: center;
@@ -2683,8 +2759,41 @@ a {
 
 .mkt-modal-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+.mkt-btn-danger {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.72rem;
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-md);
+  background: var(--danger-soft);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 0;
+  color: var(--danger);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.mkt-btn-danger:hover {
+  background: var(--danger);
+  color: var(--fg-on-accent);
+}
+
+.mkt-btn-danger[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.mkt-delete-error {
+  flex: 1 1 100%;
+  margin: 0;
 }
 
 .mkt-btn-cancel {

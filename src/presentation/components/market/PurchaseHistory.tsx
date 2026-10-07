@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFetch } from "@/presentation/hooks/useFetch";
 import { Icon } from "@/presentation/components/ui/Icon";
 import { PurchaseItemEditModal } from "@/presentation/components/market/PurchaseItemEditModal";
@@ -20,10 +20,14 @@ function formatCurrency(amount: number): string {
   return `$${amount.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`;
 }
 
-export function PurchaseHistory() {
+export function PurchaseHistory({ refreshSignal = 0 }: { readonly refreshSignal?: number }) {
   const { data: purchases, loading, refetch: refetchPurchases } = useFetch<readonly PurchaseWithItems[]>("/api/market/purchases?includeItems=true");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<PurchaseItemDetail | null>(null);
+
+  useEffect(() => {
+    if (refreshSignal > 0) refetchPurchases();
+  }, [refreshSignal, refetchPurchases]);
 
   if (loading) {
     return (

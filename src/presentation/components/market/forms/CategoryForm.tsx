@@ -3,6 +3,7 @@
 import { ColorInput } from "./ColorInput";
 import { useState } from "react";
 import type { Category } from "@/domain/market/entities/category";
+import { EntityDeleteButton } from "@/presentation/components/market/forms/EntityDeleteButton";
 
 interface CategoryFormProps {
   readonly initial?: Category | null;
@@ -50,6 +51,14 @@ export function CategoryForm({ initial, onClose, onSaved }: CategoryFormProps) {
           </div>
         </div>
         <div className="mkt-modal-actions">
+          {isEdit && (
+            <EntityDeleteButton
+              endpoint="/api/market/categories"
+              id={initial.id}
+              confirmMessage={`¿Seguro que deseas eliminar la categoría "${initial.name}"? Esta acción no se puede deshacer.`}
+              onDeleted={() => { onClose(); onSaved(); }}
+            />
+          )}
           <button type="button" className="mkt-btn-cancel" onClick={onClose}>Cancelar</button>
           <button type="submit" className="mkt-btn-submit">{isEdit ? "Guardar cambios" : "Agregar categoría"}</button>
         </div>

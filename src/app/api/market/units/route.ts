@@ -42,3 +42,23 @@ export async function PUT(request: NextRequest) {
     return unitUseCases.update(id, body);
   });
 }
+
+export async function DELETE(request: NextRequest) {
+  return apiRoute(async () => {
+    const session = getSessionFromRequest(request);
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) badRequest('Unit id is required');
+
+    const existing = await unitUseCases.findById(id);
+    if (!existing) notFound('Unit not found');
+
+    if (!canModifyRecord(existing.createdBy, session?.id ?? null, session?.roleCode ?? null)) {
+      forbidden('You can only delete records you created');
+    }
+
+    const deleted = await unitUseCases.remove(id);
+    return { success: deleted };
+  });
+}

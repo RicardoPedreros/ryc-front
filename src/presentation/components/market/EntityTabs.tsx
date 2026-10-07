@@ -48,6 +48,7 @@ function ProductList() {
   const { data: brands, refetch: refetchBrands } = useFetch<readonly Brand[]>("/api/market/brands");
   const { data: units } = useFetch<readonly Unit[]>("/api/market/units");
   const [modal, setModal] = useState<ProductModal>(null);
+  const [showPacks, setShowPacks] = useState(false);
   const [brandModalName, setBrandModalName] = useState<string | null>(null);
 
   const catMap = new Map((categories ?? []).map((c) => [c.id, c.name]));
@@ -76,16 +77,30 @@ function ProductList() {
 
   if (loading) return <EntityEmpty title="Cargando..." />;
 
-  const baseProducts = (products ?? []).filter((p) => p.parentProductId == null);
+  const allProducts = products ?? [];
+  const listedProducts = showPacks ? allProducts : allProducts.filter((p) => p.parentProductId == null);
 
-  if (baseProducts.length === 0) {
+  if (allProducts.length === 0) {
     return <EntityEmpty title="Sin productos" subtitle="Agrega tu primer producto" />;
   }
 
   return (
     <>
+      <div className="mkt-entity-filter">
+        <label className="mkt-entity-toggle">
+          <input
+            type="checkbox"
+            checked={showPacks}
+            onChange={(e) => setShowPacks(e.target.checked)}
+          />
+          <span className="mkt-entity-toggle-control">
+            <span className="mkt-entity-toggle-thumb" />
+          </span>
+          <span className="mkt-entity-toggle-text">Mostrar packs</span>
+        </label>
+      </div>
       <div className="mkt-entity-list">
-        {baseProducts.map((product) => {
+        {listedProducts.map((product) => {
           const qty = stockMap.get(product.id) ?? 0;
           const isLow = qty <= 2;
           const brandName = product.brandId ? brandNameMap.get(product.brandId) ?? null : null;

@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       id: session.id,
       username: session.username,
-      roleCode: session.roleCode,
+      roleCode: session.roleCode.toLowerCase(),
       firstName: session.firstName,
       lastName: session.lastName,
     });

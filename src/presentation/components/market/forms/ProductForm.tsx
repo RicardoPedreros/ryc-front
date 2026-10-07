@@ -11,12 +11,18 @@ import type { Unit } from "@/domain/market/entities/unit";
 import type { Brand } from "@/domain/market/entities/brand";
 import type { Product } from "@/domain/market/entities/product";
 import type { ProductSearchResult } from "@/domain/market/repositories/product-repository";
+import { EntityDeleteButton } from "@/presentation/components/market/forms/EntityDeleteButton";
 
 export interface ProductFormProps {
   readonly categories: readonly Category[];
   readonly units: readonly Unit[];
   readonly brands: readonly Brand[];
   readonly initial?: Product | null;
+  readonly initialName?: string;
+  readonly initialBarcode?: string;
+  readonly title?: string;
+  readonly submitLabel?: string;
+  readonly onAfterCreate?: (created: { id: string }) => Promise<void>;
   readonly onClose: () => void;
   readonly onSaved: () => void;
   readonly onOpenBrandForm?: (name: string) => void;
@@ -27,17 +33,24 @@ export function ProductForm({
   units,
   brands,
   initial,
+  initialName,
+  initialBarcode,
+  title: titleProp,
+  submitLabel,
+  onAfterCreate,
   onClose,
   onSaved,
   onOpenBrandForm,
 }: ProductFormProps) {
   const isEdit = initial != null;
   const isEditPack = isEdit && initial.parentProductId != null;
-  const [barcode, setBarcode] = useState(initial?.barcode ?? "");
+  const [barcode, setBarcode] = useState(initial?.barcode ?? initialBarcode ?? "");
   const [packBarcode, setPackBarcode] = useState("");
   const [isPack, setIsPack] = useState(false);
   const [customAlarms, setCustomAlarms] = useState(false);
   const [notificate, setNotificate] = useState(initial?.notificate ?? true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [baseProduct, setBaseProduct] = useState<ProductSearchResult | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<readonly ProductSearchResult[]>([]);
@@ -104,24 +117,75 @@ export function ProductForm({
 
   const activePack = isEdit ? isEditPack : isPack && baseProduct != null;
 
-  const title = isEdit
+  const defaultTitle = isEdit
     ? (isEditPack ? "Editar pack" : "Editar producto")
     : (activePack ? "Agregar pack" : "Agregar producto");
+
+  const title = titleProp ?? defaultTitle;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
-    if (isEdit) {
-      if (isEditPack) {
-        await fetch(`/api/market/products?id=${initial.id}`, {
+    setError(null);
+    setSubmitting(true);
+    try {
+      if (isEdit) {
+        if (isEditPack) {
+          const res = await fetch(`/api/market/products?id=${initial.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              barcode: barcode || null,
+              stockQuantity: Number(form.get("stockQuantity")) || 1,
+              notificate,
+            }),
+          });
+          if (!res.ok) throw new Error("No se pudo guardar el producto");
+          onClose();
+          onSaved();
+          return;
+        }
+        const categoryId = form.get("categoryId") as string;
+        const unitId = form.get("unitId") as string;
+        if (!categoryId || !unitId) return;
+        const res = await fetch(`/api/market/products?id=${initial.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            barcode: barcode || null,
-            stockQuantity: Number(form.get("stockQuantity")) || 1,
+            name: form.get("name"),
+            brandId: form.get("brandId") || null,
+            categoryId,
+            unitId,
+            presentationQuantity: form.get("presentationQuantity") ? Number(form.get("presentationQuantity")) : null,
+            minStock: customAlarms ? Number(form.get("minStock")) || 1 : undefined,
+            minDays: customAlarms ? Number(form.get("minDays")) || 7 : undefined,
             notificate,
+            barcode: barcode || null,
           }),
         });
+        if (!res.ok) throw new Error("No se pudo guardar el producto");
+        onClose();
+        onSaved();
+        return;
+      }
+      if (baseProduct) {
+        const res = await fetch("/api/market/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: baseProduct.name,
+            brandId: baseProduct.brandId,
+            parentProductId: baseProduct.id,
+            categoryId: baseProduct.categoryId,
+            unitId: baseProduct.unitId,
+            presentationQuantity: baseProduct.presentationQuantity,
+            stockQuantity: Number(form.get("stockQuantity")) || 2,
+            minStock: baseProduct.minStock,
+            minDays: baseProduct.minDays,
+            barcode: packBarcode || null,
+          }),
+        });
+        if (!res.ok) throw new Error("No se pudo crear el producto");
         onClose();
         onSaved();
         return;
@@ -129,8 +193,8 @@ export function ProductForm({
       const categoryId = form.get("categoryId") as string;
       const unitId = form.get("unitId") as string;
       if (!categoryId || !unitId) return;
-      await fetch(`/api/market/products?id=${initial.id}`, {
-        method: "PUT",
+      const res = await fetch("/api/market/products", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.get("name"),
@@ -138,58 +202,26 @@ export function ProductForm({
           categoryId,
           unitId,
           presentationQuantity: form.get("presentationQuantity") ? Number(form.get("presentationQuantity")) : null,
-          minStock: customAlarms ? Number(form.get("minStock")) || 1 : undefined,
-          minDays: customAlarms ? Number(form.get("minDays")) || 7 : undefined,
+          stockQuantity: 1,
+          minStock: customAlarms ? Number(form.get("minStock")) || 1 : 1,
+          minDays: customAlarms ? Number(form.get("minDays")) || 7 : 7,
           notificate,
           barcode: barcode || null,
         }),
       });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(data?.error ?? "No se pudo crear el producto");
+      }
+      const created = (await res.json().catch(() => null)) as { id: string } | null;
+      if (onAfterCreate && created) await onAfterCreate(created);
       onClose();
       onSaved();
-      return;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo guardar el producto");
+    } finally {
+      setSubmitting(false);
     }
-    if (baseProduct) {
-      await fetch("/api/market/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: baseProduct.name,
-          brandId: baseProduct.brandId,
-          parentProductId: baseProduct.id,
-          categoryId: baseProduct.categoryId,
-          unitId: baseProduct.unitId,
-          presentationQuantity: baseProduct.presentationQuantity,
-          stockQuantity: Number(form.get("stockQuantity")) || 2,
-          minStock: baseProduct.minStock,
-          minDays: baseProduct.minDays,
-          barcode: packBarcode || null,
-        }),
-      });
-      onClose();
-      onSaved();
-      return;
-    }
-    const categoryId = form.get("categoryId") as string;
-    const unitId = form.get("unitId") as string;
-    if (!categoryId || !unitId) return;
-    await fetch("/api/market/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: form.get("name"),
-        brandId: form.get("brandId") || null,
-        categoryId,
-        unitId,
-        presentationQuantity: form.get("presentationQuantity") ? Number(form.get("presentationQuantity")) : null,
-        stockQuantity: 1,
-        minStock: customAlarms ? Number(form.get("minStock")) || 1 : 1,
-        minDays: customAlarms ? Number(form.get("minDays")) || 7 : 7,
-        notificate,
-        barcode: barcode || null,
-      }),
-    });
-    onClose();
-    onSaved();
   };
 
   return (
@@ -496,7 +528,7 @@ export function ProductForm({
                 </Stack>
                 <div className="mkt-form-group">
                   <label className="mkt-form-label">Nombre</label>
-                  <input name="name" className="mkt-form-input" type="text" placeholder="ej. Leche entera" required />
+                  <input name="name" className="mkt-form-input" type="text" placeholder="ej. Leche entera" defaultValue={initialName ?? ""} required />
                 </div>
                 <div className="mkt-form-row">
                   <div className="mkt-form-group">
@@ -573,10 +605,19 @@ export function ProductForm({
           </>
         )}
 
+        {error && <p className="mkt-form-error" role="alert">{error}</p>}
         <div className="mkt-modal-actions">
-          <button type="button" className="mkt-btn-cancel" onClick={onClose}>Cancelar</button>
-          <button type="submit" className="mkt-btn-submit" disabled={!isEdit && isPack && !baseProduct}>
-            {isEdit ? "Guardar cambios" : (activePack ? "Agregar pack" : "Agregar producto")}
+          {isEdit && (
+            <EntityDeleteButton
+              endpoint="/api/market/products"
+              id={initial.id}
+              confirmMessage={`¿Seguro que deseas eliminar el producto "${initial.name}"? Esta acción no se puede deshacer.`}
+              onDeleted={() => { onClose(); onSaved(); }}
+            />
+          )}
+          <button type="button" className="mkt-btn-cancel" onClick={onClose} disabled={submitting}>Cancelar</button>
+          <button type="submit" className="mkt-btn-submit" disabled={submitting || (!isEdit && isPack && !baseProduct)}>
+            {submitLabel ?? (isEdit ? "Guardar cambios" : (activePack ? "Agregar pack" : "Agregar producto"))}
           </button>
         </div>
       </form>

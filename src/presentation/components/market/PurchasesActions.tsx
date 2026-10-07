@@ -7,7 +7,7 @@ import { ShoppingList } from "./ShoppingList";
 
 type ActiveModal = "compra" | "lista" | null;
 
-export function PurchasesActions() {
+export function PurchasesActions({ onRecorded }: { readonly onRecorded?: () => void }) {
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
 
   return (
@@ -38,7 +38,7 @@ export function PurchasesActions() {
         </div>
       </div>
 
-      <PurchaseModals open={activeModal === "compra"} onClose={() => setActiveModal(null)} />
+      <PurchaseModals open={activeModal === "compra"} onClose={() => setActiveModal(null)} onRecorded={onRecorded} />
       <ShoppingList open={activeModal === "lista"} onClose={() => setActiveModal(null)} />
     </>
   );

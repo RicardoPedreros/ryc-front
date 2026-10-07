@@ -21,7 +21,7 @@ interface MovementType {
 type AdjustMode = "increase" | "decrease";
 
 export function StockAdjustment() {
-  const { data: products, loading: loadingProducts } = useFetch<readonly ProductWithStock[]>(
+  const { data: products, loading: loadingProducts, refetch: refetchProducts } = useFetch<readonly ProductWithStock[]>(
     "/api/market/inventory/adjust"
   );
   const { data: movementTypes } = useFetch<readonly MovementType[]>(
@@ -155,6 +155,7 @@ export function StockAdjustment() {
       }
 
       setSaved(true);
+      refetchProducts();
       resetAdjustForm();
       setSelectedProductId(null);
     } catch {
